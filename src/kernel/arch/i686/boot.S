@@ -27,6 +27,8 @@
         pushl $0
         popf
 
+        call _init
+
         push %ebx
         push %eax
 

@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(OwOS C CXX ASM)
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(ARCH "i686")
 
@@ -14,6 +16,7 @@ set(CMAKE_STRIP ${TOOLCHAIN_PATH}strip)
 set(CMAKE_AR ${TOOLCHAIN_PATH}ar)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/bin)
+set(BUILD_PATH ${CMAKE_SOURCE_DIR}/build)
 
 add_subdirectory(src)
 

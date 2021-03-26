@@ -3,3 +3,5 @@ set(ARCH_SOURCES
     PARENT_SCOPE
 )
 
+add_library(crti OBJECT crti.S)
+add_library(crtn OBJECT crtn.S)
