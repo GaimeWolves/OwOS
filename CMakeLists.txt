@@ -16,3 +16,15 @@ set(CMAKE_AR ${TOOLCHAIN_PATH}ar)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/bin)
 
 add_subdirectory(src)
+
+add_custom_target(run
+    COMMAND qemu-system-i386 -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel
+    DEPENDS kernel
+    USES_TERMINAL
+)
+
+add_custom_target(debug
+    COMMAND qemu-system-i386 -s -S -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel & gdb -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
+    DEPENDS kernel
+    USES_TERMINAL
+)
