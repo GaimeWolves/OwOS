@@ -1,7 +1,7 @@
 add_subdirectory(arch/${ARCH})
 
 set(KERNEL_SOURCES
-    include/multiboot
+    include/multiboot.h
     entry.cpp
 )
 
