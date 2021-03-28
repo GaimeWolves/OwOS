@@ -14,22 +14,54 @@ void kputs(const char *str)
     Textmode::puts(str);
 }
 
-void print_init_msg(bool failed, const char *msg)
+void print_check_msg(bool ok, const char *msg)
 {
     kputc('[');
 
-    if (failed)
-    {
-        Textmode::set_color(Textmode::Color::RED, Textmode::Color::BLACK);
-        kputs("FAILED");
-    }
-    else
+    if (ok)
     {
         Textmode::set_color(Textmode::Color::GREEN, Textmode::Color::BLACK);
         kputs("  OK  ");
     }
+    else
+    {
+        Textmode::set_color(Textmode::Color::RED, Textmode::Color::BLACK);
+        kputs("FAILED");
+    }
 
     Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
+    kputc(']');
+    kputc(' ');
+
+    kputs(msg);
+
+    kputc('\n');
+}
+
+void print_debug_msg(const char *msg)
+{
+    kputc('[');
+
+    Textmode::set_color(Textmode::Color::MAGENTA, Textmode::Color::BLACK);
+    kputs(" DEBUG");
+    Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
+
+    kputc(']');
+    kputc(' ');
+
+    kputs(msg);
+
+    kputc('\n');
+}
+
+void print_test_msg(const char *msg)
+{
+    kputc('[');
+
+    Textmode::set_color(Textmode::Color::LIGHT_GREEN, Textmode::Color::BLACK);
+    kputs(" TEST ");
+    Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
+
     kputc(']');
     kputc(' ');
 
