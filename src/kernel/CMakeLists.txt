@@ -3,6 +3,7 @@ add_subdirectory(arch/${ARCH})
 set(KERNEL_SOURCES
     include/multiboot.h
     include/IO.hpp
+    include/tests.hpp
     include/heap/kmalloc.hpp
     include/vga/textmode.hpp
     include/libk/kstdio.hpp
@@ -12,6 +13,8 @@ set(KERNEL_SOURCES
     heap/kmalloc.cpp
     vga/textmode.cpp
     libk/kstdio.cpp
+    tests/test_crtx.cpp
+    tests/test_heap.cpp
 )
 
 set(SOURCES
