@@ -2,7 +2,11 @@ add_subdirectory(arch/${ARCH})
 
 set(KERNEL_SOURCES
     include/multiboot.h
+    include/heap/kmalloc.hpp
     entry.cpp
+    heap/BitmapHeap.hpp
+    heap/BitmapHeap.cpp
+    heap/kmalloc.cpp
 )
 
 set(SOURCES
