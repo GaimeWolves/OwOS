@@ -3,6 +3,7 @@
 
 #include <multiboot.h>
 #include <heap/kmalloc.hpp>
+#include <vga/textmode.hpp>
 
 namespace Kernel
 {
@@ -41,6 +42,7 @@ namespace Kernel
         for (size_t i = 0; i < sizeof(message) - 1; i++)
             *(((uint16_t *)0xB8000) + i) = vga_entry((uint8_t)message[i], 15);
 
+        VGA::Textmode::init();
         Heap::init();
 
         void *heapTestArray[100] = {0};

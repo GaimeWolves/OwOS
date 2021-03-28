@@ -4,10 +4,14 @@ set(KERNEL_SOURCES
     include/multiboot.h
     include/IO.hpp
     include/heap/kmalloc.hpp
+    include/vga/textmode.hpp
+    include/libk/kstdio.hpp
     entry.cpp
     heap/BitmapHeap.hpp
     heap/BitmapHeap.cpp
     heap/kmalloc.cpp
+    vga/textmode.cpp
+    libk/kstdio.cpp
 )
 
 set(SOURCES

@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <libk/kstdio.hpp>
+
 #include "BitmapHeap.hpp"
 
 #define HEAP_SIZE 2 * 1024 * 1024 // 2MiB initial heap space
@@ -16,6 +18,8 @@ namespace Kernel::Heap
     void init()
     {
         heap.expand((uintptr_t)kmalloc_heap, HEAP_SIZE, 16);
+
+        print_init_msg(false, "Heap");
     }
 
     const heap_statistics_t &getStatistics()
