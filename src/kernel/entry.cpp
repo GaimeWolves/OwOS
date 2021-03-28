@@ -12,8 +12,6 @@ namespace Kernel
 
     extern "C" __attribute__((noreturn)) void entry(uint32_t magic, multiboot_info_t *multiboot_info)
     {
-        Tests::test_crtx();
-
         if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
             print_check_msg(false, "Wrong bootloader magic value");
 
@@ -21,6 +19,8 @@ namespace Kernel
             print_check_msg(false, "No memory map provided");
 
         VGA::Textmode::init();
+
+        Tests::test_crtx();
 
         Heap::init();
         Tests::test_heap();

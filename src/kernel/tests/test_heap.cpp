@@ -96,17 +96,18 @@ namespace Kernel::Tests
     {
         print_test_msg("Heap allocations");
         orig_stats = getStatistics();
+        bool ok = true;
 
         if (!test_simple_kmalloc())
-            return false;
+            ok = false;
 
         if (!test_large_kmalloc())
-            return false;
+            ok = false;
 
         if (!test_many_kmalloc())
-            return false;
+            ok = false;
 
-        return true;
+        return ok;
     }
 
 } // namespace Kernel::Tests
