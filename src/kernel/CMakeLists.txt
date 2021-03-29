@@ -41,6 +41,10 @@ add_dependencies(kernel crti crtn)
 target_link_libraries(kernel gcc)
 target_include_directories(kernel PRIVATE include)
 
+if (DEBUG_KERNEL)
+    target_compile_definitions(kernel PRIVATE _DEBUG=1)
+endif(DEBUG_KERNEL)
+
 add_custom_command(
     TARGET kernel PRE_LINK
     COMMAND mkdir -p ${BUILD_PATH}/crt
