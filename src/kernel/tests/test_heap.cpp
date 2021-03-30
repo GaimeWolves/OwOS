@@ -20,7 +20,7 @@ namespace Kernel::Tests
 
         if (ptr == nullptr)
         {
-            print_check_msg(false, "Simple allocation: nullptr returned");
+            LibK::printf_check_msg(false, "Simple allocation: nullptr returned");
             return false;
         }
 
@@ -30,11 +30,11 @@ namespace Kernel::Tests
 
         if (stats.used != orig_stats.used || stats.free != orig_stats.free)
         {
-            print_check_msg(false, "Simple allocation: statistics wrong (heap corrupted?)");
+            LibK::printf_check_msg(false, "Simple allocation: statistics wrong (heap corrupted?)");
             return false;
         }
 
-        print_check_msg(true, "Simple allocation");
+        LibK::printf_check_msg(true, "Simple allocation");
         return true;
     }
 
@@ -44,7 +44,7 @@ namespace Kernel::Tests
 
         if (ptr == nullptr)
         {
-            print_check_msg(false, "Large allocation: nullptr returned");
+            LibK::printf_check_msg(false, "Large allocation: nullptr returned");
             return false;
         }
 
@@ -54,11 +54,11 @@ namespace Kernel::Tests
 
         if (stats.used != orig_stats.used || stats.free != orig_stats.free)
         {
-            print_check_msg(false, "Large allocation: statistics wrong (heap corrupted?)");
+            LibK::printf_check_msg(false, "Large allocation: statistics wrong (heap corrupted?)");
             return false;
         }
 
-        print_check_msg(true, "Large allocation");
+        LibK::printf_check_msg(true, "Large allocation");
         return true;
     }
 
@@ -73,7 +73,7 @@ namespace Kernel::Tests
         {
             if (ptr == nullptr)
             {
-                print_check_msg(false, "Many allocations: nullptr returned");
+                LibK::printf_check_msg(false, "Many allocations: nullptr returned");
                 return false;
             }
 
@@ -84,17 +84,17 @@ namespace Kernel::Tests
 
         if (stats.used != orig_stats.used || stats.free != orig_stats.free)
         {
-            print_check_msg(false, "Many allocations: statistics wrong (heap corrupted?)");
+            LibK::printf_check_msg(false, "Many allocations: statistics wrong (heap corrupted?)");
             return false;
         }
 
-        print_check_msg(true, "Many allocations");
+        LibK::printf_check_msg(true, "Many allocations");
         return true;
     }
 
     bool test_heap()
     {
-        print_test_msg("Heap allocations");
+        LibK::printf_test_msg("Heap allocations");
         orig_stats = getStatistics();
         bool ok = true;
 

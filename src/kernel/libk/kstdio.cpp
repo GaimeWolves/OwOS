@@ -18,62 +18,6 @@ void kputs(const char *str)
     Textmode::puts(str);
 }
 
-void print_check_msg(bool ok, const char *msg)
-{
-    kputc('[');
-
-    if (ok)
-    {
-        Textmode::set_color(Textmode::Color::GREEN, Textmode::Color::BLACK);
-        kputs("  OK  ");
-    }
-    else
-    {
-        Textmode::set_color(Textmode::Color::RED, Textmode::Color::BLACK);
-        kputs("FAILED");
-    }
-
-    Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
-    kputc(']');
-    kputc(' ');
-
-    kputs(msg);
-
-    kputc('\n');
-}
-
-void print_debug_msg(const char *msg)
-{
-    kputc('[');
-
-    Textmode::set_color(Textmode::Color::MAGENTA, Textmode::Color::BLACK);
-    kputs(" DEBUG");
-    Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
-
-    kputc(']');
-    kputc(' ');
-
-    kputs(msg);
-
-    kputc('\n');
-}
-
-void print_test_msg(const char *msg)
-{
-    kputc('[');
-
-    Textmode::set_color(Textmode::Color::LIGHT_GREEN, Textmode::Color::BLACK);
-    kputs(" TEST ");
-    Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
-
-    kputc(']');
-    kputc(' ');
-
-    kputs(msg);
-
-    kputc('\n');
-}
-
 void kvprintf(const char *fmt, va_list ap)
 {
     printf_internal(
@@ -111,3 +55,79 @@ void ksprintf(char *buffer, const char *fmt, ...)
 
     va_end(ap);
 }
+
+namespace Kernel::LibK
+{
+
+    void printf_check_msg(bool ok, const char *msg, ...)
+    {
+        kputc('[');
+
+        if (ok)
+        {
+            Textmode::set_color(Textmode::Color::GREEN, Textmode::Color::BLACK);
+            kputs("  OK  ");
+        }
+        else
+        {
+            Textmode::set_color(Textmode::Color::RED, Textmode::Color::BLACK);
+            kputs("FAILED");
+        }
+
+        Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
+        kputc(']');
+        kputc(' ');
+
+        va_list ap;
+        va_start(ap, msg);
+
+        kvprintf(msg, ap);
+
+        va_end(ap);
+
+        kputc('\n');
+    }
+
+    void printf_debug_msg(const char *msg, ...)
+    {
+        kputc('[');
+
+        Textmode::set_color(Textmode::Color::MAGENTA, Textmode::Color::BLACK);
+        kputs(" DEBUG");
+        Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
+
+        kputc(']');
+        kputc(' ');
+
+        va_list ap;
+        va_start(ap, msg);
+
+        kvprintf(msg, ap);
+
+        va_end(ap);
+
+        kputc('\n');
+    }
+
+    void printf_test_msg(const char *msg, ...)
+    {
+        kputc('[');
+
+        Textmode::set_color(Textmode::Color::LIGHT_GREEN, Textmode::Color::BLACK);
+        kputs(" TEST ");
+        Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
+
+        kputc(']');
+        kputc(' ');
+
+        va_list ap;
+        va_start(ap, msg);
+
+        kvprintf(msg, ap);
+
+        va_end(ap);
+
+        kputc('\n');
+    }
+
+} // namespace Kernel::LibK

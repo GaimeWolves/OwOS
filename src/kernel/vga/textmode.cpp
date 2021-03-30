@@ -87,7 +87,7 @@ namespace Kernel::VGA::Textmode
         cursorX = 0;
         cursorY = 0;
 
-        print_check_msg(true, "VGA textmode");
+        LibK::printf_check_msg(true, "VGA textmode");
     }
 
     void putc(const char ch)

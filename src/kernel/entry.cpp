@@ -13,10 +13,10 @@ namespace Kernel
     extern "C" __attribute__((noreturn)) void entry(uint32_t magic, multiboot_info_t *multiboot_info)
     {
         if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-            print_check_msg(false, "Wrong bootloader magic value");
+            LibK::printf_check_msg(false, "Wrong bootloader magic value");
 
         if (!(multiboot_info->flags & MULTIBOOT_INFO_MEM_MAP))
-            print_check_msg(false, "No memory map provided");
+            LibK::printf_check_msg(false, "No memory map provided");
 
         VGA::Textmode::init();
 
@@ -24,6 +24,10 @@ namespace Kernel
 
         Heap::init();
         Tests::test_heap();
+
+#ifdef _DEBUG
+        LibK::printf_debug_msg("Reached end of entry");
+#endif
 
         for (;;)
             ;

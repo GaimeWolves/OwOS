@@ -19,7 +19,7 @@ namespace Kernel::Heap
     {
         heap.expand((uintptr_t)kmalloc_heap, HEAP_SIZE, 16);
 
-        print_check_msg(true, "Heap");
+        LibK::printf_check_msg(true, "Heap");
     }
 
     const heap_statistics_t &getStatistics()

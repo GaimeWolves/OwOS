@@ -14,12 +14,12 @@ namespace Kernel::Tests
 
     bool test_crtx()
     {
-        print_test_msg("Global constructors");
+        LibK::printf_test_msg("Global constructors");
 
         if (constructor_was_run)
-            print_check_msg(true, "test_constructor was called");
+            LibK::printf_check_msg(true, "test_constructor was called");
         else
-            print_check_msg(false, "test_constructor was not called");
+            LibK::printf_check_msg(false, "test_constructor was not called");
 
         return constructor_was_run;
     }
