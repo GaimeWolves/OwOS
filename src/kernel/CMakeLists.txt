@@ -4,8 +4,10 @@ set(KERNEL_SOURCES
     include/multiboot.h
     include/IO.hpp
     include/tests.hpp
+    include/arch/processor.hpp
     include/heap/kmalloc.hpp
     include/vga/textmode.hpp
+    include/libk/kassert.hpp
     include/libk/kstdio.hpp
     include/libk/kctype.hpp
     include/libk/kmath.hpp
@@ -17,6 +19,7 @@ set(KERNEL_SOURCES
     heap/BitmapHeap.cpp
     heap/kmalloc.cpp
     vga/textmode.cpp
+    libk/kassert.cpp
     libk/kstdio.cpp
     libk/kctype.cpp
     libk/kstring.cpp
@@ -35,7 +38,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_compile_options(-ffreestanding -Og -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti)
+add_compile_options(-ffreestanding -Og -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.)
 add_link_options(LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
 
 execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -print-file-name=crtbegin.o OUTPUT_VARIABLE CRTBEGIN_OBJ OUTPUT_STRIP_TRAILING_WHITESPACE)
