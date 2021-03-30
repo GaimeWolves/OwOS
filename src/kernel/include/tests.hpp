@@ -6,6 +6,7 @@ namespace Kernel::Tests
 
     bool test_crtx();
     bool test_heap();
+    bool test_printf();
 
 } // namespace Kernel::Tests
 

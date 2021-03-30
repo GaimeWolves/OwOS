@@ -25,6 +25,8 @@ namespace Kernel
         Heap::init();
         Tests::test_heap();
 
+        Tests::test_printf();
+
 #ifdef _DEBUG
         LibK::printf_debug_msg("Reached end of entry");
 #endif
