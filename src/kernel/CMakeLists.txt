@@ -20,6 +20,7 @@ set(KERNEL_SOURCES
     libk/kstdio.cpp
     libk/kctype.cpp
     libk/kstring.cpp
+    libk/printf.hpp
     tests/test_crtx.cpp
     tests/test_heap.cpp
     tests/test_printf.cpp
