@@ -48,12 +48,17 @@ namespace Kernel::VGA::Textmode
         if (cursorY < ROWS)
             return;
 
-        for (uint8_t y = ROWS - 2; y > 0; y--)
+        for (uint8_t y = 0; y < ROWS - 1; y++)
         {
             for (uint8_t x = 0; x < COLS; x++)
             {
                 buffer[y * COLS + x] = buffer[(y + 1) * COLS + x];
             }
+        }
+
+        for (uint8_t x = 0; x < COLS; x++)
+        {
+            buffer[(ROWS - 1) * COLS + x] = vga_char(' ', color);
         }
 
         cursorY--;
