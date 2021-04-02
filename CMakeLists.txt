@@ -29,7 +29,7 @@ add_custom_target(run
 )
 
 add_custom_target(debug
-    COMMAND qemu-system-i386 -s -S -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel & gdb -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
+    COMMAND qemu-system-i386 -s -S -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel & cd ${CMAKE_SOURCE_DIR} && gdb -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
     DEPENDS kernel
     USES_TERMINAL
 )

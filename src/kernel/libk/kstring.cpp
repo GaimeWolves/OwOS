@@ -47,4 +47,27 @@ extern "C"
 
         return dest;
     }
+
+    void *memmove(void *dest, const void *src, size_t count)
+    {
+        const char *sp = (const char *)src;
+        char *dp = (char *)dest;
+
+        if (src < dest)
+        {
+            for (size_t i = count; i > 0; i--)
+            {
+                dp[i - 1] = sp[i - 1];
+            }
+        }
+        else if (src > dest)
+        {
+            for (size_t i = 0; i < count; i++)
+            {
+                dp[i] = sp[i];
+            }
+        }
+
+        return dest;
+    }
 }

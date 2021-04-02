@@ -6,34 +6,40 @@
 #endif
 
 // Magic numbers
-#define MUTLIBOOT_HEADER_MAGIC     0x1BADB002
+#define MUTLIBOOT_HEADER_MAGIC 0x1BADB002
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
 // Alignment info
 #define MULTIBOOT_HEADER_ALIGN 4
 #define MULTIBOOT_MODULE_ALIGN 4096
-#define MULTIBOOT_INFO_ALIGN   4
+#define MULTIBOOT_INFO_ALIGN 4
 
 // OS flags
-#define MULTIBOOT_PAGE_ALIGN  0x00000001 // Request 4KiB aligned modules
+#define MULTIBOOT_PAGE_ALIGN 0x00000001  // Request 4KiB aligned modules
 #define MULTIBOOT_MEMORY_INFO 0x00000002 // Request memory info
-#define MULTIBOOT_VIDEO_MODE  0x00000004 // Request video info
+#define MULTIBOOT_VIDEO_MODE 0x00000004  // Request video info
 #define MULTIBOOT_AOUT_KLUDGE 0x00010000 // Use address fields in header
 
 // Bootloader flags
-#define MULTIBOOT_INFO_MEMORY           0x0000001 // Memory info available
-#define MULTIBOOT_INFO_BOOTDEVICE       0x0000002 // Boot device set
-#define MULTIBOOT_INFO_CMDLINE          0x0000004 // Command line defined
-#define MULTIBOOT_INFO_MODULES          0x0000008 // Modules loaded
-#define MULTIBOOT_INFO_AOUT_SYMS        0x0000010 // Symbol table available
-#define MULTIBOOT_INFO_ELF_SHEADER      0x0000020 // ELF section header available
-#define MULTIBOOT_INFO_MEM_MAP          0x0000040 // Full memory map available
-#define MULTIBOOT_INFO_DRIVE_INFO       0x0000080 // Drive info available
-#define MULTIBOOT_INFO_CONFIG_TABLE     0x0000100 // Config table available
-#define MULTIBOOT_INFO_BOOTLOADER_NAME  0x0000200 // Bootloader name set
-#define MULTIBOOT_INFO_APM_TABLE        0x0000400 // APM table available
-#define MULTIBOOT_INFO_VBE_INFO         0x0000800 // Video information available
+#define MULTIBOOT_INFO_MEMORY 0x0000001          // Memory info available
+#define MULTIBOOT_INFO_BOOTDEVICE 0x0000002      // Boot device set
+#define MULTIBOOT_INFO_CMDLINE 0x0000004         // Command line defined
+#define MULTIBOOT_INFO_MODULES 0x0000008         // Modules loaded
+#define MULTIBOOT_INFO_AOUT_SYMS 0x0000010       // Symbol table available
+#define MULTIBOOT_INFO_ELF_SHEADER 0x0000020     // ELF section header available
+#define MULTIBOOT_INFO_MEM_MAP 0x0000040         // Full memory map available
+#define MULTIBOOT_INFO_DRIVE_INFO 0x0000080      // Drive info available
+#define MULTIBOOT_INFO_CONFIG_TABLE 0x0000100    // Config table available
+#define MULTIBOOT_INFO_BOOTLOADER_NAME 0x0000200 // Bootloader name set
+#define MULTIBOOT_INFO_APM_TABLE 0x0000400       // APM table available
+#define MULTIBOOT_INFO_VBE_INFO 0x0000800        // Video information available
 #define MULTIBOOT_INFO_FRAMEBUFFER_INFO 0x0001000
+
+#define MULTIBOOT_MEMORY_AVAILABLE 1
+#define MULTIBOOT_MEMORY_RESERVED 2
+#define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE 3
+#define MULTIBOOT_MEMORY_NVS 4
+#define MULTIBOOT_MEMORY_BADRAM 5
 
 #ifndef ASM_FILE
 

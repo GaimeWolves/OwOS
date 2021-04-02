@@ -9,6 +9,9 @@ namespace Kernel::Heap
     inline static uint8_t getID(uint8_t *bitmap, uint32_t block);
     inline static uint8_t getFreeID(uint8_t idLeft, uint8_t idRight);
 
+    inline static bool can_align(uint8_t *bitmap, uint32_t block_size, uint32_t block, size_t align);
+    inline static uintptr_t align_address(uintptr_t address, size_t align);
+
     // Set the 2-bit id in the specified place of the bitmap
     inline static void setID(uint8_t *bitmap, uint32_t block, uint8_t id)
     {
@@ -37,10 +40,19 @@ namespace Kernel::Heap
         return 3;
     }
 
-    BitmapHeap::BitmapHeap()
+    inline static bool can_align(uint8_t *bitmap, uint32_t block_size, uint32_t block, size_t align)
     {
-        m_first_block = nullptr;
-        m_stats = {};
+        if (align <= block_size)
+            return true;
+
+        uintptr_t beginAddr = (uintptr_t)bitmap + block * block_size;
+
+        return beginAddr % align + block_size > align;
+    }
+
+    inline static uintptr_t align_address(uintptr_t address, size_t align)
+    {
+        return address + (align - address % align);
     }
 
     void BitmapHeap::expand(uintptr_t addr, uint32_t size, uint32_t block_size)
@@ -78,7 +90,7 @@ namespace Kernel::Heap
         m_stats.meta += metadata_size;
     }
 
-    void *BitmapHeap::alloc(size_t size)
+    void *BitmapHeap::alloc(size_t size, size_t align)
     {
         // Iterate through all blocks
         for (auto block = m_first_block; block; block = block->next)
@@ -95,6 +107,9 @@ namespace Kernel::Heap
             {
                 if (start >= block_count)
                     start = 0;
+
+                if (!can_align(bitmap, block->block_size, start, align))
+                    continue;
 
                 // The current block is used
                 if (getID(bitmap, start))
@@ -126,7 +141,7 @@ namespace Kernel::Heap
                 m_stats.free -= needed_blocks * block->block_size;
                 m_stats.used += needed_blocks * block->block_size;
 
-                return (void *)((uintptr_t)bitmap + start * block->block_size);
+                return (void *)align_address((uintptr_t)bitmap + start * block->block_size, align);
             }
         }
 
@@ -164,6 +179,33 @@ namespace Kernel::Heap
 
         // TODO: Notify error
         return;
+    }
+
+    size_t BitmapHeap::size(void *ptr)
+    {
+        for (auto block = m_first_block; block; block = block->next)
+        {
+            // Pointer is inside block
+            if ((uintptr_t)ptr >= (uintptr_t)(block + 1) && (uintptr_t)ptr < (uintptr_t)block + sizeof(heap_block_t) + block->mem_size)
+            {
+                uint8_t *bitmap = (uint8_t *)(block + 1);
+                uintptr_t offset = (uintptr_t)ptr - (uintptr_t)bitmap;
+                size_t alignment = offset % block->block_size;
+                uint32_t block_index = offset / block->block_size;
+                uint8_t id = getID(bitmap, block_index);
+
+                uint32_t block_count = block->mem_size / block->block_size;
+
+                uint32_t count = 0;
+                for (; getID(bitmap, block_index + count) == id && (block_index + count) < block_count; count++)
+                    ;
+
+                return count * block->block_size - alignment;
+            }
+        }
+
+        // TODO: Notify error
+        return 0;
     }
 
 } // namespace Kernel::Heap

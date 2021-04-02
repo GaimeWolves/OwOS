@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 #include <libk/kstdio.hpp>
+#include <libk/kstring.hpp>
+#include <libk/kassert.hpp>
 
 #include "BitmapHeap.hpp"
 
@@ -12,14 +14,17 @@
 __attribute__((section(".heap"))) static uint8_t kmalloc_heap[HEAP_SIZE];
 
 static Kernel::Heap::BitmapHeap heap;
+static bool isInitialized = false;
 
 namespace Kernel::Heap
 {
     void init()
     {
-        heap.expand((uintptr_t)kmalloc_heap, HEAP_SIZE, 16);
-
-        LibK::printf_check_msg(true, "Heap");
+        if (!isInitialized)
+        {
+            heap.expand((uintptr_t)kmalloc_heap, HEAP_SIZE, 16);
+            isInitialized = true;
+        }
     }
 
     const heap_statistics_t &getStatistics()
@@ -28,10 +33,36 @@ namespace Kernel::Heap
     }
 } // namespace Kernel::Heap
 
-void *kmalloc(size_t size)
+void *kmalloc(size_t size, size_t align)
 {
     // TODO: Do error detection and prevention
-    return heap.alloc(size);
+    return heap.alloc(size, align);
+}
+
+void *krealloc(void *ptr, size_t size, size_t align)
+{
+    size_t current_size = heap.size(ptr);
+
+    if (current_size >= size)
+    {
+        // TODO: Implement shrinking of heap allocation
+        return ptr;
+    }
+
+    void *n_ptr = kmalloc(size, align);
+    memmove(n_ptr, ptr, current_size);
+    kfree(ptr);
+
+    assert(n_ptr);
+    return n_ptr;
+}
+
+void *kcalloc(size_t size, size_t align)
+{
+    void *ptr = kmalloc(size, align);
+    assert(ptr);
+    memset(ptr, 0, size);
+    return ptr;
 }
 
 void kfree(void *ptr)

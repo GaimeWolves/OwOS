@@ -18,7 +18,10 @@ namespace Kernel::Heap
     const heap_statistics_t &getStatistics();
 } // namespace Kernel::Heap
 
-__attribute__((malloc)) void *kmalloc(size_t size);
+__attribute__((malloc)) void *kmalloc(size_t size, size_t align = 1);
+void *krealloc(void *ptr, size_t size, size_t align = 1);
+void *kcalloc(size_t size, size_t align = 1);
+
 void kfree(void *ptr);
 
 // C++ placement new and delete operators

@@ -3,8 +3,10 @@
 
 #include <multiboot.h>
 #include <heap/kmalloc.hpp>
+#include <memory/MemoryManager.hpp>
 #include <vga/textmode.hpp>
 #include <libk/kstdio.hpp>
+#include <libk/kstring.hpp>
 #include <tests.hpp>
 
 namespace Kernel
@@ -12,19 +14,13 @@ namespace Kernel
 
     extern "C" __attribute__((noreturn)) void entry(uint32_t magic, multiboot_info_t *multiboot_info)
     {
-        if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-            LibK::printf_check_msg(false, "Wrong bootloader magic value");
-
-        if (!(multiboot_info->flags & MULTIBOOT_INFO_MEM_MAP))
-            LibK::printf_check_msg(false, "No memory map provided");
+        assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
+        assert(multiboot_info);
 
         VGA::Textmode::init();
 
         Tests::test_crtx();
-
-        Heap::init();
         Tests::test_heap();
-
         Tests::test_printf();
 
 #ifdef _DEBUG

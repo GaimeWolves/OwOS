@@ -4,6 +4,3 @@ set(ARCH_SOURCES
     arch/i686/processor.cpp
     PARENT_SCOPE
 )
-
-add_library(crti OBJECT crti.S)
-add_library(crtn OBJECT crtn.S)

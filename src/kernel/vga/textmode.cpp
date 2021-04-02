@@ -5,6 +5,7 @@
 
 #include <libk/kstdio.hpp>
 #include <IO.hpp>
+#include <memory/MMIO.hpp>
 
 #define ROWS 25
 #define COLS 80
@@ -28,7 +29,7 @@ namespace Kernel::VGA::Textmode
 
     static uint8_t cursorX = 0, cursorY = 0;
     static uint8_t color = vga_char_color(Color::WHITE, Color::BLACK);
-    static vga_char_t *buffer = (vga_char_t *)VGA_MEMORY;
+    static Memory::MMIO<vga_char_t> buffer(VGA_MEMORY, sizeof(vga_char_t) * ROWS * COLS);
 
     static IO::Port controlIndex(VGA_CONTROL_REG);
     static IO::Port controlData = controlIndex.offset(1);
