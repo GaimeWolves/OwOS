@@ -6,92 +6,92 @@
 .set CHECKSUM, -(MAGIC + FLAGS)
 
 .section .multiboot.data
-    .align 4
-    .long MAGIC
-    .long FLAGS
-    .long CHECKSUM
+	.align 4
+	.long MAGIC
+	.long FLAGS
+	.long CHECKSUM
 
 .section .bss
-    multiboot_magic: .4byte 0
-    multiboot_addr: .4byte 0
+	multiboot_magic: .4byte 0
+	multiboot_addr: .4byte 0
 
-    .align 16
-    stack_begin:
-        .skip 16384
-    stack_end:
+	.align 16
+	stack_begin:
+		.skip 16384
+	stack_end:
 
-    .align 4096
-    bootstrap_page_directory:
-        .skip 4096
-    bootstrap_page_table_1: # Add more tables if necessary
-        .skip 4096
+	.align 4096
+	bootstrap_page_directory:
+		.skip 4096
+	bootstrap_page_table_1: # Add more tables if necessary
+		.skip 4096
 
 .section .multiboot.text
-    .global _entry
-    .type _entry, @function
-    _entry:
-            # Save passed arguments in %eax and %ebx
-            movl %eax, multiboot_magic - 0xC0000000
-            movl %ebx, multiboot_addr - 0xC0000000
+	.global _entry
+	.type _entry, @function
+	_entry:
+			# Save passed arguments in %eax and %ebx
+			movl %eax, multiboot_magic - 0xC0000000
+			movl %ebx, multiboot_addr - 0xC0000000
 
-            movl $(bootstrap_page_table_1 - 0xC0000000), %edi
-            movl $0, %esi
-            movl $1024, %ecx
-        .loop_map_kernel:
-            cmpl $(_kernel_start - 0xC0000000), %esi
-            jl .loop_map_kernel_increment
-            cmpl $(_kernel_end - 0xC0000000), %esi
-            jg .enable_paging
+			movl $(bootstrap_page_table_1 - 0xC0000000), %edi
+			movl $0, %esi
+			movl $1024, %ecx
+		.loop_map_kernel:
+			cmpl $(_kernel_start - 0xC0000000), %esi
+			jl .loop_map_kernel_increment
+			cmpl $(_kernel_end - 0xC0000000), %esi
+			jg .enable_paging
 
-            # Map physical address to virtual address
-            # NOTE: all memory is "present, writeable"
-            movl %esi, %edx
-            or $0x003, %edx
-            movl %edx, (%edi)
-        .loop_map_kernel_increment:
-            addl $4096, %esi
-            addl $4, %edi
-            loop .loop_map_kernel
-        .enable_paging:
-            # Both identity map and map to 0xC0000000 the
-            # PD0 (from 0x0 - 0x3FFFFF) up to as many as needed
-            movl $(bootstrap_page_table_1 - 0xC0000000 + 0x003), bootstrap_page_directory - 0xC0000000 + 0
-            movl $(bootstrap_page_table_1 - 0xC0000000 + 0x003), bootstrap_page_directory - 0xC0000000 + 768 * 4
+			# Map physical address to virtual address
+			# NOTE: all memory is "present, writeable"
+			movl %esi, %edx
+			or $0x003, %edx
+			movl %edx, (%edi)
+		.loop_map_kernel_increment:
+			addl $4096, %esi
+			addl $4, %edi
+			loop .loop_map_kernel
+		.enable_paging:
+			# Both identity map and map to 0xC0000000 the
+			# PD0 (from 0x0 - 0x3FFFFF) up to as many as needed
+			movl $(bootstrap_page_table_1 - 0xC0000000 + 0x003), bootstrap_page_directory - 0xC0000000 + 0
+			movl $(bootstrap_page_table_1 - 0xC0000000 + 0x003), bootstrap_page_directory - 0xC0000000 + 768 * 4
 
-            # Point cr3 to bootstrap_page_directory
-            movl $(bootstrap_page_directory - 0xC0000000), %ecx
-            movl %ecx, %cr3
+			# Point cr3 to bootstrap_page_directory
+			movl $(bootstrap_page_directory - 0xC0000000), %ecx
+			movl %ecx, %cr3
 
-            # Enable paging and the write-protect bit.
-            movl %cr0, %ecx
-            orl $0x80010000, %ecx
-            movl %ecx, %cr0
+			# Enable paging and the write-protect bit.
+			movl %cr0, %ecx
+			orl $0x80010000, %ecx
+			movl %ecx, %cr0
 
-            # Jump to higher half with an absolute jump
-            lea _call_entry, %ecx
-            jmp *%ecx
+			# Jump to higher half with an absolute jump
+			lea _call_entry, %ecx
+			jmp *%ecx
 
 .section .text
-    _call_entry:
-            # Unmap the identity mapping as it is now unnecessary.
-            movl $0, bootstrap_page_directory + 0
+	_call_entry:
+			# Unmap the identity mapping as it is now unnecessary.
+			movl $0, bootstrap_page_directory + 0
 
-            # Reload crc3 to force a TLB flush so the changes to take effect.
-            movl %cr3, %ecx
-            movl %ecx, %cr3
+			# Reload crc3 to force a TLB flush so the changes to take effect.
+			movl %cr3, %ecx
+			movl %ecx, %cr3
 
-            movl $stack_end, %esp
-            movl %esp, %ebp
+			movl $stack_end, %esp
+			movl %esp, %ebp
 
-            push (multiboot_addr)
-            push (multiboot_magic)
+			push (multiboot_addr)
+			push (multiboot_magic)
 
-            call early_entry
+			call early_entry
 
-            cli
-            hlt
+			cli
+			hlt
 
-        .loop:
-            jmp .loop
+		.loop:
+			jmp .loop
 
-    .size _call_entry, . - _call_entry
+	.size _call_entry, . - _call_entry

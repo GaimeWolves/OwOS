@@ -22,7 +22,7 @@ namespace Kernel::Processor
 	void load_page_directory(uintptr_t page_directory)
 	{
 		asm volatile("mov %%eax, %%cr3" ::"a"(page_directory)
-					 : "memory");
+			     : "memory");
 	}
 
 	uintptr_t get_page_directory()
@@ -30,7 +30,7 @@ namespace Kernel::Processor
 		uintptr_t page_directory = 0;
 
 		asm volatile("mov %%cr3, %%eax"
-					 : "=a"(page_directory));
+			     : "=a"(page_directory));
 
 		return page_directory;
 	}
@@ -43,7 +43,7 @@ namespace Kernel::Processor
 	void invalidate_address(uintptr_t address)
 	{
 		asm volatile("invlpg (%0)" ::"r"(address)
-					 : "memory");
+			     : "memory");
 	}
 
 } // namespace Kernel::Processor
