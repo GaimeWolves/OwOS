@@ -73,7 +73,7 @@
 
 .section .text
     _call_entry:
-            # Unmap the identity mapping as it is now unnecessary. 
+            # Unmap the identity mapping as it is now unnecessary.
             movl $0, bootstrap_page_directory + 0
 
             # Reload crc3 to force a TLB flush so the changes to take effect.

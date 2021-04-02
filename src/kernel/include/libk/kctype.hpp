@@ -32,18 +32,18 @@ inline __attribute__((always_inline)) int isxdigit(int c) { return __ctype_looku
 
 inline __attribute__((always_inline)) int tolower(int c)
 {
-    if (__ctype_lookup[c] & CT_UPPER)
-        return c + ('a' - 'A');
-    else
-        return c;
+	if (__ctype_lookup[c] & CT_UPPER)
+		return c + ('a' - 'A');
+	else
+		return c;
 }
 
 inline __attribute__((always_inline)) int toupper(int c)
 {
-    if (__ctype_lookup[c] & CT_LOWER)
-        return c - ('a' - 'A');
-    else
-        return c;
+	if (__ctype_lookup[c] & CT_LOWER)
+		return c - ('a' - 'A');
+	else
+		return c;
 }
 
 #ifndef CTYPE_H_KEEP_DEFS
