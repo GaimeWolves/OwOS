@@ -5,7 +5,6 @@
 
 namespace Kernel::LibK
 {
-
 	template <typename T, typename V>
 	auto min(T a, V b) -> decltype(a + b)
 	{
@@ -46,7 +45,6 @@ namespace Kernel::LibK
 	{
 		return value & power_of_two;
 	}
-
 } // namespace Kernel::LibK
 
 #endif // KMATH_H

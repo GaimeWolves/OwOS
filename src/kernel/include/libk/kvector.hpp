@@ -1,13 +1,12 @@
 #ifndef VECTOR_H
 #define VECTOR_H 1
 
-#include <heap/kmalloc.hpp>
 #include <libk/kassert.hpp>
+#include <libk/kmalloc.hpp>
 #include <libk/kmath.hpp>
 
 namespace Kernel::LibK
 {
-
 	template <typename T>
 	class Vector
 	{
@@ -92,7 +91,6 @@ namespace Kernel::LibK
 
 		alignas(T) T *m_array{nullptr};
 	};
-
 } // namespace Kernel::LibK
 
 #endif // VECTOR_H

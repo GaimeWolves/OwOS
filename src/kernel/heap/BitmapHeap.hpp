@@ -3,11 +3,10 @@
 
 #include <stdint.h>
 
-#include <heap/kmalloc.hpp>
+#include <libk/kmalloc.hpp>
 
 namespace Kernel::Heap
 {
-
 	class BitmapHeap
 	{
 	private:
@@ -36,7 +35,6 @@ namespace Kernel::Heap
 
 		const heap_statistics_t &getStatistics() { return m_stats; }
 	};
-
 } // namespace Kernel::Heap
 
 #endif // BITMAP_HEAP_H

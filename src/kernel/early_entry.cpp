@@ -26,6 +26,7 @@ namespace Kernel
 
 		__attribute__((noreturn)) void early_entry(uint32_t magic, multiboot_info_t *multiboot_info)
 		{
+			// Ensure memory management is setup
 			for (func_t *ctor = &_start_heap_ctors; ctor < &_end_heap_ctors; ctor++)
 				(*ctor)();
 
@@ -35,9 +36,10 @@ namespace Kernel
 			for (func_t *ctor = &_start_ctors; ctor < &_end_ctors; ctor++)
 				(*ctor)();
 
+			// Main kernel entry point
 			entry(magic, multiboot_info);
 
-			for (func_t *dtor = &_start_ctors; dtor < &_end_dtors; dtor++)
+			for (func_t *dtor = &_start_dtors; dtor < &_end_dtors; dtor++)
 				(*dtor)();
 
 			__cxa_finalize(0);

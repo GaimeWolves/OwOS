@@ -1,11 +1,11 @@
-#include <heap/kmalloc.hpp>
+#include <libk/kmalloc.hpp>
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
+#include <libk/kassert.hpp>
 #include <libk/kstdio.hpp>
 #include <libk/kstring.hpp>
-#include <libk/kassert.hpp>
 
 #include "BitmapHeap.hpp"
 
@@ -33,42 +33,47 @@ namespace Kernel::Heap
 	}
 } // namespace Kernel::Heap
 
-void *kmalloc(size_t size, size_t align)
+extern "C"
 {
-	// TODO: Do error detection and prevention
-	return heap.alloc(size, align);
-}
-
-void *krealloc(void *ptr, size_t size, size_t align)
-{
-	size_t current_size = heap.size(ptr);
-
-	if (current_size >= size)
+	void *kmalloc(size_t size, size_t align)
 	{
-		// TODO: Implement shrinking of heap allocation
+		// TODO: Do error detection and prevention
+		void *ptr = heap.alloc(size, align);
+		assert(ptr);
 		return ptr;
 	}
 
-	void *n_ptr = kmalloc(size, align);
-	memmove(n_ptr, ptr, current_size);
-	kfree(ptr);
+	void *krealloc(void *ptr, size_t size, size_t align)
+	{
+		size_t current_size = heap.size(ptr);
 
-	assert(n_ptr);
-	return n_ptr;
-}
+		if (current_size >= size)
+		{
+			// TODO: Implement shrinking of heap allocation
+			return ptr;
+		}
 
-void *kcalloc(size_t size, size_t align)
-{
-	void *ptr = kmalloc(size, align);
-	assert(ptr);
-	memset(ptr, 0, size);
-	return ptr;
-}
+		void *n_ptr = kmalloc(size, align);
+		memmove(n_ptr, ptr, current_size);
+		kfree(ptr);
 
-void kfree(void *ptr)
-{
-	// TODO: Do error detection
-	heap.free(ptr);
+		assert(n_ptr);
+		return n_ptr;
+	}
+
+	void *kcalloc(size_t size, size_t align)
+	{
+		void *ptr = kmalloc(size, align);
+		assert(ptr);
+		memset(ptr, 0, size);
+		return ptr;
+	}
+
+	void kfree(void *ptr)
+	{
+		// TODO: Do error detection
+		heap.free(ptr);
+	}
 }
 
 // C++ new and delete operators

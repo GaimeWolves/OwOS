@@ -4,7 +4,6 @@
 
 namespace Kernel::Heap
 {
-
 	inline static void setID(uint8_t *bitmap, uint32_t block, uint8_t id);
 	inline static uint8_t getID(uint8_t *bitmap, uint32_t block);
 	inline static uint8_t getFreeID(uint8_t idLeft, uint8_t idRight);
@@ -207,5 +206,4 @@ namespace Kernel::Heap
 		// TODO: Notify error
 		return 0;
 	}
-
 } // namespace Kernel::Heap

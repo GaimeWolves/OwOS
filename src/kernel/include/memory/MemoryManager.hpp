@@ -4,14 +4,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <memory/Pages.hpp>
 #include <memory/MultibootMap.hpp>
+#include <memory/Pages.hpp>
 
 #include <multiboot.h>
 
 namespace Kernel::Memory
 {
-
 	class MemoryManager
 	{
 	public:
@@ -67,7 +66,6 @@ namespace Kernel::Memory
 
 		MultibootMap m_memory_map;
 	};
-
-}; // namespace Kernel::Memory
+} // namespace Kernel::Memory
 
 #endif // MEMORY_MANAGER_H

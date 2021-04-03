@@ -1,12 +1,12 @@
 #ifndef PRINTF_H
 #define PRINTF_H 1
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#include <libk/kstdarg.hpp>
 #include <libk/kctype.hpp>
 #include <libk/kmath.hpp>
+#include <libk/kstdarg.hpp>
 #include <libk/kstring.hpp>
 #include <libk/kutility.hpp>
 
@@ -269,7 +269,7 @@ namespace Kernel::LibK
 		struct printf_impl_t
 		{
 			inline __attribute__((always_inline)) printf_impl_t(putc_func &putc, char *&buffer, const int &written, state_t &state, argument_list_ref_t ap)
-				: m_putc(putc), m_buffer(buffer), m_written(written), m_state(state), m_ap(ap)
+			    : m_putc(putc), m_buffer(buffer), m_written(written), m_state(state), m_ap(ap)
 			{
 			}
 
@@ -521,7 +521,6 @@ namespace Kernel::LibK
 	} // namespace __Printf
 
 	using __Printf::printf_internal;
-
 } // namespace Kernel::LibK
 
 #endif // PRINTF_H

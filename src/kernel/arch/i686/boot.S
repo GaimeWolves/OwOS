@@ -4,6 +4,7 @@
 .set FLAGS, (MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO)
 .set MAGIC, MUTLIBOOT_HEADER_MAGIC
 .set CHECKSUM, -(MAGIC + FLAGS)
+.set virt_addr, 0xC0000000
 
 .section .multiboot.data
 	.align 4
@@ -31,16 +32,16 @@
 	.type _entry, @function
 	_entry:
 			# Save passed arguments in %eax and %ebx
-			movl %eax, multiboot_magic - 0xC0000000
-			movl %ebx, multiboot_addr - 0xC0000000
+			movl %eax, multiboot_magic - virt_addr
+			movl %ebx, multiboot_addr - virt_addr
 
-			movl $(bootstrap_page_table_1 - 0xC0000000), %edi
+			movl $(bootstrap_page_table_1 - virt_addr), %edi
 			movl $0, %esi
 			movl $1024, %ecx
 		.loop_map_kernel:
-			cmpl $(_kernel_start - 0xC0000000), %esi
+			cmpl $(_kernel_start - virt_addr), %esi
 			jl .loop_map_kernel_increment
-			cmpl $(_kernel_end - 0xC0000000), %esi
+			cmpl $(_kernel_end - virt_addr), %esi
 			jg .enable_paging
 
 			# Map physical address to virtual address
@@ -55,11 +56,11 @@
 		.enable_paging:
 			# Both identity map and map to 0xC0000000 the
 			# PD0 (from 0x0 - 0x3FFFFF) up to as many as needed
-			movl $(bootstrap_page_table_1 - 0xC0000000 + 0x003), bootstrap_page_directory - 0xC0000000 + 0
-			movl $(bootstrap_page_table_1 - 0xC0000000 + 0x003), bootstrap_page_directory - 0xC0000000 + 768 * 4
+			movl $(bootstrap_page_table_1 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 0
+			movl $(bootstrap_page_table_1 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 768 * 4
 
 			# Point cr3 to bootstrap_page_directory
-			movl $(bootstrap_page_directory - 0xC0000000), %ecx
+			movl $(bootstrap_page_directory - virt_addr), %ecx
 			movl %ecx, %cr3
 
 			# Enable paging and the write-protect bit.
@@ -76,7 +77,7 @@
 			# Unmap the identity mapping as it is now unnecessary.
 			movl $0, bootstrap_page_directory + 0
 
-			# Reload crc3 to force a TLB flush so the changes to take effect.
+			# Reload CR3 to force a TLB flush so the changes take effect.
 			movl %cr3, %ecx
 			movl %ecx, %cr3
 

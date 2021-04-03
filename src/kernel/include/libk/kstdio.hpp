@@ -8,10 +8,6 @@ extern "C"
 	void kputc(const char ch);
 	void kputs(const char *str);
 
-	void print_check_msg(bool ok, const char *msg);
-	void print_debug_msg(const char *msg);
-	void print_test_msg(const char *msg);
-
 	void kprintf(const char *fmt, ...);
 	void ksprintf(char *buffer, const char *fmt, ...);
 
@@ -21,11 +17,9 @@ extern "C"
 
 namespace Kernel::LibK
 {
-
 	void printf_check_msg(bool ok, const char *msg, ...);
 	void printf_debug_msg(const char *msg, ...);
 	void printf_test_msg(const char *msg, ...);
-
 } // namespace Kernel::LibK
 
 #endif // KSTDIO_H

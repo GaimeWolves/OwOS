@@ -1,7 +1,7 @@
 #include <tests.hpp>
 
-#include <libk/kstdio.hpp>
 #include <libk/kstdarg.hpp>
+#include <libk/kstdio.hpp>
 #include <libk/kstring.hpp>
 
 namespace Kernel::Tests
@@ -73,5 +73,4 @@ namespace Kernel::Tests
 
 		return ok;
 	}
-
 } // namespace Kernel::Tests

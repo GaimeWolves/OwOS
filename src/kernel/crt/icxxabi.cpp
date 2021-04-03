@@ -28,7 +28,7 @@ extern "C"
 		__atexit_func_count++;
 
 		return 0;
-	};
+	}
 
 	void __cxa_finalize(void *f)
 	{
@@ -39,12 +39,11 @@ extern "C"
 			while (i--)
 			{
 				if (__atexit_funcs[i].destructor_func)
-				{
 					(*__atexit_funcs[i].destructor_func)(__atexit_funcs[i].obj_ptr);
-				};
-			};
+			}
+
 			return;
-		};
+		}
 
 		while (i--)
 		{
@@ -52,10 +51,10 @@ extern "C"
 			{
 				(*__atexit_funcs[i].destructor_func)(__atexit_funcs[i].obj_ptr);
 				__atexit_funcs[i].destructor_func = 0;
-			};
-		};
-	};
+			}
+		}
+	}
 
 #ifdef __cplusplus
-};
+}
 #endif

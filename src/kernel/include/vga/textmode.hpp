@@ -14,7 +14,7 @@ namespace Kernel::VGA::Textmode
 		CYAN = 3,
 		RED = 4,
 		MAGENTA = 5,
-		BROWN = 6,
+		YELLOW = 6,
 		LIGHT_GREY = 7,
 		DARK_GREY = 8,
 		LIGHT_BLUE = 9,
@@ -22,7 +22,7 @@ namespace Kernel::VGA::Textmode
 		LIGHT_CYAN = 11,
 		LIGHT_RED = 12,
 		LIGHT_MAGENTA = 13,
-		LIGHT_BROWN = 14,
+		LIGHT_YELLOW = 14,
 		WHITE = 15,
 	};
 

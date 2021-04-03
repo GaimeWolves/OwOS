@@ -1,0 +1,16 @@
+---
+BasedOnStyle: LLVM
+AlignConsecutiveMacros: 'true'
+AlignEscapedNewlines: Left
+AlignTrailingComments: 'true'
+BreakBeforeBraces: Allman
+IndentPPDirectives: AfterHash
+IndentWidth: '4'
+NamespaceIndentation: All
+PointerAlignment: Right
+TabWidth: '4'
+UseTab: ForIndentation
+ColumnLimit: 0
+AccessModifierOffset: -4
+
+...

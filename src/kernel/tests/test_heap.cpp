@@ -1,6 +1,6 @@
 #include <tests.hpp>
 
-#include <heap/kmalloc.hpp>
+#include <libk/kmalloc.hpp>
 #include <libk/kstdio.hpp>
 
 namespace Kernel::Tests

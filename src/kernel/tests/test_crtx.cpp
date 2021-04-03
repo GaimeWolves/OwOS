@@ -4,7 +4,6 @@
 
 namespace Kernel::Tests
 {
-
 	static bool constructor_was_run = false;
 
 	__attribute__((constructor)) static void test_constructor()
@@ -23,5 +22,4 @@ namespace Kernel::Tests
 
 		return constructor_was_run;
 	}
-
 } // namespace Kernel::Tests

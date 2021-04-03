@@ -4,60 +4,23 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef ARCH_i686
+#	include <arch/i686/io.hpp>
+#endif
+
 namespace Kernel::IO
 {
-
-	void out8(size_t port, uint8_t value);
-	void out16(size_t port, uint16_t value);
-	void out32(size_t port, uint32_t value);
+	template <typename T>
+	inline __attribute__((always_inline)) void out(size_t port, T value);
 
 	template <typename T>
-	inline __attribute__((always_inline)) void out(size_t port, T value)
-	{
-		if constexpr (sizeof(T) == 4)
-		{
-			out32(port, value);
-			return;
-		}
-
-		if constexpr (sizeof(T) == 2)
-		{
-			out16(port, value);
-			return;
-		}
-
-		if constexpr (sizeof(T) == 1)
-		{
-			out8(port, value);
-			return;
-		}
-	}
-
-	uint8_t in8(size_t port);
-	uint16_t in16(size_t port);
-	uint32_t in32(size_t port);
-
-	template <typename T>
-	inline __attribute__((always_inline)) T in(size_t port)
-	{
-		if constexpr (sizeof(T) == 4)
-			return in32(port);
-
-		if constexpr (sizeof(T) == 2)
-			return in16(port);
-
-		if constexpr (sizeof(T) == 1)
-			return in8(port);
-	}
+	inline __attribute__((always_inline)) T in(size_t port);
 
 	class Port
 	{
 	public:
 		Port() = default;
-		Port(size_t address)
-			: m_address(address)
-		{
-		}
+		Port(size_t address) : m_address(address) {}
 
 		Port offset(size_t offset) const { return Port(m_address + offset); }
 

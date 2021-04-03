@@ -7,7 +7,6 @@
 
 namespace Kernel::Memory
 {
-
 	enum class RegionType : uint8_t
 	{
 		Available = MULTIBOOT_MEMORY_AVAILABLE,
@@ -38,7 +37,6 @@ namespace Kernel::Memory
 	private:
 		LibK::Vector<map_region_t> m_entries;
 	};
-
 }; // namespace Kernel::Memory
 
 #endif // MEMORY_MAP_H

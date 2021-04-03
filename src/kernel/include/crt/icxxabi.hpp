@@ -21,7 +21,7 @@ extern "C"
 	void __cxa_finalize(void *f);
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif // ICXXABI_H

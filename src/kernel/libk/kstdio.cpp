@@ -8,57 +8,59 @@
 using namespace Kernel::VGA;
 using namespace Kernel::LibK;
 
-void kputc(const char ch)
+extern "C"
 {
-	Textmode::putc(ch);
-}
+	void kputc(const char ch)
+	{
+		Textmode::putc(ch);
+	}
 
-void kputs(const char *str)
-{
-	Textmode::puts(str);
-}
+	void kputs(const char *str)
+	{
+		Textmode::puts(str);
+	}
 
-void kvprintf(const char *fmt, va_list ap)
-{
-	printf_internal(
-		[](char *&, char ch) {
-			kputc(ch);
-		},
-		nullptr, fmt, ap);
-}
+	void kvprintf(const char *fmt, va_list ap)
+	{
+		printf_internal(
+		    [](char *&, char ch) {
+			    kputc(ch);
+		    },
+		    nullptr, fmt, ap);
+	}
 
-void kvsprintf(char *buffer, const char *fmt, va_list ap)
-{
-	printf_internal(
-		[](char *&buf, char ch) {
-			*buf++ = ch;
-		},
-		buffer, fmt, ap);
-}
+	void kvsprintf(char *buffer, const char *fmt, va_list ap)
+	{
+		printf_internal(
+		    [](char *&buf, char ch) {
+			    *buf++ = ch;
+		    },
+		    buffer, fmt, ap);
+	}
 
-void kprintf(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
+	void kprintf(const char *fmt, ...)
+	{
+		va_list ap;
+		va_start(ap, fmt);
 
-	kvprintf(fmt, ap);
+		kvprintf(fmt, ap);
 
-	va_end(ap);
-}
+		va_end(ap);
+	}
 
-void ksprintf(char *buffer, const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
+	void ksprintf(char *buffer, const char *fmt, ...)
+	{
+		va_list ap;
+		va_start(ap, fmt);
 
-	kvsprintf(buffer, fmt, ap);
+		kvsprintf(buffer, fmt, ap);
 
-	va_end(ap);
+		va_end(ap);
+	}
 }
 
 namespace Kernel::LibK
 {
-
 	void printf_check_msg(bool ok, const char *msg, ...)
 	{
 		kputc('[');
@@ -129,5 +131,4 @@ namespace Kernel::LibK
 
 		kputc('\n');
 	}
-
 } // namespace Kernel::LibK

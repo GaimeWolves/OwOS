@@ -1,8 +1,8 @@
 #ifndef KSTRING_H
 #define KSTRING_H 1
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 extern "C"
 {

@@ -3,17 +3,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <arch/io.hpp>
 #include <libk/kstdio.hpp>
-#include <IO.hpp>
 #include <memory/MMIO.hpp>
 
 #define ROWS 25
 #define COLS 80
+
 #define VGA_MEMORY 0xB8000
 
 #define VGA_CONTROL_REG 0x3D4 // VGA control register port
 
-#define VGA_CURSOR_POS_LOW_REG 0x0F	 // VGA cursor position low register index
+#define VGA_CURSOR_POS_LOW_REG  0x0F // VGA cursor position low register index
 #define VGA_CURSOR_POS_HIGH_REG 0x0E // VGA cursor position high register index
 
 namespace Kernel::VGA::Textmode
@@ -97,24 +98,20 @@ namespace Kernel::VGA::Textmode
 		{
 			cursorX = 0;
 			cursorY++;
-
-			handle_scrolling();
-			update_cursor();
-			return;
 		}
-
-		buffer[cursorY * COLS + cursorX] = vga_char((uint8_t)ch, color);
-
-		cursorX++;
-
-		if (cursorX >= COLS)
+		else
 		{
-			cursorX = 0;
-			cursorY++;
+			buffer[cursorY * COLS + cursorX] = vga_char((uint8_t)ch, color);
+			cursorX++;
 
-			handle_scrolling();
+			if (cursorX >= COLS)
+			{
+				cursorX = 0;
+				cursorY++;
+			}
 		}
 
+		handle_scrolling();
 		update_cursor();
 	}
 
@@ -128,5 +125,4 @@ namespace Kernel::VGA::Textmode
 	{
 		color = vga_char_color(fg, bg);
 	}
-
 } // namespace Kernel::VGA::Textmode

@@ -1,26 +1,26 @@
 #include <memory/MemoryManager.hpp>
 
+#include <arch/processor.hpp>
 #include <memory/MultibootMap.hpp>
 
+#include <libk/kmalloc.hpp>
 #include <libk/kmath.hpp>
 #include <libk/kstring.hpp>
-#include <heap/kmalloc.hpp>
-#include <arch/processor.hpp>
 
-#define PAGE_COUNT 1024
-#define PAGE_SIZE (PAGE_COUNT * sizeof(uint32_t))
+#define PAGE_COUNT     1024
+#define PAGE_SIZE      (PAGE_COUNT * sizeof(uint32_t))
 #define PAGE_SIZE_HUGE (PAGE_SIZE * PAGE_COUNT)
 #define DIRECTORY_SIZE PAGE_SIZE_HUGE
 
-#define OFFSET_BITS 12
-#define TABLE_BITS 10
+#define OFFSET_BITS    12
+#define TABLE_BITS     10
 #define DIRECTORY_BITS 10
 
-#define OFFSET_MASK 0xFFF
-#define TABLE_MASK 0x3FF000
+#define OFFSET_MASK    0xFFF
+#define TABLE_MASK     0x3FF000
 #define DIRECTORY_MASK 0xFFC00000
 
-#define PAGE_DIRECTORY_ADDR 0xFFFFF000
+#define PAGE_DIRECTORY_ADDR   0xFFFFF000
 #define PAGE_TABLE_ARRAY_ADDR 0xFFC00000
 
 // For now all memory mapped IO (MMIO) is just mapped with this offset
@@ -135,26 +135,26 @@ namespace Kernel::Memory
 		m_current_mapping_table = &page_table;
 
 		page_directory[1023] = page_directory_entry_t{
-			.present = true,
-			.writeable = true,
-			.user = false,
-			.write_through = false,
-			.cache_disable = false,
-			.accessed = false,
-			.page_size = false,
-			.page_table_address = pt_address >> 12,
+		    .present = true,
+		    .writeable = true,
+		    .user = false,
+		    .write_through = false,
+		    .cache_disable = false,
+		    .accessed = false,
+		    .page_size = false,
+		    .page_table_address = pt_address >> 12,
 		};
 
 		page_table[1023] = page_table_entry_t{
-			.present = true,
-			.writeable = true,
-			.user = false,
-			.write_through = false,
-			.cache_disable = false,
-			.accessed = false,
-			.dirty = false,
-			.global = false,
-			.page_address = pd_address >> 12,
+		    .present = true,
+		    .writeable = true,
+		    .user = false,
+		    .write_through = false,
+		    .cache_disable = false,
+		    .accessed = false,
+		    .dirty = false,
+		    .global = false,
+		    .page_address = pd_address >> 12,
 		};
 	}
 
@@ -179,29 +179,29 @@ namespace Kernel::Memory
 				uintptr_t address = (uintptr_t)&page_table - (uintptr_t)&_virtual_addr;
 
 				page_directory[pd_index] = page_directory_entry_t{
-					.present = true,
-					.writeable = true,
-					.user = false,
-					.write_through = false,
-					.cache_disable = false,
-					.accessed = false,
-					.page_size = false,
-					.page_table_address = address >> 12,
+				    .present = true,
+				    .writeable = true,
+				    .user = false,
+				    .write_through = false,
+				    .cache_disable = false,
+				    .accessed = false,
+				    .page_size = false,
+				    .page_table_address = address >> 12,
 				};
 
 				assert(page_directory[1023].present);
 
 				page_table_t &mapping_table = *m_current_mapping_table;
 				mapping_table[pd_index] = page_table_entry_t{
-					.present = true,
-					.writeable = true,
-					.user = false,
-					.write_through = false,
-					.cache_disable = false,
-					.accessed = false,
-					.dirty = false,
-					.global = false,
-					.page_address = address >> 12,
+				    .present = true,
+				    .writeable = true,
+				    .user = false,
+				    .write_through = false,
+				    .cache_disable = false,
+				    .accessed = false,
+				    .dirty = false,
+				    .global = false,
+				    .page_address = address >> 12,
 				};
 			}
 
@@ -211,15 +211,15 @@ namespace Kernel::Memory
 			uintptr_t page_address = to_page_address(p_address);
 
 			page_table[pt_index] = page_table_entry_t{
-				.present = true,
-				.writeable = true,
-				.user = false,
-				.write_through = false,
-				.cache_disable = false,
-				.accessed = false,
-				.dirty = false,
-				.global = false,
-				.page_address = page_address >> 12,
+			    .present = true,
+			    .writeable = true,
+			    .user = false,
+			    .write_through = false,
+			    .cache_disable = false,
+			    .accessed = false,
+			    .dirty = false,
+			    .global = false,
+			    .page_address = page_address >> 12,
 			};
 		}
 	}
@@ -254,14 +254,14 @@ namespace Kernel::Memory
 		mapping_table[pd_index] = create_pte(address, get_page_directory()[1023], false, true, false);
 
 		return page_directory_entry_t{
-			.present = true,
-			.writeable = is_writeable,
-			.user = is_user,
-			.write_through = false,
-			.cache_disable = disable_cache,
-			.accessed = false,
-			.page_size = false,
-			.page_table_address = (uint32_t)address >> 12,
+		    .present = true,
+		    .writeable = is_writeable,
+		    .user = is_user,
+		    .write_through = false,
+		    .cache_disable = disable_cache,
+		    .accessed = false,
+		    .page_size = false,
+		    .page_table_address = (uint32_t)address >> 12,
 		};
 	}
 
@@ -271,15 +271,15 @@ namespace Kernel::Memory
 		assert(!is_user || (is_user && !pde.user));
 
 		return page_table_entry_t{
-			.present = true,
-			.writeable = is_writeable,
-			.user = is_user,
-			.write_through = false,
-			.cache_disable = disable_cache,
-			.accessed = false,
-			.dirty = false,
-			.global = false,
-			.page_address = page_address >> 12,
+		    .present = true,
+		    .writeable = is_writeable,
+		    .user = is_user,
+		    .write_through = false,
+		    .cache_disable = disable_cache,
+		    .accessed = false,
+		    .dirty = false,
+		    .global = false,
+		    .page_address = page_address >> 12,
 		};
 	}
 
@@ -361,5 +361,4 @@ namespace Kernel::Memory
 	{
 		unmap_range(virtual_addr, size, true);
 	}
-
 }; // namespace Kernel::Memory

@@ -10,7 +10,6 @@
 
 namespace Kernel::Memory
 {
-
 	template <typename T>
 	class MMIO
 	{
@@ -18,7 +17,7 @@ namespace Kernel::Memory
 		MMIO() = default;
 
 		MMIO(uintptr_t address, size_t size)
-			: m_size(size)
+		    : m_size(size)
 		{
 			m_ref = (T *)MemoryManager::instance().map_mmio_region(address, size);
 			assert(m_ref);
@@ -48,11 +47,9 @@ namespace Kernel::Memory
 		T *operator()() { return m_ref; }
 
 	private:
-		T *m_ref{0};
-
+		alignas(T) T *m_ref{0};
 		size_t m_size{0};
 	};
-
-}; // namespace Kernel::Memory
+} // namespace Kernel::Memory
 
 #endif // MMIO_H
