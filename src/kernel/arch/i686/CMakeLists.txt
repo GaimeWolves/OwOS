@@ -1,5 +1,6 @@
 set(ARCH_INCLUDES
     include/arch/i686/io.hpp
+    include/arch/i686/gdt.hpp
     PARENT_SCOPE
 )
 

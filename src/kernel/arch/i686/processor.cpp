@@ -1,7 +1,29 @@
 #include <arch/processor.hpp>
 
+#include <arch/i686/gdt.hpp>
+
+#include <memory/MemoryManager.hpp>
+
 namespace Kernel::Processor
 {
+	static gdt_entry_t gdt[5];
+	static gdt_descriptor_t gdtr;
+
+	void init()
+	{
+		gdt[0] = gdt_entry_t();
+		gdt[1] = create_gdt_selector(false, true);
+		gdt[2] = create_gdt_selector(false, false);
+		gdt[3] = create_gdt_selector(true, true);
+		gdt[4] = create_gdt_selector(true, false);
+
+		gdtr.size = sizeof(gdt);
+		gdtr.offset = (uint32_t)&gdt;
+
+		asm volatile("lgdt %0" ::"m"(gdtr)
+		             : "memory");
+	}
+
 	__attribute__((noreturn)) void halt()
 	{
 		for (;;)

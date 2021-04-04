@@ -1,10 +1,11 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#include <multiboot.h>
+#include <arch/processor.hpp>
 #include <memory/MemoryManager.hpp>
-#include <vga/textmode.hpp>
+#include <multiboot.h>
 #include <tests.hpp>
+#include <vga/textmode.hpp>
 
 #include <libk/kmalloc.hpp>
 #include <libk/kstdio.hpp>
@@ -16,6 +17,8 @@ namespace Kernel
 	{
 		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
 		assert(multiboot_info);
+
+		Processor::init();
 
 		VGA::Textmode::init();
 

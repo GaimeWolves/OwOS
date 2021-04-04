@@ -6,6 +6,8 @@
 
 namespace Kernel::Processor
 {
+	void init();
+
 	__attribute__((noreturn)) void halt();
 
 	void clear_interrupts();
