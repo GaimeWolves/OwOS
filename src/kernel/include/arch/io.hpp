@@ -31,7 +31,7 @@ namespace Kernel::IO
 		inline __attribute__((always_inline)) void out(T value) { IO::out<T>(m_address, value); }
 
 		template <typename T>
-		inline __attribute__((always_inline)) T in() { IO::in<T>(m_address); }
+		inline __attribute__((always_inline)) T in() { return IO::in<T>(m_address); }
 
 		bool operator==(const Port &other) const { return m_address == other.m_address; }
 		bool operator!=(const Port &other) const { return m_address != other.m_address; }
