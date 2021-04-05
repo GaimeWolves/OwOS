@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <arch/interrupts.hpp>
 #include <arch/processor.hpp>
 #include <memory/MemoryManager.hpp>
 #include <multiboot.h>
@@ -19,6 +20,8 @@ namespace Kernel
 		assert(multiboot_info);
 
 		Processor::init();
+		Processor::init_interrupts();
+		Processor::enable_interrupts();
 
 		VGA::Textmode::init();
 

@@ -16,6 +16,7 @@ set(LIBK_INCLUDES
 	include/libk/kcstring.hpp
 	include/libk/kutility.hpp
 	include/libk/kvector.hpp
+	include/libk/kstring.hpp
 )
 
 set(LIBK_SOURCES
@@ -28,9 +29,11 @@ set(LIBK_SOURCES
 
 set(KERNEL_INCLUDES
 	include/multiboot.h
+	include/panic.hpp
 	include/tests.hpp
 	include/arch/io.hpp
 	include/arch/processor.hpp
+	include/arch/interrupts.hpp
 	include/crt/icxxabi.hpp
 	include/memory/MemoryManager.hpp
 	include/memory/MultibootMap.hpp
@@ -41,6 +44,7 @@ set(KERNEL_INCLUDES
 set(KERNEL_SOURCES
 	early_entry.cpp
 	entry.cpp
+	panic.cpp
 	crt/icxxabi.cpp
 	memory/MemoryManager.cpp
 	memory/MultibootMap.cpp
@@ -63,7 +67,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_compile_options(-ffreestanding -Og -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.)
+add_compile_options(-ffreestanding -Og -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -mgeneral-regs-only -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.)
 add_link_options(LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
 
 add_library(kernel_heap STATIC ${HEAP_SOURCES})
