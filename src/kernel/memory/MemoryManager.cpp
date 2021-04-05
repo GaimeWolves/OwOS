@@ -3,9 +3,9 @@
 #include <arch/processor.hpp>
 #include <memory/MultibootMap.hpp>
 
-#include <libk/kmalloc.hpp>
+#include <libk/kcmalloc.hpp>
+#include <libk/kcstring.hpp>
 #include <libk/kmath.hpp>
-#include <libk/kstring.hpp>
 
 #define PAGE_COUNT     1024
 #define PAGE_SIZE      (PAGE_COUNT * sizeof(uint32_t))

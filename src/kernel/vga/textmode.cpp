@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <arch/io.hpp>
-#include <libk/kstdio.hpp>
+#include <libk/kcstdio.hpp>
 #include <memory/MMIO.hpp>
 
 #define ROWS 25

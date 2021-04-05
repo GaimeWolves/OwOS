@@ -1,28 +1,28 @@
 add_subdirectory(arch/${ARCH})
 
 set(HEAP_SOURCES
-	include/libk/kmalloc.hpp
+	include/libk/kcmalloc.hpp
 	heap/BitmapHeap.hpp
 	heap/BitmapHeap.cpp
-	heap/kmalloc.cpp
+	heap/kcmalloc.cpp
 )
 
 set(LIBK_INCLUDES
-	include/libk/kassert.hpp
-	include/libk/kstdio.hpp
-	include/libk/kctype.hpp
+	include/libk/kcassert.hpp
+	include/libk/kcstdio.hpp
+	include/libk/kcctype.hpp
 	include/libk/kmath.hpp
-	include/libk/kstdarg.hpp
-	include/libk/kstring.hpp
+	include/libk/kcstdarg.hpp
+	include/libk/kcstring.hpp
 	include/libk/kutility.hpp
 	include/libk/kvector.hpp
 )
 
 set(LIBK_SOURCES
-	libk/kassert.cpp
-	libk/kstdio.cpp
-	libk/kctype.cpp
-	libk/kstring.cpp
+	libk/kcassert.cpp
+	libk/kcstdio.cpp
+	libk/kcctype.cpp
+	libk/kcstring.cpp
 	libk/printf.hpp
 )
 

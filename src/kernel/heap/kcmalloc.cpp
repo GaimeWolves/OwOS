@@ -1,17 +1,17 @@
-#include <libk/kmalloc.hpp>
+#include <libk/kcmalloc.hpp>
 
 #include <stddef.h>
 #include <stdint.h>
 
-#include <libk/kassert.hpp>
-#include <libk/kstdio.hpp>
-#include <libk/kstring.hpp>
+#include <libk/kcassert.hpp>
+#include <libk/kcstdio.hpp>
+#include <libk/kcstring.hpp>
 
 #include "BitmapHeap.hpp"
 
 #define HEAP_SIZE 2 * 1024 * 1024 // 2MiB initial heap space
 
-__attribute__((section(".heap"))) static uint8_t kmalloc_heap[HEAP_SIZE];
+__attribute__((section(".heap"))) static uint8_t kcmalloc_heap[HEAP_SIZE];
 
 static Kernel::Heap::BitmapHeap heap;
 static bool isInitialized = false;
@@ -22,7 +22,7 @@ namespace Kernel::Heap
 	{
 		if (!isInitialized)
 		{
-			heap.expand((uintptr_t)kmalloc_heap, HEAP_SIZE, 16);
+			heap.expand((uintptr_t)kcmalloc_heap, HEAP_SIZE, 16);
 			isInitialized = true;
 		}
 	}

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include <libk/kmalloc.hpp>
+#include <libk/kcmalloc.hpp>
 
 namespace Kernel::Heap
 {

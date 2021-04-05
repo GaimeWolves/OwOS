@@ -1,5 +1,5 @@
-#ifndef CTYPE_H
-#define CTYPE_H 1
+#ifndef CCTYPE_H
+#define CCTYPE_H 1
 
 #include <stdint.h>
 
@@ -60,4 +60,4 @@ extern "C"
 #	undef CT_SPACE
 #endif
 
-#endif // CTYPE_H
+#endif // CCTYPE_H

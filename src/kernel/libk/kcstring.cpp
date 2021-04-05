@@ -1,4 +1,4 @@
-#include <libk/kstring.hpp>
+#include <libk/kcstring.hpp>
 
 extern "C"
 {
@@ -67,6 +67,17 @@ extern "C"
 				dp[i] = sp[i];
 			}
 		}
+
+		return dest;
+	}
+
+	void *memcpy(void *dest, const void *src, size_t n)
+	{
+		const char *sp = (const char *)src;
+		char *dp = (char *)dest;
+
+		for (; n > 0; n--)
+			*dp++ = *sp++;
 
 		return dest;
 	}

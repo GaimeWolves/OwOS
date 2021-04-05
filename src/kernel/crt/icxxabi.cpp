@@ -1,6 +1,6 @@
 #include <crt/icxxabi.hpp>
 
-#include <libk/kassert.hpp>
+#include <libk/kcassert.hpp>
 
 #ifdef __cplusplus
 extern "C"

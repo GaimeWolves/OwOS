@@ -1,6 +1,6 @@
 #include <tests.hpp>
 
-#include <libk/kstdio.hpp>
+#include <libk/kcstdio.hpp>
 
 namespace Kernel::Tests
 {

@@ -4,10 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <libk/kctype.hpp>
+#include <libk/kcctype.hpp>
+#include <libk/kcstdarg.hpp>
+#include <libk/kcstring.hpp>
 #include <libk/kmath.hpp>
-#include <libk/kstdarg.hpp>
-#include <libk/kstring.hpp>
 #include <libk/kutility.hpp>
 
 namespace Kernel::LibK

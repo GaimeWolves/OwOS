@@ -1,6 +1,6 @@
-#include <libk/kstdio.hpp>
+#include <libk/kcstdio.hpp>
 
-#include <libk/kstdarg.hpp>
+#include <libk/kcstdarg.hpp>
 #include <vga/textmode.hpp>
 
 #include "printf.hpp"

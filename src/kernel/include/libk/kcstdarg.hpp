@@ -1,5 +1,5 @@
-#ifndef KSTDARG_H
-#define KSTDARG_H 1
+#ifndef KCSTDARG_H
+#define KCSTDARG_H 1
 
 #include <stdarg.h>
 
@@ -15,4 +15,4 @@ namespace Kernel::LibK
 	};
 } // namespace Kernel::LibK
 
-#endif // KSTDARG_H
+#endif // KCSTDARG_H

@@ -1,8 +1,8 @@
-#ifndef VECTOR_H
-#define VECTOR_H 1
+#ifndef KVECTOR_H
+#define KVECTOR_H 1
 
-#include <libk/kassert.hpp>
-#include <libk/kmalloc.hpp>
+#include <libk/kcassert.hpp>
+#include <libk/kcmalloc.hpp>
 #include <libk/kmath.hpp>
 
 namespace Kernel::LibK
@@ -75,17 +75,12 @@ namespace Kernel::LibK
 			m_size = n;
 		}
 
-		void push_back(const T &val)
-		{
-			resize(m_size + 1, val);
-		}
+		void push_back(const T &val) { resize(m_size + 1, val); }
+		void pop_back() { m_array[m_size-- - 1].~T(); }
 
-		void pop_back()
-		{
-			m_array[m_size-- - 1].~T();
-		}
+		const T *data() const { return m_array; }
 
-	private:
+	protected:
 		size_t m_capacity{4};
 		size_t m_size{0};
 
@@ -93,4 +88,4 @@ namespace Kernel::LibK
 	};
 } // namespace Kernel::LibK
 
-#endif // VECTOR_H
+#endif // KVECTOR_H

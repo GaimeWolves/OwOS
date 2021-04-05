@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <libk/kassert.hpp>
+#include <libk/kcassert.hpp>
 
 #include <memory/MemoryManager.hpp>
 

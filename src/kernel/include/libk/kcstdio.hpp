@@ -1,7 +1,7 @@
-#ifndef KSTDIO_H
-#define KSTDIO_H 1
+#ifndef KCSTDIO_H
+#define KCSTDIO_H 1
 
-#include <libk/kstdarg.hpp>
+#include <libk/kcstdarg.hpp>
 
 extern "C"
 {
@@ -22,4 +22,4 @@ namespace Kernel::LibK
 	void printf_test_msg(const char *msg, ...);
 } // namespace Kernel::LibK
 
-#endif // KSTDIO_H
+#endif // KCSTDIO_H

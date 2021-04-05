@@ -1,17 +1,36 @@
 #ifndef KSTRING_H
 #define KSTRING_H 1
 
-#include <stddef.h>
-#include <stdint.h>
+#include <libk/kcmalloc.hpp>
+#include <libk/kcstring.hpp>
+#include <libk/kmath.hpp>
+#include <libk/kvector.hpp>
 
-extern "C"
+namespace Kernel::LibK
 {
-	size_t strlen(const char *str);
-	char *strrev(char *str);
-	int strcmp(const char *lhs, const char *rhs);
+	template <typename charT>
+	class BasicString : Vector<charT>
+	{
+	public:
+		BasicString() : Vector<charT>() {}
 
-	void *memset(void *dest, int ch, size_t count);
-	void *memmove(void *dest, const void *src, size_t count);
-}
+		BasicString(const charT *s)
+		{
+			assert(s);
+			size_t len = strlen(s);
+
+			this->m_capacity = next_power_of_two(len);
+			this->m_size = len;
+			this->m_array = (charT *)kmalloc(this->m_capacity, sizeof(charT));
+
+			assert(this->m_array);
+			memcpy(this->m_array, s, this->m_size);
+		}
+
+		const charT *c_str() const { return this->data(); }
+	};
+
+	typedef BasicString<char> String;
+} // namespace Kernel::LibK
 
 #endif // KSTRING_H

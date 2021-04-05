@@ -1,5 +1,5 @@
-#ifndef KMALLOC_H
-#define KMALLOC_H 1
+#ifndef KCMALLOC_H
+#define KCMALLOC_H 1
 
 #include <stddef.h>
 #include <stdint.h>
@@ -34,4 +34,4 @@ inline void *operator new[](size_t, void *p) { return p; }
 inline void operator delete(void *, void *){};
 inline void operator delete[](void *, void *){};
 
-#endif // KMALLOC_H
+#endif // KCMALLOC_H

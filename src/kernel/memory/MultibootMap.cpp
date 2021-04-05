@@ -1,6 +1,6 @@
 #include <memory/MultibootMap.hpp>
 
-#include <libk/kassert.hpp>
+#include <libk/kcassert.hpp>
 #include <multiboot.h>
 
 namespace Kernel::Memory

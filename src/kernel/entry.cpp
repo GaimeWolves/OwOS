@@ -7,9 +7,9 @@
 #include <tests.hpp>
 #include <vga/textmode.hpp>
 
-#include <libk/kmalloc.hpp>
-#include <libk/kstdio.hpp>
-#include <libk/kstring.hpp>
+#include <libk/kcmalloc.hpp>
+#include <libk/kcstdio.hpp>
+#include <libk/kcstring.hpp>
 
 namespace Kernel
 {

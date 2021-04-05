@@ -1,8 +1,8 @@
 #include <tests.hpp>
 
-#include <libk/kstdarg.hpp>
-#include <libk/kstdio.hpp>
-#include <libk/kstring.hpp>
+#include <libk/kcstdarg.hpp>
+#include <libk/kcstdio.hpp>
+#include <libk/kcstring.hpp>
 
 namespace Kernel::Tests
 {

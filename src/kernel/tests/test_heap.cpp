@@ -1,20 +1,20 @@
 #include <tests.hpp>
 
-#include <libk/kmalloc.hpp>
-#include <libk/kstdio.hpp>
+#include <libk/kcmalloc.hpp>
+#include <libk/kcstdio.hpp>
 
 namespace Kernel::Tests
 {
 	using Kernel::Heap::getStatistics;
 	using Kernel::Heap::heap_statistics_t;
 
-	static bool test_simple_kmalloc();
-	static bool test_large_kmalloc();
-	static bool test_many_kmalloc();
+	static bool test_simple_kcmalloc();
+	static bool test_large_kcmalloc();
+	static bool test_many_kcmalloc();
 
 	static heap_statistics_t orig_stats;
 
-	static bool test_simple_kmalloc()
+	static bool test_simple_kcmalloc()
 	{
 		auto ptr = kmalloc(0x10);
 
@@ -38,7 +38,7 @@ namespace Kernel::Tests
 		return true;
 	}
 
-	static bool test_large_kmalloc()
+	static bool test_large_kcmalloc()
 	{
 		auto ptr = kmalloc(0x1000);
 
@@ -62,7 +62,7 @@ namespace Kernel::Tests
 		return true;
 	}
 
-	static bool test_many_kmalloc()
+	static bool test_many_kcmalloc()
 	{
 		void *allocs[100] = {0};
 
@@ -98,13 +98,13 @@ namespace Kernel::Tests
 		orig_stats = getStatistics();
 		bool ok = true;
 
-		if (!test_simple_kmalloc())
+		if (!test_simple_kcmalloc())
 			ok = false;
 
-		if (!test_large_kmalloc())
+		if (!test_large_kcmalloc())
 			ok = false;
 
-		if (!test_many_kmalloc())
+		if (!test_many_kcmalloc())
 			ok = false;
 
 		return ok;

@@ -1,7 +1,7 @@
-#include <libk/kassert.hpp>
+#include <libk/kcassert.hpp>
 
 #include <arch/processor.hpp>
-#include <libk/kstdio.hpp>
+#include <libk/kcstdio.hpp>
 
 __attribute__((noreturn)) void __assertion_failed(const char *condition, const char *file, unsigned line, const char *function)
 {
