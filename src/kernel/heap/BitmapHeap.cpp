@@ -9,6 +9,7 @@ namespace Kernel::Heap
 	inline static uint8_t getFreeID(uint8_t idLeft, uint8_t idRight);
 
 	inline static bool can_align(uint8_t *bitmap, uint32_t block_size, uint32_t block, size_t align);
+	inline static size_t get_aligment_offset(uintptr_t address, size_t align);
 	inline static uintptr_t align_address(uintptr_t address, size_t align);
 
 	// Set the 2-bit id in the specified place of the bitmap
@@ -49,9 +50,17 @@ namespace Kernel::Heap
 		return beginAddr % align + block_size > align;
 	}
 
+	inline static size_t get_aligment_offset(uintptr_t address, size_t align)
+	{
+		if (align == 1)
+			return 0;
+
+		return align - address % align;
+	}
+
 	inline static uintptr_t align_address(uintptr_t address, size_t align)
 	{
-		return address + (align - address % align);
+		return address + get_aligment_offset(address, align);
 	}
 
 	void BitmapHeap::expand(uintptr_t addr, uint32_t size, uint32_t block_size)
@@ -98,7 +107,6 @@ namespace Kernel::Heap
 				continue;
 
 			uint32_t block_count = block->mem_size / block->block_size;
-			uint32_t needed_blocks = (size + block->block_size - 1) / block->block_size;
 			uint8_t *bitmap = (uint8_t *)(block + 1);
 
 			// Iterate from last_alloc + 1 to last_alloc, wrapping around if the index exceeds the block count
@@ -109,6 +117,10 @@ namespace Kernel::Heap
 
 				if (!can_align(bitmap, block->block_size, start, align))
 					continue;
+
+				uintptr_t address = (uintptr_t)bitmap + start * block->block_size;
+				size_t offset = get_aligment_offset(address, align);
+				uint32_t needed_blocks = (size + offset + block->block_size - 1) / block->block_size;
 
 				// The current block is used
 				if (getID(bitmap, start))
@@ -140,7 +152,7 @@ namespace Kernel::Heap
 				m_stats.free -= needed_blocks * block->block_size;
 				m_stats.used += needed_blocks * block->block_size;
 
-				return (void *)align_address((uintptr_t)bitmap + start * block->block_size, align);
+				return (void *)(address + offset);
 			}
 		}
 
