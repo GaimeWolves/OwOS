@@ -145,13 +145,13 @@ namespace Kernel::LibK
 			{
 				if (!num && !is_ptr)
 				{
-					if (!state.pad_zeroes)
+					if (written == 0 && state.has_precision && state.precision == 0)
 						break;
 
 					if (state.has_precision && written >= (size_t)state.precision)
 						break;
 
-					if (written > 0 || (written == 0 && state.has_precision && state.precision == 0))
+					if (!state.has_precision && written > 0)
 						break;
 				}
 
