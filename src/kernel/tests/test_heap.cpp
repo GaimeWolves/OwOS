@@ -16,6 +16,8 @@ namespace Kernel::Tests
 
 	static bool test_simple_kmalloc()
 	{
+		orig_stats = getStatistics();
+
 		auto ptr = kmalloc(0x10);
 
 		if (ptr == nullptr)
@@ -40,6 +42,8 @@ namespace Kernel::Tests
 
 	static bool test_large_kmalloc()
 	{
+		orig_stats = getStatistics();
+
 		auto ptr = kmalloc(0x1000);
 
 		if (ptr == nullptr)
@@ -65,6 +69,8 @@ namespace Kernel::Tests
 	static bool test_many_kmalloc()
 	{
 		void *allocs[100] = {0};
+
+		orig_stats = getStatistics();
 
 		for (uint32_t i = 0; i < sizeof(allocs) / sizeof(void *); i++)
 			allocs[i] = kmalloc(7 * (i + 1));
@@ -95,7 +101,6 @@ namespace Kernel::Tests
 	bool test_heap()
 	{
 		LibK::printf_test_msg("Heap allocations");
-		orig_stats = getStatistics();
 		bool ok = true;
 
 		if (!test_simple_kmalloc())
