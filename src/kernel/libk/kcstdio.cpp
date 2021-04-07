@@ -1,11 +1,13 @@
 #include <libk/kcstdio.hpp>
 
+#include <devices/SerialPort.hpp>
 #include <libk/kcstdarg.hpp>
 #include <vga/textmode.hpp>
 
 #include "printf.hpp"
 
 using namespace Kernel::VGA;
+using namespace Kernel::Devices;
 using namespace Kernel::LibK;
 
 extern "C"
@@ -13,11 +15,13 @@ extern "C"
 	void kputc(const char ch)
 	{
 		Textmode::putc(ch);
+		SerialPort::get(SerialPort::COM1).write_one(ch);
 	}
 
 	void kputs(const char *str)
 	{
 		Textmode::puts(str);
+		SerialPort::get(SerialPort::COM1).write(str);
 	}
 
 	void kvprintf(const char *fmt, va_list ap)

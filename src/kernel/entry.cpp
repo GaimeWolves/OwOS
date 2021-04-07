@@ -3,6 +3,7 @@
 
 #include <arch/interrupts.hpp>
 #include <arch/processor.hpp>
+#include <devices/SerialPort.hpp>
 #include <memory/MemoryManager.hpp>
 #include <multiboot.h>
 #include <tests.hpp>
@@ -23,6 +24,7 @@ namespace Kernel
 		Processor::init_interrupts();
 		Processor::enable_interrupts();
 
+		Devices::SerialPort::init();
 		VGA::Textmode::init();
 
 		Tests::test_crtx();

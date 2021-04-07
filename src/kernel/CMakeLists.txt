@@ -35,6 +35,7 @@ set(KERNEL_INCLUDES
 	include/arch/processor.hpp
 	include/arch/interrupts.hpp
 	include/crt/icxxabi.hpp
+	include/devices/SerialPort.hpp
 	include/memory/MemoryManager.hpp
 	include/memory/MultibootMap.hpp
 	include/memory/Pages.hpp
@@ -46,6 +47,7 @@ set(KERNEL_SOURCES
 	entry.cpp
 	panic.cpp
 	crt/icxxabi.cpp
+	devices/SerialPort.cpp
 	memory/MemoryManager.cpp
 	memory/MultibootMap.cpp
 	vga/textmode.cpp
