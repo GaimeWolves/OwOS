@@ -1,5 +1,4 @@
-#ifndef ARCH_i686_GDT_H
-#define ARCH_i686_GDT_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -51,5 +50,3 @@ namespace Kernel::Processor
 		};
 	}
 } // namespace Kernel::Processor
-
-#endif // ARCH_i686_GDT_H

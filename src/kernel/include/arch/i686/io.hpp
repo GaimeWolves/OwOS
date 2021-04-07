@@ -1,5 +1,4 @@
-#ifndef ARCH_i686_IO_H
-#define ARCH_i686_IO_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -90,5 +89,3 @@ namespace Kernel::IO
 	}
 
 } // namespace Kernel::IO
-
-#endif // ARCH_i686_IO_H

@@ -1,5 +1,4 @@
-#ifndef PCI_H
-#define PCI_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -150,5 +149,3 @@ namespace Kernel::PCI
 		LibK::Vector<Function> m_all_pci_devices;
 	};
 } // namespace Kernel::PCI
-
-#endif // PCI_H

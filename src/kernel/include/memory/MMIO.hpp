@@ -1,5 +1,4 @@
-#ifndef MMIO_H
-#define MMIO_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -51,5 +50,3 @@ namespace Kernel::Memory
 		size_t m_size{0};
 	};
 } // namespace Kernel::Memory
-
-#endif // MMIO_H

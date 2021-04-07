@@ -1,5 +1,4 @@
-#ifndef IO_H
-#define IO_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -45,5 +44,3 @@ namespace Kernel::IO
 	};
 
 } // namespace Kernel::IO
-
-#endif // IO_H

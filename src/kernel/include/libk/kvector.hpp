@@ -1,5 +1,4 @@
-#ifndef KVECTOR_H
-#define KVECTOR_H 1
+#pragma once
 
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>
@@ -87,5 +86,3 @@ namespace Kernel::LibK
 		alignas(T) T *m_array{nullptr};
 	};
 } // namespace Kernel::LibK
-
-#endif // KVECTOR_H

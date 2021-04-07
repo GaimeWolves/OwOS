@@ -1,7 +1,4 @@
-#ifndef KUTILITY_H
-#define KUTILITY_H 1
+#pragma once
 
 template <typename T>
 auto declval() -> T;
-
-#endif // KUTILITY_H

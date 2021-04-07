@@ -1,5 +1,4 @@
-#ifndef TESTS_H
-#define TESTS_H 1
+#pragma once
 
 namespace Kernel::Tests
 {
@@ -7,5 +6,3 @@ namespace Kernel::Tests
 	bool test_heap();
 	bool test_printf();
 } // namespace Kernel::Tests
-
-#endif // TESTS_H

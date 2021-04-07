@@ -1,5 +1,4 @@
-#ifndef ARCH_i686_INTERRUPT_STUBS_H
-#define ARCH_i686_INTERRUPT_STUBS_H 1
+#pragma once
 
 #define INTERRUPT_HANDLER(isr_number)           \
 	extern "C" void isr_##isr_number##_entry(); \
@@ -286,5 +285,3 @@ INTERRUPT_HANDLER(0xFC);
 INTERRUPT_HANDLER(0xFD);
 INTERRUPT_HANDLER(0xFE);
 INTERRUPT_HANDLER(0xFF);
-
-#endif // ARCH_i686_INTERRUPT_STUBS_H

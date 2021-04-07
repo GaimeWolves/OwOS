@@ -1,5 +1,4 @@
-#ifndef INTERRUPTS_H
-#define INTERRUPTS_H 1
+#pragma once
 
 #include <libk/kstring.hpp>
 #include <libk/kvector.hpp>
@@ -32,5 +31,3 @@ namespace Kernel::Processor
 		panic("Unhandled Interrupt - %s", get_irq(id).name.c_str());
 	}
 } // namespace Kernel::Processor
-
-#endif // INTERRUPTS_H

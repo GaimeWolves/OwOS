@@ -1,5 +1,4 @@
-#ifndef MEMORY_MAP_H
-#define MEMORY_MAP_H 1
+#pragma once
 
 #include <multiboot.h>
 
@@ -38,5 +37,3 @@ namespace Kernel::Memory
 		LibK::Vector<map_region_t> m_entries;
 	};
 }; // namespace Kernel::Memory
-
-#endif // MEMORY_MAP_H

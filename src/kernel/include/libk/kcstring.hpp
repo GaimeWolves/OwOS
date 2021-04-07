@@ -1,5 +1,4 @@
-#ifndef KCSTRING_H
-#define KCSTRING_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -14,5 +13,3 @@ extern "C"
 	void *memmove(void *dest, const void *src, size_t count);
 	void *memcpy(void *dest, const void *src, size_t count);
 }
-
-#endif // KCSTRING_H

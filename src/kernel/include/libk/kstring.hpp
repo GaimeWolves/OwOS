@@ -1,5 +1,4 @@
-#ifndef KSTRING_H
-#define KSTRING_H 1
+#pragma once
 
 #include <libk/kcmalloc.hpp>
 #include <libk/kcstring.hpp>
@@ -32,5 +31,3 @@ namespace Kernel::LibK
 
 	typedef BasicString<char> String;
 } // namespace Kernel::LibK
-
-#endif // KSTRING_H

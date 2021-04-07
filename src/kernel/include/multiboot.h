@@ -1,5 +1,4 @@
-#ifndef _MULTIBOOT_H
-#define _MULTIBOOT_H 1
+#pragma once
 
 #ifndef ASM_FILE
 #	include <stdint.h>
@@ -147,5 +146,3 @@ typedef struct multiboot_mmap_entry_t
 } __attribute__((packed)) multiboot_mmap_entry_t;
 
 #endif
-
-#endif // _MULTIBOOT_H

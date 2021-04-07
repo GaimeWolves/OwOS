@@ -1,5 +1,4 @@
-#ifndef PROCESSOR_H
-#define PROCESSOR_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -18,5 +17,3 @@ namespace Kernel::Processor
 	void flush_page_directory();
 	void invalidate_address(uintptr_t address);
 } // namespace Kernel::Processor
-
-#endif

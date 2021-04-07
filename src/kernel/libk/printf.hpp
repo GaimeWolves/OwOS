@@ -1,5 +1,4 @@
-#ifndef PRINTF_H
-#define PRINTF_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -522,5 +521,3 @@ namespace Kernel::LibK
 
 	using __Printf::printf_internal;
 } // namespace Kernel::LibK
-
-#endif // PRINTF_H

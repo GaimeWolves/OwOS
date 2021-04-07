@@ -1,5 +1,4 @@
-#ifndef KCASSERT_H
-#define KCASSERT_H 1
+#pragma once
 
 __attribute__((noreturn)) void __assertion_failed(const char *condition, const char *file, unsigned line, const char *function);
 
@@ -8,5 +7,3 @@ __attribute__((noreturn)) void __assertion_failed(const char *condition, const c
 #else
 #	define assert(condition) (static_cast<bool>(condition) ? (void)0 : __assertion_failed(#    condition, __FILE__, __LINE__, __PRETTY_FUNCTION__))
 #endif
-
-#endif // KCASSERT_H

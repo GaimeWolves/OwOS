@@ -1,5 +1,4 @@
-#ifndef BITMAP_HEAP_H
-#define BITMAP_HEAP_H 1
+#pragma once
 
 #include <stdint.h>
 
@@ -36,5 +35,3 @@ namespace Kernel::Heap
 		const heap_statistics_t &getStatistics() { return m_stats; }
 	};
 } // namespace Kernel::Heap
-
-#endif // BITMAP_HEAP_H

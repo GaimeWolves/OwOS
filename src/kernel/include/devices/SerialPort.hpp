@@ -1,5 +1,4 @@
-#ifndef SERIAL_PORT_H
-#define SERIAL_PORT_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -122,5 +121,3 @@ namespace Kernel::Devices
 		static SerialPort m_instances[4];
 	};
 } // namespace Kernel::Devices
-
-#endif // SERIAL_PORT_H

@@ -1,5 +1,4 @@
-#ifndef ARCH_i686_INTERRUPTS_H
-#define ARCH_i686_INTERRUPTS_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,5 +54,3 @@ namespace Kernel::Processor
 		uint32_t eflags;
 	} registers_t;
 } // namespace Kernel::Processor
-
-#endif // ARCH_i686_INTERRUPTS_H

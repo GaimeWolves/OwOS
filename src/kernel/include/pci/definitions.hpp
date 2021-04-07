@@ -1,5 +1,4 @@
-#ifndef PCI_DEFINITIONS_H
-#define PCI_DEFINITIONS_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -90,5 +89,3 @@ namespace Kernel::PCI
 		uint8_t m_function{0};
 	};
 } // namespace Kernel::PCI
-
-#endif // PCI_DEFINITIONS_H

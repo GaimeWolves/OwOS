@@ -1,5 +1,4 @@
-#ifndef MEMORY_MANAGER_H
-#define MEMORY_MANAGER_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -67,5 +66,3 @@ namespace Kernel::Memory
 		MultibootMap m_memory_map;
 	};
 } // namespace Kernel::Memory
-
-#endif // MEMORY_MANAGER_H

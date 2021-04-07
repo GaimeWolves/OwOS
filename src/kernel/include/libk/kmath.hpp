@@ -1,5 +1,4 @@
-#ifndef KMATH_H
-#define KMATH_H 1
+#pragma once
 
 #include <limits.h>
 
@@ -46,5 +45,3 @@ namespace Kernel::LibK
 		return value & power_of_two;
 	}
 } // namespace Kernel::LibK
-
-#endif // KMATH_H

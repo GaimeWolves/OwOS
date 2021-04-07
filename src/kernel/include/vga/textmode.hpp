@@ -1,5 +1,4 @@
-#ifndef VGA_TEXTMODE_H
-#define VGA_TEXTMODE_H 1
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -33,5 +32,3 @@ namespace Kernel::VGA::Textmode
 
 	void set_color(Color fg, Color bg);
 } // namespace Kernel::VGA::Textmode
-
-#endif // VGA_TEXTMODE_H

@@ -1,5 +1,4 @@
-#ifndef KCSTDIO_H
-#define KCSTDIO_H 1
+#pragma once
 
 #include <libk/kcstdarg.hpp>
 
@@ -21,5 +20,3 @@ namespace Kernel::LibK
 	void printf_debug_msg(const char *msg, ...);
 	void printf_test_msg(const char *msg, ...);
 } // namespace Kernel::LibK
-
-#endif // KCSTDIO_H

@@ -1,5 +1,4 @@
-#ifndef ICXXABI_H
-#define ICXXABI_H 1
+#pragma once
 
 #define ATEXIT_MAX_FUNCS 128
 
@@ -23,5 +22,3 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
-#endif // ICXXABI_H

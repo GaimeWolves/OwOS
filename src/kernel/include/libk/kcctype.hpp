@@ -1,5 +1,4 @@
-#ifndef CCTYPE_H
-#define CCTYPE_H 1
+#pragma once
 
 #include <stdint.h>
 
@@ -30,7 +29,7 @@ extern "C"
 	inline __attribute__((always_inline)) int isxdigit(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_DIGIT | CT_HEXDG); }
 
 	inline __attribute__((always_inline)) int isascii(int c) { return (unsigned)(c) <= 0x7F; }
-	inline __attribute__((always_inline)) int toascii(int c) { return (unsigned)(c) & 0x7F; }
+	inline __attribute__((always_inline)) int toascii(int c) { return (unsigned)(c)&0x7F; }
 
 	inline __attribute__((always_inline)) int tolower(int c)
 	{
@@ -60,4 +59,3 @@ extern "C"
 #	undef CT_SPACE
 #endif
 
-#endif // CCTYPE_H

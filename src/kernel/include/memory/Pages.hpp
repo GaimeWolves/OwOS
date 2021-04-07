@@ -1,5 +1,4 @@
-#ifndef PAGES_H
-#define PAGES_H 1
+#pragma once
 
 #include <stdint.h>
 
@@ -55,5 +54,3 @@ namespace Kernel::Memory
 		inline page_directory_entry_t &operator[](int i) { return tables[i]; }
 	} __attribute__((packed, aligned(4096))) page_directory_t;
 } // namespace Kernel::Memory
-
-#endif // PAGES_H
