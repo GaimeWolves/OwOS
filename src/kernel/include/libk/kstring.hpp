@@ -9,7 +9,7 @@
 namespace Kernel::LibK
 {
 	template <typename charT>
-	class BasicString : Vector<charT>
+	class BasicString : public Vector<charT>
 	{
 	public:
 		BasicString() : Vector<charT>() {}
