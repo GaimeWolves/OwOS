@@ -6,6 +6,7 @@
 #include <devices/SerialPort.hpp>
 #include <memory/MemoryManager.hpp>
 #include <multiboot.h>
+#include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>
 
@@ -26,6 +27,8 @@ namespace Kernel
 
 		Devices::SerialPort::init();
 		VGA::Textmode::init();
+
+		PCI::HostBridge::instance().init();
 
 		Tests::test_crtx();
 		Tests::test_heap();
