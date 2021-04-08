@@ -117,7 +117,7 @@ namespace Kernel::Devices
 		m_is_faulty = m_data_reg.in<uint8_t>() != 0xAE;
 	}
 
-	void SerialPort::write(const LibK::String &str)
+	void SerialPort::write(const LibK::string &str)
 	{
 		if (m_is_faulty)
 			return;
@@ -137,9 +137,9 @@ namespace Kernel::Devices
 		m_data_reg.out(ch);
 	}
 
-	LibK::String SerialPort::read(size_t n)
+	LibK::string SerialPort::read(size_t n)
 	{
-		LibK::String ret;
+		LibK::string ret;
 
 		if (m_is_faulty)
 			return ret;

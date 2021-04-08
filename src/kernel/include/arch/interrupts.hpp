@@ -17,8 +17,8 @@ namespace Kernel::Processor
 	typedef struct irq_descriptor_t
 	{
 		irq_ack_t acknowledge;
-		LibK::Vector<irqaction_t> actions;
-		LibK::String name;
+		LibK::vector<irqaction_t> actions;
+		LibK::string name;
 	} irq_descriptor_t;
 
 	void init_interrupts();

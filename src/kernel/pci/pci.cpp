@@ -236,9 +236,8 @@ namespace Kernel::PCI
 #ifdef _DEBUG
 		LibK::printf_debug_msg("Listing PCI devices:");
 		kprintf("ADDRESS CLAS SUBC PROG VENDOR DEVICE HDRT\n");
-		for (size_t i = 0; i < m_all_pci_devices.size(); i++)
+		for (auto &device : m_all_pci_devices)
 		{
-			auto &device = m_all_pci_devices[i];
 			kprintf(
 			    "%.2hhX:%.2hhX.%hhu 0x%.2hhx 0x%.2hhx 0x%.2hhx 0x%.4hx 0x%.4hx 0x%.2hhx\n",
 			    device.get_address().bus(),
@@ -295,5 +294,11 @@ namespace Kernel::PCI
 
 		if (base_class == PCI_CLASS_BRIDGE && subclass == PCI_BRIDGE_SUBCLASS_PCI_TO_PCI)
 			enumerate_bus(function);
+	}
+
+	void HostBridge::enumerate(LibK::function<void(Function &)> callback)
+	{
+		for (size_t i = 0; i < m_all_pci_devices.size(); i++)
+			callback(m_all_pci_devices[i]);
 	}
 } // namespace Kernel::PCI

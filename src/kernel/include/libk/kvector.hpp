@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libk/__iterators.hpp>
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>
 #include <libk/kmath.hpp>
@@ -7,15 +8,15 @@
 namespace Kernel::LibK
 {
 	template <typename T>
-	class Vector
+	class vector
 	{
 	public:
-		Vector()
+		vector()
 		{
 			m_array = (T *)kmalloc(sizeof(T) * m_capacity, sizeof(T));
 		}
 
-		Vector(size_t n, const T &val = T())
+		vector(size_t n, const T &val = T())
 		{
 			m_capacity = next_power_of_two(n);
 			m_size = n;
@@ -26,7 +27,7 @@ namespace Kernel::LibK
 				m_array[i] = val;
 		}
 
-		~Vector()
+		~vector()
 		{
 			kfree(m_array);
 		}
@@ -78,6 +79,11 @@ namespace Kernel::LibK
 		void pop_back() { m_array[m_size-- - 1].~T(); }
 
 		const T *data() const { return m_array; }
+
+		typedef normal_iterator<vector<T>, T> iterator;
+
+		iterator begin() { return iterator{*this, 0}; }
+		iterator end() { return iterator{*this, m_size}; }
 
 	protected:
 		size_t m_capacity{4};

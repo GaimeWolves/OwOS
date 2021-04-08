@@ -17,6 +17,10 @@ set(LIBK_INCLUDES
 	include/libk/kutility.hpp
 	include/libk/kvector.hpp
 	include/libk/kstring.hpp
+	include/libk/kfunctional.hpp
+	include/libk/ktype_traits.hpp
+	include/libk/kiterator.hpp
+	include/libk/__iterators.hpp
 )
 
 set(LIBK_SOURCES

@@ -15,19 +15,19 @@
 #define INIT_INTERRUPT(i, n)                                                        \
 	{                                                                               \
 		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
-		irqs[(i)].name = LibK::String((n));                                         \
+		irqs[(i)].name = LibK::string((n));                                         \
 	}
 
 #define INIT_TRAP(i, n)                                                        \
 	{                                                                          \
 		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TRAP_GATE); \
-		irqs[(i)].name = LibK::String((n));                                    \
+		irqs[(i)].name = LibK::string((n));                                    \
 	}
 
 #define INIT_PIC_INTERRUPT(i, n)                                                    \
 	{                                                                               \
 		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
-		irqs[(i)].name = LibK::String((n));                                         \
+		irqs[(i)].name = LibK::string((n));                                         \
 		irqs[(i)].acknowledge = pic_eoi;                                            \
 	}
 

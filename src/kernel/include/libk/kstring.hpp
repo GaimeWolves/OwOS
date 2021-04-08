@@ -8,12 +8,12 @@
 namespace Kernel::LibK
 {
 	template <typename charT>
-	class BasicString : public Vector<charT>
+	class basic_string : public vector<charT>
 	{
 	public:
-		BasicString() : Vector<charT>() {}
+		basic_string() : vector<charT>() {}
 
-		BasicString(const charT *s)
+		basic_string(const charT *s)
 		{
 			assert(s);
 			size_t len = strlen(s);
@@ -29,5 +29,5 @@ namespace Kernel::LibK
 		const charT *c_str() const { return this->data(); }
 	};
 
-	typedef BasicString<char> String;
+	typedef basic_string<char> string;
 } // namespace Kernel::LibK

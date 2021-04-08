@@ -31,9 +31,9 @@ namespace Kernel::Memory
 
 		void load_map(multiboot_info_t *multiboot_info);
 
-		const LibK::Vector<map_region_t> &get_entries() const { return m_entries; }
+		const LibK::vector<map_region_t> &get_entries() const { return m_entries; }
 
 	private:
-		LibK::Vector<map_region_t> m_entries;
+		LibK::vector<map_region_t> m_entries;
 	};
 }; // namespace Kernel::Memory

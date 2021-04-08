@@ -5,6 +5,7 @@
 
 #include <pci/definitions.hpp>
 
+#include <libk/kfunctional.hpp>
 #include <libk/kvector.hpp>
 
 namespace Kernel::PCI
@@ -135,6 +136,8 @@ namespace Kernel::PCI
 
 		void init();
 
+		void enumerate(LibK::function<void(Function &)> callback);
+
 	private:
 		HostBridge() : Function(0, 0, 0)
 		{
@@ -146,6 +149,6 @@ namespace Kernel::PCI
 		void enumerate_device(uint8_t bus, uint8_t device);
 		void enumerate_function(uint8_t bus, uint8_t device, uint8_t function);
 
-		LibK::Vector<Function> m_all_pci_devices;
+		LibK::vector<Function> m_all_pci_devices;
 	};
 } // namespace Kernel::PCI
