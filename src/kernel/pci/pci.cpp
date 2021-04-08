@@ -298,7 +298,7 @@ namespace Kernel::PCI
 
 	void HostBridge::enumerate(LibK::function<void(Function &)> callback)
 	{
-		for (size_t i = 0; i < m_all_pci_devices.size(); i++)
-			callback(m_all_pci_devices[i]);
+		for (auto &device : m_all_pci_devices)
+			callback(device);
 	}
 } // namespace Kernel::PCI

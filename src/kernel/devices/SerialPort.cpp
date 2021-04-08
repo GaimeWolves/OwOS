@@ -122,8 +122,8 @@ namespace Kernel::Devices
 		if (m_is_faulty)
 			return;
 
-		for (size_t i = 0; i < str.size(); i++)
-			write_one(str[i]);
+		for (auto ch : str)
+			write_one(ch);
 	}
 
 	void SerialPort::write_one(char ch)
@@ -145,7 +145,7 @@ namespace Kernel::Devices
 			return ret;
 
 		while (n--)
-			ret.push_back(read_one());
+			ret += read_one();
 
 		return ret;
 	}

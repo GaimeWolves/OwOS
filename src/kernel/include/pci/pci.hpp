@@ -111,7 +111,7 @@ namespace Kernel::PCI
 		uint8_t get_max_latency();
 
 	protected:
-		Address m_address;
+		Address m_address{};
 
 		Type m_type{Type::Standard};
 		bool m_multifunction{false};

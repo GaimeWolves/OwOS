@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libk/kfunctional.hpp>
 #include <libk/kstring.hpp>
 #include <libk/kvector.hpp>
 
@@ -11,8 +12,8 @@
 
 namespace Kernel::Processor
 {
-	typedef void (*irq_ack_t)(int id);
-	typedef void (*irqaction_t)(int id, registers_t *regs);
+	typedef LibK::function<void(int)> irq_ack_t;
+	typedef LibK::function<void(int, registers_t *)> irqaction_t;
 
 	typedef struct irq_descriptor_t
 	{

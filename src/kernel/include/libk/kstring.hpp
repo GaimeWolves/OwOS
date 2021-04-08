@@ -27,6 +27,12 @@ namespace Kernel::LibK
 		}
 
 		const charT *c_str() const { return this->data(); }
+
+		basic_string &operator+=(charT c)
+		{
+			this->push_back(c);
+			return *this;
+		}
 	};
 
 	typedef basic_string<char> string;

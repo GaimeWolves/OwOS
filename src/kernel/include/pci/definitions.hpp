@@ -57,6 +57,8 @@ namespace Kernel::PCI
 	class Address
 	{
 	public:
+		Address() = default;
+
 		Address(uint8_t bus, uint8_t device, uint8_t function)
 		    : m_bus(bus), m_device(device), m_function(function)
 		{

@@ -30,6 +30,8 @@ namespace Kernel::LibK
 			return m_callable->call(forward<Args>(args)...);
 		}
 
+		explicit operator bool() const noexcept { return m_callable != nullptr; }
+
 	private:
 		struct callable_base
 		{

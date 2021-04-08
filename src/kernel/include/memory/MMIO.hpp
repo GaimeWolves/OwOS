@@ -46,7 +46,7 @@ namespace Kernel::Memory
 		T *operator()() { return m_ref; }
 
 	private:
-		alignas(T) T *m_ref{0};
+		alignas(T) T *m_ref{nullptr};
 		size_t m_size{0};
 	};
 } // namespace Kernel::Memory

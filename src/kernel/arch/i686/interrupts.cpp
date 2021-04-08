@@ -91,8 +91,8 @@ namespace Kernel::Processor
 		if (irqs[n].acknowledge)
 			irqs[n].acknowledge(n);
 
-		for (size_t i = 0; i < irqs[n].actions.size(); i++)
-			irqs[n].actions[i](n, regs);
+		for (auto &action : irqs[n].actions)
+			action(n, regs);
 
 		if (irqs[n].actions.size() == 0)
 			unhandled_interrupt(n, regs);
