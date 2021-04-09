@@ -13,6 +13,8 @@ namespace Kernel::LibK
 	class function<Ret(Args...)>
 	{
 	public:
+		function() = default;
+
 		template <typename F>
 		function(F functor)
 		    : m_callable(new callable<F>(move(functor)))

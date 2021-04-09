@@ -81,7 +81,7 @@ namespace Kernel::LibK
 		const T *data() const { return m_array; }
 
 		typedef normal_iterator<vector<T>, T> iterator;
-		typedef normal_iterator<vector<const T>, const T> const_iterator;
+		typedef normal_iterator<const vector<T>, const T> const_iterator;
 
 		iterator begin() { return iterator{*this, 0}; }
 		iterator end() { return iterator{*this, m_size}; }
