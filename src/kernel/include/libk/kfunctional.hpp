@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libk/kcassert.hpp>
+#include <libk/kcstddef.hpp>
 #include <libk/ktype_traits.hpp>
 #include <libk/kutility.hpp>
 
@@ -15,10 +16,48 @@ namespace Kernel::LibK
 	public:
 		function() = default;
 
+		function(LibK::nullptr_t)
+		    : m_callable(nullptr)
+		{
+		}
+
+		template <typename F>
+		function(const function &other)
+		{
+			if (other.m_callable)
+				m_callable = new callable<F>(*other.m_callable);
+			else
+				m_callable = nullptr;
+		}
+
 		template <typename F>
 		function(F functor)
 		    : m_callable(new callable<F>(move(functor)))
 		{
+		}
+
+		template <typename F>
+		function &operator=(F functor)
+		{
+			m_callable = new callable<F>(move(functor));
+			return *this;
+		}
+
+		template <typename F>
+		function &operator=(const function &other)
+		{
+			if (other.m_callable)
+				m_callable = new callable<F>(*other.m_callable);
+			else
+				m_callable = nullptr;
+
+			return *this;
+		}
+
+		function &operator=(LibK::nullptr_t)
+		{
+			m_callable = nullptr;
+			return *this;
 		}
 
 		~function()
@@ -52,10 +91,15 @@ namespace Kernel::LibK
 			{
 			}
 
+			callable(const callable &other)
+			    : functor(other.functor)
+			{
+			}
+
 			Ret call(Args... args) const final override { return functor(forward<Args>(args)...); }
 		};
 
 		// TODO: Implement unique_ptr
-		callable_base *m_callable;
+		callable_base *m_callable{nullptr};
 	};
 } // namespace Kernel::LibK

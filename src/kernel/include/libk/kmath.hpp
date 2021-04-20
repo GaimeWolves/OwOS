@@ -34,6 +34,24 @@ namespace Kernel::LibK
 	}
 
 	template <typename T>
+	constexpr T round_up_to_multiple(T value, T multiple)
+	{
+		if (multiple == 0)
+			return value;
+
+		return (value + multiple - 1) / multiple * multiple;
+	}
+
+	template <typename T>
+	constexpr T round_down_to_multiple(T value, T multiple)
+	{
+		if (multiple == 0)
+			return value;
+
+		return value / multiple;
+	}
+
+	template <typename T>
 	constexpr T round_up_to_power_of_two(T value, T power_of_two)
 	{
 		return ((value - 1) & ~(power_of_two - 1)) + power_of_two;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 #include <libk/ktype_traits.hpp>
 
 namespace Kernel::LibK
@@ -25,4 +27,7 @@ namespace Kernel::LibK
 	{
 		return static_cast<typename remove_reference<T>::type &&>(t);
 	}
+
+	template <class T, size_t N>
+	constexpr size_t size(T (&)[N]) { return N; }
 } // namespace Kernel::LibK

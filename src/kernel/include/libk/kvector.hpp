@@ -23,7 +23,7 @@ namespace Kernel::LibK
 
 			m_array = (T *)kmalloc(sizeof(T) * m_capacity, sizeof(T));
 
-			for (int i = 0; i < n; i++)
+			for (size_t i = 0; i < n; i++)
 				m_array[i] = val;
 		}
 
