@@ -55,5 +55,8 @@
 		"iomanip": "cpp",
 		"sstream": "cpp"
 	},
-	"C_Cpp.default.defines": ["ARCH_i686", "_DEBUG"]
+	"C_Cpp.default.defines": ["ARCH_i686", "_DEBUG"],
+	"C_Cpp.default.compilerPath": "${workspaceFolder}/toolchain/bin/i686-elf-gcc",
+	"C_Cpp.default.intelliSenseMode": "gcc-x86",
+	"C_Cpp.default.compilerArgs": ["-ffreestanding"],
 }
