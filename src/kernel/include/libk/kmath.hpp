@@ -48,7 +48,7 @@ namespace Kernel::LibK
 		if (multiple == 0)
 			return value;
 
-		return value / multiple;
+		return value / multiple * multiple;
 	}
 
 	template <typename T>

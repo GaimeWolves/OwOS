@@ -12,6 +12,7 @@
 
 namespace Kernel::Memory
 {
+	// TODO: Maybe hide this in the VMM class
 	typedef struct vm_avl_node_t
 	{
 		vm_avl_node_t *parent;
@@ -93,6 +94,8 @@ namespace Kernel::Memory
 
 		vm_avl_node_t *avl_insert(vm_avl_node_t *root, memory_region_t region);
 		vm_avl_node_t *avl_delete(vm_avl_node_t *root, memory_region_t region);
+
+		vm_avl_node_t *avl_rebalance(vm_avl_node_t *root);
 
 		vm_avl_node_t *avl_rotate_right(vm_avl_node_t *root);
 		vm_avl_node_t *avl_rotate_left(vm_avl_node_t *root);

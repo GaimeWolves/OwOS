@@ -63,6 +63,7 @@ namespace Kernel::Memory
 		return (void *)mem_region.region.address;
 	}
 
+	// Directly maps the provided physical region to a virtual region
 	void *VirtualMemoryManager::alloc_mmio_buffer(uintptr_t phys_addr, size_t size, RegionType type __attribute__((unused)), AllocationStategy strategy)
 	{
 		size = LibK::round_up_to_multiple<size_t>(size, PAGE_SIZE);
@@ -126,6 +127,7 @@ namespace Kernel::Memory
 
 		avl_traverse_unmapped(true, memory_space, callback);
 
+		// TODO: Implement more metadata to determine memory (like cache) that can be unmapped
 		if (min_region.size == 0)
 			panic("Out of kernel virtual memory (OOM) while allocating buffer of size %u", size);
 
@@ -195,6 +197,7 @@ namespace Kernel::Memory
 
 	void VirtualMemoryManager::load_kernel_space()
 	{
+		m_current_memory_space = m_kernel_memory_space;
 		load_memory_space(m_kernel_memory_space);
 	}
 
@@ -306,6 +309,9 @@ namespace Kernel::Memory
 		}
 	}
 
+	// This uses the 'last' pointer that points to the region immediatly preceding
+	// the currently processed one to report unmapped regions to the callback.
+	// If the callback at any point returns false the traversal is immediatly stopped.
 	void VirtualMemoryManager::avl_traverse_all_helper(bool is_kernel_space, vm_avl_node_t *root, vm_avl_node_t **last, bool *do_continue, LibK::function<bool(region_t, vm_avl_node_t *)> &callback)
 	{
 		if (!root)
@@ -409,41 +415,7 @@ namespace Kernel::Memory
 
 		root->height = avl_calc_height(root);
 
-		int bf = avl_get_balance(root);
-
-		if (bf < -1)
-		{
-			if (avl_get_balance(root->left) == -1)
-				return avl_rotate_right(root);
-			else
-				return avl_rotate_left_right(root);
-		}
-
-		if (bf > 1)
-		{
-			if (avl_get_balance(root->right) == 1)
-				return avl_rotate_left(root);
-			else
-				return avl_rotate_right_left(root);
-		}
-
-		//		// rotate left
-		//		if (bf > 1 && is_right)
-		//			return avl_rotate_left(root);
-		//
-		//		// double rotate left right
-		//		if (bf > 1 && is_left)
-		//			return avl_rotate_right_left(root);
-		//
-		//		// double rotate right left
-		//		if (bf < -1 && is_right)
-		//			return avl_rotate_left_right(root);
-		//
-		//		// rotate left
-		//		if (bf < -1 && is_left)
-		//			return avl_rotate_right(root);
-
-		return root;
+		return avl_rebalance(root);
 	}
 
 	vm_avl_node_t *VirtualMemoryManager::avl_delete(vm_avl_node_t *root, memory_region_t region)
@@ -485,6 +457,11 @@ namespace Kernel::Memory
 
 		root->height = avl_calc_height(root);
 
+		return avl_rebalance(root);
+	}
+
+	vm_avl_node_t *VirtualMemoryManager::avl_rebalance(vm_avl_node_t *root)
+	{
 		int bf = avl_get_balance(root);
 
 		if (bf < -1)

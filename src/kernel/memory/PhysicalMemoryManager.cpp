@@ -239,6 +239,7 @@ namespace Kernel::Memory
 			return (void *)phys_addr;
 		}
 
+		// TODO: Alert VMM to free up some memory (e.g. free cached objects, swap memory)
 		panic("Out Of Memory (OOM) while allocating physical buffer of size %d", size);
 	}
 

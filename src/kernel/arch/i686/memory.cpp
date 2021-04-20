@@ -7,6 +7,7 @@
 #include <libk/kcmalloc.hpp>
 #include <libk/kcstring.hpp>
 #include <libk/kfunctional.hpp>
+#include <libk/kmath.hpp>
 #include <libk/kvector.hpp>
 
 #define PAGE_COUNT     1024
@@ -97,7 +98,7 @@ namespace Kernel::Memory::Arch
 		    .cache_disable = disable_cache,
 		    .accessed = false,
 		    .page_size = false,
-		    .page_table_address = (uint32_t)table_addr >> 12,
+		    .page_table_address = (uint32_t)table_addr >> OFFSET_BITS,
 		};
 	}
 
@@ -112,7 +113,7 @@ namespace Kernel::Memory::Arch
 		    .accessed = false,
 		    .dirty = false,
 		    .global = false,
-		    .page_address = (uint32_t)page_addr >> 12,
+		    .page_address = (uint32_t)page_addr >> OFFSET_BITS,
 		};
 	}
 
@@ -138,9 +139,9 @@ namespace Kernel::Memory::Arch
 		return raw_create_pte(page_address, is_user, is_writeable, disable_cache);
 	}
 
-	void for_page_in_range(uintptr_t virt_addr, size_t size, LibK::function<void(uintptr_t)> callback)
+	static void for_page_in_range(uintptr_t virt_addr, size_t size, LibK::function<void(uintptr_t)> callback)
 	{
-		uintptr_t page_limit = (virt_addr + size + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE;
+		uintptr_t page_limit = LibK::round_up_to_multiple<uintptr_t>(virt_addr + size, PAGE_SIZE);
 
 		for (; virt_addr < page_limit; virt_addr += PAGE_SIZE)
 			callback(virt_addr);
@@ -182,7 +183,7 @@ namespace Kernel::Memory::Arch
 		size_t size = (uintptr_t)&_kernel_end - (uintptr_t)&_kernel_start;
 		uintptr_t v_address = (uintptr_t)&_kernel_start;
 
-		uintptr_t page_limit = (p_address + size + PAGE_SIZE) / PAGE_SIZE * PAGE_SIZE;
+		uintptr_t page_limit = LibK::round_up_to_multiple<uintptr_t>(p_address + size + 1, PAGE_SIZE);
 
 		for (; p_address < page_limit; p_address += PAGE_SIZE, v_address += PAGE_SIZE)
 		{
@@ -190,10 +191,9 @@ namespace Kernel::Memory::Arch
 
 			if (page_directory[pd_index].value() == 0)
 			{
-				// At this early stage we rely on the preallocated heap
-				// as the PMM that is later used needs the multiboot info.
-				// FIXME: Maybe map the memory map at the boot stage
-				//        and use the PMM here too
+				// NOTE: At this early stage we rely on the preallocated heap
+				// as this paging space is not yet installed and as such we
+				// cannot use the mapping technique yet.
 				auto *page_table_ptr = (page_table_t *)kcalloc(PAGE_SIZE, PAGE_SIZE);
 				assert(page_table_ptr);
 
@@ -255,6 +255,8 @@ namespace Kernel::Memory::Arch
 
 	void map(paging_space_t &memory_space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, bool is_user)
 	{
+		assert(virt_addr + size < PAGE_TABLE_ARRAY_ADDR);
+
 		for_page_in_range(virt_addr, size, [&](uintptr_t virt_addr) {
 			size_t pd_index = get_pd_index(virt_addr);
 			size_t pt_index = get_pt_index(virt_addr);
@@ -311,6 +313,7 @@ namespace Kernel::Memory::Arch
 
 		static const page_directory_entry_t null_pd_entry{};
 
+		// Check if page directories have become empty
 		for (auto pd_index : page_tables_to_check)
 		{
 			auto &page_table = get_page_table(pd_index);
@@ -342,9 +345,9 @@ namespace Kernel::Memory::Arch
 		uintptr_t p_address = (uintptr_t)&_physical_addr;
 
 		uintptr_t page_begin = v_address / PAGE_SIZE * PAGE_SIZE;
-		uintptr_t page_end = (v_address + size + PAGE_SIZE) / PAGE_SIZE * PAGE_SIZE;
+		uintptr_t page_end = LibK::round_up_to_multiple<uintptr_t>(p_address + size + 1, PAGE_SIZE);
 
-		uintptr_t phys_begin = p_address / PAGE_SIZE * PAGE_SIZE;
+		uintptr_t phys_begin = LibK::round_down_to_multiple<uintptr_t>(p_address, PAGE_SIZE);
 
 		return memory_region_t{
 		    .region = {page_begin, page_end - page_begin},

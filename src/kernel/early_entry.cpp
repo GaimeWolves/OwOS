@@ -38,21 +38,15 @@ namespace Kernel
 		// Move multiboot info structures into kernel space (kernel heap)
 		static void early_preserve_multiboot_info(uint32_t magic, multiboot_info_t *&multiboot_info)
 		{
-			if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-				Processor::halt(); // Halt as we don't have methods of printing (no panic or assertions)
-
-			// Preserve header
-			if (!multiboot_info)
-				Processor::halt();
+			assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
+			assert(multiboot_info);
 
 			multiboot_info = (multiboot_info_t *)((uintptr_t)multiboot_info + (uintptr_t)&_virtual_addr);
 			multiboot_info_t *new_multiboot_info = (multiboot_info_t *)kmalloc(sizeof(multiboot_info_t));
 			memmove(new_multiboot_info, multiboot_info, sizeof(multiboot_info_t));
 			multiboot_info = new_multiboot_info;
 
-			// Preserve memory map
-			if (!(multiboot_info->flags & MULTIBOOT_INFO_MEM_MAP))
-				Processor::halt();
+			assert(multiboot_info->flags & MULTIBOOT_INFO_MEM_MAP);
 
 			multiboot_info->mmap_addr += (uint32_t)&_virtual_addr;
 			multiboot_mmap_entry_t *new_mmap_addr = (multiboot_mmap_entry_t *)kmalloc(multiboot_info->mmap_length);

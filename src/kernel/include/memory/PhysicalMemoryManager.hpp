@@ -36,7 +36,7 @@ namespace Kernel::Memory
 
 		void init(multiboot_info_t *multiboot_info);
 
-		void *alloc(size_t size, uint32_t min_address = 0, uint32_t max_address = 0xFFFFFFFF, uint32_t boundary = 0);
+		void *alloc(size_t size, uint32_t min_address = 0, uint32_t max_address = UINT32_MAX, uint32_t boundary = 0);
 		void free(void *page, size_t size);
 
 	private:
