@@ -36,6 +36,9 @@ namespace Kernel
 			for (func_t *ctor = &_start_ctors; ctor < &_end_ctors; ctor++)
 				(*ctor)();
 
+			// Get debug output really early
+			Devices::SerialPort::init();
+
 			// Main kernel entry point
 			entry(magic, multiboot_info);
 

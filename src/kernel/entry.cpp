@@ -25,7 +25,6 @@ namespace Kernel
 		Processor::init_interrupts();
 		Processor::enable_interrupts();
 
-		Devices::SerialPort::init();
 		VGA::Textmode::init();
 
 		PCI::HostBridge::instance().init();
