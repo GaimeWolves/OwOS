@@ -37,12 +37,13 @@ set(KERNEL_INCLUDES
 	include/tests.hpp
 	include/arch/io.hpp
 	include/arch/processor.hpp
+	include/arch/memory.hpp
 	include/arch/interrupts.hpp
 	include/crt/icxxabi.hpp
 	include/devices/SerialPort.hpp
-	include/memory/MemoryManager.hpp
+	include/memory/PhysicalMemoryManager.hpp
+	include/memory/VirtualMemoryManager.hpp
 	include/memory/MultibootMap.hpp
-	include/memory/Pages.hpp
 	include/pci/definitions.hpp
 	include/pci/pci.hpp
 	include/vga/textmode.hpp
@@ -54,13 +55,15 @@ set(KERNEL_SOURCES
 	panic.cpp
 	crt/icxxabi.cpp
 	devices/SerialPort.cpp
-	memory/MemoryManager.cpp
 	memory/MultibootMap.cpp
+	memory/PhysicalMemoryManager.cpp
+	memory/VirtualMemoryManager.cpp
 	pci/pci.cpp
 	vga/textmode.cpp
 	tests/test_crtx.cpp
 	tests/test_heap.cpp
 	tests/test_printf.cpp
+	tests/test_vmm.cpp
 )
 
 set(SOURCES

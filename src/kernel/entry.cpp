@@ -4,7 +4,7 @@
 #include <arch/interrupts.hpp>
 #include <arch/processor.hpp>
 #include <devices/SerialPort.hpp>
-#include <memory/MemoryManager.hpp>
+#include <memory/VirtualMemoryManager.hpp>
 #include <multiboot.h>
 #include <pci/pci.hpp>
 #include <tests.hpp>
@@ -32,6 +32,7 @@ namespace Kernel
 		Tests::test_crtx();
 		Tests::test_heap();
 		Tests::test_printf();
+		Tests::test_vmm();
 
 #ifdef _DEBUG
 		LibK::printf_debug_msg("Reached end of entry");

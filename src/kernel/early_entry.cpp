@@ -1,11 +1,20 @@
 #include <crt/icxxabi.hpp>
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include <arch/processor.hpp>
-#include <memory/MemoryManager.hpp>
+#include <devices/SerialPort.hpp>
+#include <memory/VirtualMemoryManager.hpp>
 #include <multiboot.h>
+
+#include <libk/kcmalloc.hpp>
+#include <libk/kcstring.hpp>
+
+extern "C"
+{
+	extern uintptr_t _virtual_addr;
+}
 
 namespace Kernel
 {
@@ -24,6 +33,33 @@ namespace Kernel
 		func_t _start_dtors;
 		func_t _end_dtors;
 
+		static void early_preserve_multiboot_info(uint32_t magic, multiboot_info_t *&multiboot_info);
+
+		// Move multiboot info structures into kernel space (kernel heap)
+		static void early_preserve_multiboot_info(uint32_t magic, multiboot_info_t *&multiboot_info)
+		{
+			if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+				Processor::halt(); // Halt as we don't have methods of printing (no panic or assertions)
+
+			// Preserve header
+			if (!multiboot_info)
+				Processor::halt();
+
+			multiboot_info = (multiboot_info_t *)((uintptr_t)multiboot_info + (uintptr_t)&_virtual_addr);
+			multiboot_info_t *new_multiboot_info = (multiboot_info_t *)kmalloc(sizeof(multiboot_info_t));
+			memmove(new_multiboot_info, multiboot_info, sizeof(multiboot_info_t));
+			multiboot_info = new_multiboot_info;
+
+			// Preserve memory map
+			if (!(multiboot_info->flags & MULTIBOOT_INFO_MEM_MAP))
+				Processor::halt();
+
+			multiboot_info->mmap_addr += (uint32_t)&_virtual_addr;
+			multiboot_mmap_entry_t *new_mmap_addr = (multiboot_mmap_entry_t *)kmalloc(multiboot_info->mmap_length);
+			memmove(new_mmap_addr, (void *)multiboot_info->mmap_addr, multiboot_info->mmap_length);
+			multiboot_info->mmap_addr = (uint32_t)new_mmap_addr;
+		}
+
 		__attribute__((noreturn)) void early_entry(uint32_t magic, multiboot_info_t *multiboot_info)
 		{
 			// Ensure memory management is setup
@@ -31,7 +67,10 @@ namespace Kernel
 				(*ctor)();
 
 			Heap::init();
-			Memory::MemoryManager::instance().init(multiboot_info);
+
+			early_preserve_multiboot_info(magic, multiboot_info);
+
+			Memory::VirtualMemoryManager::instance().init(multiboot_info);
 
 			for (func_t *ctor = &_start_ctors; ctor < &_end_ctors; ctor++)
 				(*ctor)();

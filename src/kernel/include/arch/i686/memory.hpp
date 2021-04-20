@@ -1,8 +1,11 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
-namespace Kernel::Memory
+#define PAGE_SIZE 4096
+
+namespace Kernel::Memory::Arch
 {
 	typedef struct page_table_entry_t
 	{
@@ -27,7 +30,7 @@ namespace Kernel::Memory
 		page_table_entry_t pages[1024];
 
 		page_table_entry_t &operator[](int i) { return pages[i]; }
-	} __attribute__((packed, aligned(4096))) page_table_t;
+	} __attribute__((packed, aligned(PAGE_SIZE))) page_table_t;
 
 	typedef struct page_directory_entry_t
 	{
@@ -52,5 +55,12 @@ namespace Kernel::Memory
 		page_directory_entry_t tables[1024];
 
 		inline page_directory_entry_t &operator[](int i) { return tables[i]; }
-	} __attribute__((packed, aligned(4096))) page_directory_t;
-} // namespace Kernel::Memory
+	} __attribute__((packed, aligned(PAGE_SIZE))) page_directory_t;
+
+	struct paging_space_t
+	{
+		uintptr_t physical_pd_address;
+		page_directory_t *page_directory;
+		page_table_t *mapping_table;
+	};
+} // namespace Kernel::Memory::Arch

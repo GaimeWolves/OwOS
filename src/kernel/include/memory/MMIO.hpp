@@ -5,7 +5,7 @@
 
 #include <libk/kcassert.hpp>
 
-#include <memory/MemoryManager.hpp>
+#include <memory/VirtualMemoryManager.hpp>
 
 namespace Kernel::Memory
 {
@@ -18,13 +18,13 @@ namespace Kernel::Memory
 		MMIO(uintptr_t address, size_t size)
 		    : m_size(size)
 		{
-			m_ref = (T *)MemoryManager::instance().map_mmio_region(address, size);
+			m_ref = (T *)VirtualMemoryManager::instance().alloc_mmio_buffer(address, size);
 			assert(m_ref);
 		}
 
 		~MMIO()
 		{
-			MemoryManager::instance().unmap_region((uintptr_t)m_ref, m_size);
+			VirtualMemoryManager::instance().free(m_ref);
 		}
 
 		T &operator*() { return *m_ref; }
