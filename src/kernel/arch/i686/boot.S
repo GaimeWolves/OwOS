@@ -39,8 +39,6 @@
 			movl $0, %esi
 			movl $1024, %ecx
 		.loop_map_kernel:
-			cmpl $(_kernel_start - virt_addr), %esi
-			jl .loop_map_kernel_increment
 			cmpl $(_kernel_end - virt_addr), %esi
 			jg .enable_paging
 
