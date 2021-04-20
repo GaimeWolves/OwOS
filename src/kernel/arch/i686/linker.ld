@@ -27,7 +27,7 @@ SECTIONS
 		_end_ctors = .;
 
 		_start_dtors = .;
-		*(.ctors)
+		*(.dtors)
 		_end_dtors = .;
 
 		*(.rodata)
