@@ -2,8 +2,6 @@
 
 #include <arch/i686/gdt.hpp>
 
-#include <memory/MemoryManager.hpp>
-
 namespace Kernel::Processor
 {
 	static gdt_entry_t gdt[5];
