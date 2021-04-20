@@ -6,7 +6,7 @@
 
 namespace Kernel::Memory
 {
-	enum class RegionType : uint8_t
+	enum class MultibootRegionType : uint8_t
 	{
 		Available = MULTIBOOT_MEMORY_AVAILABLE,
 		Reserved = MULTIBOOT_MEMORY_RESERVED,
@@ -17,9 +17,9 @@ namespace Kernel::Memory
 
 	typedef struct map_region_t
 	{
-		uintptr_t base_address;
-		size_t length;
-		RegionType type;
+		uint64_t base_address;
+		uint64_t length;
+		MultibootRegionType type;
 	} map_region_t;
 
 	class MultibootMap
@@ -32,8 +32,12 @@ namespace Kernel::Memory
 		void load_map(multiboot_info_t *multiboot_info);
 
 		const LibK::vector<map_region_t> &get_entries() const { return m_entries; }
+		uint64_t get_memory_size() const { return m_mem_size; }
+		uint64_t get_usable_mem_size() const { return m_usable_mem_size; }
 
 	private:
 		LibK::vector<map_region_t> m_entries;
+		uint64_t m_mem_size;
+		uint64_t m_usable_mem_size;
 	};
 }; // namespace Kernel::Memory
