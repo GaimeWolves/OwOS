@@ -56,6 +56,8 @@ namespace Kernel::Devices
 {
 	SerialPort SerialPort::m_instances[];
 
+	static bool initialized = false;
+
 	static inline bool can_send(IO::Port &line_status);
 	static inline bool can_receive(IO::Port &line_status);
 
@@ -73,6 +75,13 @@ namespace Kernel::Devices
 	{
 		for (size_t i = 0; i < 4; i++)
 			m_instances[i] = SerialPort(i);
+
+		initialized = true;
+	}
+
+	bool SerialPort::is_initialized()
+	{
+		return initialized;
 	}
 
 	SerialPort &SerialPort::get(size_t port)

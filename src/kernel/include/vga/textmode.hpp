@@ -26,6 +26,7 @@ namespace Kernel::VGA::Textmode
 	};
 
 	void init();
+	bool is_initialized();
 
 	void putc(const char ch);
 	void puts(const char *str);

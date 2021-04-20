@@ -35,6 +35,8 @@ namespace Kernel::VGA::Textmode
 	static IO::Port controlIndex(VGA_CONTROL_REG);
 	static IO::Port controlData = controlIndex.offset(1);
 
+	static bool initialized = false;
+
 	static inline uint8_t vga_char_color(Color fg, Color bg)
 	{
 		return (uint8_t)fg | ((uint8_t)bg << 4);
@@ -89,7 +91,14 @@ namespace Kernel::VGA::Textmode
 		cursorX = 0;
 		cursorY = 0;
 
+		initialized = true;
+
 		LibK::printf_check_msg(true, "VGA textmode");
+	}
+
+	bool is_initialized()
+	{
+		return initialized;
 	}
 
 	void putc(const char ch)

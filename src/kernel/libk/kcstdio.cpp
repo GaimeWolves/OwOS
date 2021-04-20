@@ -14,14 +14,20 @@ extern "C"
 {
 	void kputc(const char ch)
 	{
-		Textmode::putc(ch);
-		SerialPort::get(SerialPort::COM1).write_one(ch);
+		if (Textmode::is_initialized())
+			Textmode::putc(ch);
+
+		if (SerialPort::is_initialized())
+			SerialPort::get(SerialPort::COM1).write_one(ch);
 	}
 
 	void kputs(const char *str)
 	{
-		Textmode::puts(str);
-		SerialPort::get(SerialPort::COM1).write(str);
+		if (Textmode::is_initialized())
+			Textmode::puts(str);
+
+		if (SerialPort::is_initialized())
+			SerialPort::get(SerialPort::COM1).write(str);
 	}
 
 	void kvprintf(const char *fmt, va_list ap)

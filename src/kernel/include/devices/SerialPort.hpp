@@ -63,6 +63,7 @@ namespace Kernel::Devices
 		};
 
 		static void init();
+		static bool is_initialized();
 		static SerialPort &get(size_t port);
 
 		void configure(BaudRate rate, DataLength length, StopBits stopBits, ParityType parity);
