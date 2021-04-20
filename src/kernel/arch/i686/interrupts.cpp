@@ -44,7 +44,8 @@ namespace Kernel::Processor
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type)
 	{
-		uint32_t address = (uint32_t)entry;
+		static_assert(sizeof(size_t) == sizeof(uint32_t));
+		size_t address = (size_t)entry;
 
 		// We don't implement TSS currently
 		assert(type != IDTEntryType::TASK_GATE);
