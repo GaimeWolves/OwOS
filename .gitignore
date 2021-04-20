@@ -1,6 +1,7 @@
 bin
 build
 toolchain/
+log.txt
 
 ### C/C++ ###
 *.o
@@ -13,7 +14,9 @@ toolchain/
 .ccls-cache
 
 ### VSCode ###
-.vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
 
 ### GDB ###
 .gdb_history
