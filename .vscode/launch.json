@@ -10,6 +10,7 @@
 			"cwd": "${workspaceFolder}/src",
 			"targetArchitecture": "x86",
 			"miDebuggerArgs": "-n",
+			"preLaunchTask": "startQemuDebug",
 			"sourceFileMap": {
 				"./build/src/kernel/./": "${workspaceFolder}/"
 			},

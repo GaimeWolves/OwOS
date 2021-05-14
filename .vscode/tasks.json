@@ -1,0 +1,48 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "startQemuDebug",
+            "dependsOn": ["build"],
+            "command": "qemu-system-i386",
+            "args": [
+                "-s",
+                "-S",
+                "-no-reboot",
+                "-no-shutdown",
+                "-kernel",
+                "${workspaceFolder}/bin/sysroot/boot/kernel",
+                "-hda",
+                "bin/img",
+                "-daemonize"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "promptOnClose": true,
+            "type": "process"
+        },
+        {
+            "label": "build",
+            "command": "make",
+            "args": [
+                "all"
+            ],
+            "type": "process",
+            "problemMatcher":"$gcc"
+        },
+        {
+            "label": "clean",
+            "command": "make",
+            "args": [
+                "clean"
+            ],
+            "type": "process"
+        }
+    ]
+}
