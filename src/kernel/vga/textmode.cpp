@@ -5,7 +5,7 @@
 
 #include <arch/io.hpp>
 #include <libk/kcstdio.hpp>
-#include <memory/MMIO.hpp>
+#include <vga/TextmodeBuffer.hpp>
 
 #define ROWS 25
 #define COLS 80
@@ -30,7 +30,7 @@ namespace Kernel::VGA::Textmode
 
 	static uint8_t cursorX = 0, cursorY = 0;
 	static uint8_t color = vga_char_color(Color::WHITE, Color::BLACK);
-	static Memory::MMIO<vga_char_t> buffer(VGA_MEMORY, sizeof(vga_char_t) * ROWS * COLS);
+	static Textmode::TextmodeBuffer<vga_char_t> buffer(VGA_MEMORY, ROWS, COLS);
 
 	static IO::Port controlIndex(VGA_CONTROL_REG);
 	static IO::Port controlData = controlIndex.offset(1);
@@ -56,13 +56,13 @@ namespace Kernel::VGA::Textmode
 		{
 			for (uint8_t x = 0; x < COLS; x++)
 			{
-				buffer[y * COLS + x] = buffer[(y + 1) * COLS + x];
+				buffer(x, y) = buffer(x, y + 1);
 			}
 		}
 
 		for (uint8_t x = 0; x < COLS; x++)
 		{
-			buffer[(ROWS - 1) * COLS + x] = vga_char(' ', color);
+			buffer(x, ROWS - 1) = vga_char(' ', color);
 		}
 
 		cursorY--;
@@ -84,7 +84,7 @@ namespace Kernel::VGA::Textmode
 		{
 			for (uint8_t x = 0; x < COLS; x++)
 			{
-				buffer[y * COLS + x] = vga_char(' ', color);
+				buffer(x, y) = vga_char(' ', color);
 			}
 		}
 
@@ -110,7 +110,7 @@ namespace Kernel::VGA::Textmode
 		}
 		else
 		{
-			buffer[cursorY * COLS + cursorX] = vga_char((uint8_t)ch, color);
+			buffer(cursorX, cursorY) = vga_char((uint8_t)ch, color);
 			cursorX++;
 
 			if (cursorX >= COLS)
