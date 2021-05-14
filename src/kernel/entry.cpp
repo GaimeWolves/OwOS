@@ -39,6 +39,6 @@ namespace Kernel
 #endif
 
 		for (;;)
-			;
+			Processor::sleep();
 	}
 } // namespace Kernel
