@@ -17,19 +17,44 @@
 #define VGA_CURSOR_POS_LOW_REG  0x0F // VGA cursor position low register index
 #define VGA_CURSOR_POS_HIGH_REG 0x0E // VGA cursor position high register index
 
+#define ColorToFourBit(color) (uint8_t(color) & 0x0F)
+#define FourBitToColor(fourBit) (Color(fourBit))
+
 namespace Kernel::VGA::Textmode
 {
-	typedef uint16_t vga_char_t;
+	typedef struct vga_char_color
+	{
+		vga_char_color(const Color fg, const Color bg) : fg(ColorToFourBit(fg)), bg(ColorToFourBit(bg)) { }
 
-	static inline uint8_t vga_char_color(Color fg, Color bg);
-	static inline vga_char_t vga_char(uint8_t ch, uint8_t color);
+		//Sadly c++ does not support bit-field Enums so we have to use uint8_t and ugly casts here
+		uint8_t fg : 4;
+		uint8_t bg : 4;
+
+		void setFg(const Color color) { fg = ColorToFourBit(color); }
+		void setBg(const Color color) { bg = ColorToFourBit(color); }
+		Color getFg() { return FourBitToColor(fg); }
+		Color getBg() { return FourBitToColor(bg); }
+	} __attribute__((packed)) vga_char_color_t;
+	static_assert(sizeof(vga_char_color_t) == 1);
+
+	typedef struct vga_char
+	{
+		vga_char(const uint8_t ch, const vga_char_color_t color) : ch(ch), color(color) {}
+
+		char ch;
+		vga_char_color_t color;
+	} __attribute__((packed)) vga_char_t;
+	static_assert(sizeof(vga_char_t) == 2);
+
+	static inline vga_char_color_t vga_char_color(Color fg, Color bg);
+	static inline vga_char_t vga_char(char ch, vga_char_color_t color);
 
 	static void handle_scrolling();
 
 	static void update_cursor();
 
 	static uint8_t cursorX = 0, cursorY = 0;
-	static uint8_t color = vga_char_color(Color::WHITE, Color::BLACK);
+	static vga_char_color_t color = vga_char_color(Color::WHITE, Color::BLACK);
 	static Textmode::TextmodeBuffer<vga_char_t> buffer(VGA_MEMORY, ROWS, COLS);
 
 	static IO::Port controlIndex(VGA_CONTROL_REG);
@@ -37,14 +62,14 @@ namespace Kernel::VGA::Textmode
 
 	static bool initialized = false;
 
-	static inline uint8_t vga_char_color(Color fg, Color bg)
+	static inline vga_char_color_t vga_char_color(Color fg, Color bg)
 	{
-		return (uint8_t)fg | ((uint8_t)bg << 4);
+		return vga_char_color_t(fg, bg);
 	}
 
-	static inline vga_char_t vga_char(uint8_t ch, uint8_t color)
+	static inline vga_char_t vga_char(char ch, vga_char_color_t color)
 	{
-		return (vga_char_t)ch | ((vga_char_t)color << 8);
+		return vga_char_t(ch, color);
 	}
 
 	static void handle_scrolling()
@@ -101,7 +126,7 @@ namespace Kernel::VGA::Textmode
 		return initialized;
 	}
 
-	void putc(const char ch)
+	void putc(char ch)
 	{
 		if (ch == '\n')
 		{
@@ -110,7 +135,7 @@ namespace Kernel::VGA::Textmode
 		}
 		else
 		{
-			buffer(cursorX, cursorY) = vga_char((uint8_t)ch, color);
+			buffer(cursorX, cursorY) = vga_char(ch, color);
 			cursorX++;
 
 			if (cursorX >= COLS)
