@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 namespace Kernel::Processor
 {
 	enum class IDTEntryType : uint8_t
@@ -24,13 +26,13 @@ namespace Kernel::Processor
 		uint16_t offset_high : 16;
 
 		inline uint32_t offset() { return (uint32_t)offset_low | ((uint32_t)offset_high << 16); }
-	} __attribute__((packed)) idt_entry_t;
+	} __packed idt_entry_t;
 
 	typedef struct idt_descriptor_t
 	{
 		uint16_t limit;
 		uint32_t base;
-	} __attribute__((packed)) idt_descriptor_t;
+	} __packed idt_descriptor_t;
 
 	typedef struct registers_t
 	{

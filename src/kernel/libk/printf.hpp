@@ -267,7 +267,7 @@ namespace Kernel::LibK
 		template <typename putc_func, typename argument_list_ref_t, template <typename T, typename V = argument_list_ref_t> typename next_argument>
 		struct printf_impl_t
 		{
-			inline __attribute__((always_inline)) printf_impl_t(putc_func &putc, char *&buffer, const int &written, state_t &state, argument_list_ref_t ap)
+			always_inline printf_impl_t(putc_func &putc, char *&buffer, const int &written, state_t &state, argument_list_ref_t ap)
 			    : m_putc(putc), m_buffer(buffer), m_written(written), m_state(state), m_ap(ap)
 			{
 			}

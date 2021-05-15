@@ -1,12 +1,13 @@
 #include <tests.hpp>
 
 #include <libk/kcstdio.hpp>
+#include <common_attributes.h>
 
 namespace Kernel::Tests
 {
 	static bool constructor_was_run = false;
 
-	__attribute__((constructor)) static void test_constructor()
+	__constructor static void test_constructor()
 	{
 		constructor_was_run = true;
 	}

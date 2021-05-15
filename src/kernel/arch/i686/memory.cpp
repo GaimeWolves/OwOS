@@ -2,6 +2,7 @@
 
 #include <arch/processor.hpp>
 #include <memory/PhysicalMemoryManager.hpp>
+#include <common_attributes.h>
 
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>
@@ -279,7 +280,7 @@ namespace Kernel::Memory::Arch
 		});
 	}
 
-	void unmap(paging_space_t &memory_space __attribute__((unused)), uintptr_t virt_addr, size_t size)
+	void unmap(__unused paging_space_t &memory_space, uintptr_t virt_addr, size_t size)
 	{
 		assert(virt_addr + size < PAGE_TABLE_ARRAY_ADDR);
 

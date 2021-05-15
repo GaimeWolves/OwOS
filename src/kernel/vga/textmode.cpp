@@ -6,6 +6,7 @@
 #include <arch/io.hpp>
 #include <libk/kcstdio.hpp>
 #include <vga/TextmodeBuffer.hpp>
+#include <common_attributes.h>
 
 #define ROWS 25
 #define COLS 80
@@ -34,7 +35,7 @@ namespace Kernel::VGA::Textmode
 		void setBg(const Color color) { bg = ColorToFourBit(color); }
 		Color getFg() { return FourBitToColor(fg); }
 		Color getBg() { return FourBitToColor(bg); }
-	} __attribute__((packed)) vga_char_color_t;
+	} __packed vga_char_color_t;
 	static_assert(sizeof(vga_char_color_t) == 1);
 
 	typedef struct vga_char
@@ -43,7 +44,7 @@ namespace Kernel::VGA::Textmode
 
 		char ch;
 		vga_char_color_t color;
-	} __attribute__((packed)) vga_char_t;
+	} __packed vga_char_t;
 	static_assert(sizeof(vga_char_t) == 2);
 
 	static inline vga_char_color_t vga_char_color(Color fg, Color bg);

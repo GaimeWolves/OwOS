@@ -1,7 +1,9 @@
 #pragma once
 
+#include <common_attributes.h>
+
 namespace Kernel
 {
-	__attribute__((noreturn)) void panic();
-	__attribute__((noreturn)) void panic(const char *fmt, ...);
+	__noreturn void panic();
+	__noreturn void panic(const char *fmt, ...);
 } // namespace Kernel

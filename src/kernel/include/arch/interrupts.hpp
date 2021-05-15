@@ -5,6 +5,7 @@
 #include <libk/kvector.hpp>
 
 #include <panic.hpp>
+#include <common_attributes.h>
 
 #ifdef ARCH_i686
 #	include <arch/i686/interrupts.hpp>
@@ -27,7 +28,7 @@ namespace Kernel::Processor
 	irq_descriptor_t &get_irq(int id);
 	bool register_irq(int id, irqaction_t action);
 
-	inline void unhandled_interrupt(int id, registers_t *regs __attribute__((unused)))
+	inline void unhandled_interrupt(int id, __unused registers_t *regs)
 	{
 		panic("Unhandled Interrupt - %s", get_irq(id).name.c_str());
 	}

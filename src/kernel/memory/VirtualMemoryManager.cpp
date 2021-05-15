@@ -2,6 +2,7 @@
 
 #include <memory/PhysicalMemoryManager.hpp>
 #include <panic.hpp>
+#include <common_attributes.h>
 
 #include <libk/kcmalloc.hpp>
 #include <libk/kcstdio.hpp>
@@ -64,7 +65,7 @@ namespace Kernel::Memory
 	}
 
 	// Directly maps the provided physical region to a virtual region
-	void *VirtualMemoryManager::alloc_mmio_buffer(uintptr_t phys_addr, size_t size, RegionType type __attribute__((unused)), AllocationStategy strategy)
+	void *VirtualMemoryManager::alloc_mmio_buffer(uintptr_t phys_addr, size_t size, __unused RegionType type, AllocationStategy strategy)
 	{
 		size = LibK::round_up_to_multiple<size_t>(size, PAGE_SIZE);
 

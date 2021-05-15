@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 #define PAGE_SIZE 4096
 
 namespace Kernel::Memory::Arch
@@ -23,14 +25,14 @@ namespace Kernel::Memory::Arch
 
 		inline void *page() { return (void *)(page_address << 12); }
 		inline uint32_t value() { return *(uint32_t *)this; }
-	} __attribute__((packed)) page_table_entry_t;
+	} __packed page_table_entry_t;
 
 	typedef struct page_table_t
 	{
 		page_table_entry_t pages[1024];
 
 		page_table_entry_t &operator[](int i) { return pages[i]; }
-	} __attribute__((packed, aligned(PAGE_SIZE))) page_table_t;
+	} __packed_align(PAGE_SIZE) page_table_t;
 
 	typedef struct page_directory_entry_t
 	{
@@ -48,14 +50,14 @@ namespace Kernel::Memory::Arch
 
 		inline page_table_t *table() { return (page_table_t *)(page_table_address << 12); }
 		inline uint32_t value() { return *(uint32_t *)this; }
-	} __attribute__((packed)) page_directory_entry_t;
+	} __packed page_directory_entry_t;
 
 	typedef struct page_directory_t
 	{
 		page_directory_entry_t tables[1024];
 
 		inline page_directory_entry_t &operator[](int i) { return tables[i]; }
-	} __attribute__((packed, aligned(PAGE_SIZE))) page_directory_t;
+	} __packed_align(PAGE_SIZE) page_directory_t;
 
 	struct paging_space_t
 	{

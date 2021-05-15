@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 #define CT_UPPER 0b00000001 // Upper case
 #define CT_LOWER 0b00000010 // Lower case
 #define CT_DIGIT 0b00000100 // Digit
@@ -16,22 +18,22 @@ extern uint8_t __ctype_lookup[];
 
 extern "C"
 {
-	inline __attribute__((always_inline)) int isalnum(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_UPPER | CT_LOWER | CT_DIGIT); }
-	inline __attribute__((always_inline)) int isalpha(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_UPPER | CT_LOWER); }
-	inline __attribute__((always_inline)) int iscntrl(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_CNTRL); }
-	inline __attribute__((always_inline)) int isgraph(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_PUNCT | CT_UPPER | CT_LOWER | CT_DIGIT); }
-	inline __attribute__((always_inline)) int islower(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_LOWER); }
-	inline __attribute__((always_inline)) int isupper(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_UPPER); }
-	inline __attribute__((always_inline)) int isprint(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_PUNCT | CT_UPPER | CT_LOWER | CT_DIGIT | CT_SPACE); }
-	inline __attribute__((always_inline)) int ispunct(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_PUNCT); }
-	inline __attribute__((always_inline)) int isspace(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_WHITE); }
-	inline __attribute__((always_inline)) int isdigit(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_DIGIT); }
-	inline __attribute__((always_inline)) int isxdigit(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_DIGIT | CT_HEXDG); }
+	always_inline int isalnum(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_UPPER | CT_LOWER | CT_DIGIT); }
+	always_inline int isalpha(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_UPPER | CT_LOWER); }
+	always_inline int iscntrl(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_CNTRL); }
+	always_inline int isgraph(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_PUNCT | CT_UPPER | CT_LOWER | CT_DIGIT); }
+	always_inline int islower(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_LOWER); }
+	always_inline int isupper(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_UPPER); }
+	always_inline int isprint(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_PUNCT | CT_UPPER | CT_LOWER | CT_DIGIT | CT_SPACE); }
+	always_inline int ispunct(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_PUNCT); }
+	always_inline int isspace(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_WHITE); }
+	always_inline int isdigit(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_DIGIT); }
+	always_inline int isxdigit(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_DIGIT | CT_HEXDG); }
 
-	inline __attribute__((always_inline)) int isascii(int c) { return (unsigned)(c) <= 0x7F; }
-	inline __attribute__((always_inline)) int toascii(int c) { return (unsigned)(c)&0x7F; }
+	always_inline int isascii(int c) { return (unsigned)(c) <= 0x7F; }
+	always_inline int toascii(int c) { return (unsigned)(c)&0x7F; }
 
-	inline __attribute__((always_inline)) int tolower(int c)
+	always_inline int tolower(int c)
 	{
 		if (__ctype_lookup[c] & CT_UPPER)
 			return c + ('a' - 'A');
@@ -39,7 +41,7 @@ extern "C"
 			return c;
 	}
 
-	inline __attribute__((always_inline)) int toupper(int c)
+	always_inline int toupper(int c)
 	{
 		if (__ctype_lookup[c] & CT_LOWER)
 			return c - ('a' - 'A');
@@ -58,4 +60,3 @@ extern "C"
 #	undef CT_HEXDG
 #	undef CT_SPACE
 #endif
-

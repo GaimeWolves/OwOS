@@ -1,5 +1,7 @@
 #include <panic.hpp>
 
+#include <common_attributes.h>
+
 #include <libk/kcstdarg.hpp>
 #include <libk/kcstdio.hpp>
 
@@ -7,12 +9,12 @@
 
 namespace Kernel
 {
-	__attribute__((noreturn)) void panic()
+	__noreturn void panic()
 	{
 		panic(nullptr);
 	}
 
-	__attribute__((noreturn)) void panic(const char *fmt, ...)
+	__noreturn void panic(const char *fmt, ...)
 	{
 		kputs("KERNEL PANIC: ");
 

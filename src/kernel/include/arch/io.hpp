@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 #ifdef ARCH_i686
 #	include <arch/i686/io.hpp>
 #else
@@ -12,10 +14,10 @@
 namespace Kernel::IO
 {
 	template <typename T>
-	inline __attribute__((always_inline)) void out(port_t port, T value);
+	always_inline void out(port_t port, T value);
 
 	template <typename T>
-	inline __attribute__((always_inline)) T in(port_t port);
+	always_inline T in(port_t port);
 
 	class Port
 	{
@@ -29,10 +31,10 @@ namespace Kernel::IO
 		void set(port_t address) { m_address = address; }
 
 		template <typename T>
-		inline __attribute__((always_inline)) void out(T value) { IO::out<T>(m_address, value); }
+		always_inline void out(T value) { IO::out<T>(m_address, value); }
 
 		template <typename T>
-		inline __attribute__((always_inline)) T in() { return IO::in<T>(m_address); }
+		always_inline T in() { return IO::in<T>(m_address); }
 
 		bool operator==(const Port &other) const { return m_address == other.m_address; }
 		bool operator!=(const Port &other) const { return m_address != other.m_address; }

@@ -4,11 +4,12 @@
 
 #include <arch/i686/interrupts.hpp>
 #include <arch/i686/pic.hpp>
+#include <arch/processor.hpp>
+#include <common_attributes.h>
 
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
 
-#include <arch/processor.hpp>
 
 #define MAX_INTERRUPTS 256
 
@@ -39,7 +40,7 @@ namespace Kernel::Processor
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type);
 
-	extern "C" __attribute__((naked)) void common_interrupt_handler_entry();
+	extern "C" __naked void common_interrupt_handler_entry();
 	extern "C" void common_interrupt_handler(registers_t *regs);
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type)
@@ -60,7 +61,7 @@ namespace Kernel::Processor
 		};
 	}
 
-	extern "C" __attribute__((naked)) void common_interrupt_handler_entry()
+	extern "C" __naked void common_interrupt_handler_entry()
 	{
 		asm(
 		    "pusha\n"
@@ -86,7 +87,7 @@ namespace Kernel::Processor
 		    "iret\n");
 	}
 
-	extern "C" void common_interrupt_handler(registers_t *regs __attribute__((unused)))
+	extern "C" void common_interrupt_handler(registers_t *regs)
 	{
 		uint32_t n = regs->isr_number;
 		if (irqs[n].acknowledge)

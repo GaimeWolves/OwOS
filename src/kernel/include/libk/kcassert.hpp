@@ -1,6 +1,8 @@
 #pragma once
 
-__attribute__((noreturn)) void __assertion_failed(const char *condition, const char *file, unsigned line, const char *function);
+#include <common_attributes.h>
+
+__noreturn void __assertion_failed(const char *condition, const char *file, unsigned line, const char *function);
 
 #ifdef NDEBUG
 #	define assert(condition) ((void)0)

@@ -7,6 +7,7 @@
 #include <devices/SerialPort.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <multiboot.h>
+#include <common_attributes.h>
 
 #include <libk/kcmalloc.hpp>
 #include <libk/kcstring.hpp>
@@ -54,7 +55,7 @@ namespace Kernel
 			multiboot_info->mmap_addr = (uint32_t)new_mmap_addr;
 		}
 
-		__attribute__((noreturn)) void early_entry(uint32_t magic, multiboot_info_t *multiboot_info)
+		__noreturn void early_entry(uint32_t magic, multiboot_info_t *multiboot_info)
 		{
 			// Ensure memory management is setup
 			for (func_t *ctor = &_start_heap_ctors; ctor < &_end_heap_ctors; ctor++)

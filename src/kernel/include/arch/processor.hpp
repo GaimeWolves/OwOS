@@ -3,11 +3,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 namespace Kernel::Processor
 {
 	void init();
 
-	__attribute__((noreturn)) void halt();
+	__noreturn void halt();
 	void sleep();
 
 	void clear_interrupts();

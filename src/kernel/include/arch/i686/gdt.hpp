@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 namespace Kernel::Processor
 {
 	typedef struct gdt_entry_t
@@ -23,13 +25,13 @@ namespace Kernel::Processor
 
 		inline uint32_t base() { return base_low | (base_high << 24); }
 		inline uint32_t limit() { return limit_low | (limit_high << 16); }
-	} __attribute__((packed)) gdt_entry_t;
+	} __packed gdt_entry_t;
 
 	typedef struct gdt_descriptor_t
 	{
 		uint16_t size;
 		uint32_t offset;
-	} __attribute__((packed)) gdt_descriptor_t;
+	} __packed gdt_descriptor_t;
 
 	inline gdt_entry_t create_gdt_selector(bool is_userspace, bool is_code)
 	{

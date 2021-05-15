@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 #include <libk/kcassert.hpp>
 #include <libk/kcstdio.hpp>
 #include <libk/kcstring.hpp>
@@ -11,7 +13,7 @@
 
 #define HEAP_SIZE 2 * 1024 * 1024 // 2MiB initial heap space
 
-__attribute__((section(".heap"))) static uint8_t kcmalloc_heap[HEAP_SIZE];
+__section(".heap") static uint8_t kcmalloc_heap[HEAP_SIZE];
 
 static Kernel::Heap::BitmapHeap heap;
 static bool isInitialized = false;
@@ -97,12 +99,12 @@ void operator delete[](void *p)
 	kfree(p);
 }
 
-void operator delete(void *p, size_t size __attribute__((unused)))
+void operator delete(void *p, __unused size_t size)
 {
 	kfree(p);
 }
 
-void operator delete[](void *p, size_t size __attribute__((unused)))
+void operator delete[](void *p, __unused size_t size)
 {
 	kfree(p);
 }

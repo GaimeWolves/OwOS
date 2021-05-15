@@ -3,27 +3,29 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <common_attributes.h>
+
 namespace Kernel::IO
 {
 	typedef uint16_t port_t;
 
-	inline __attribute__((always_inline)) void out8(port_t port, uint8_t value)
+	always_inline void out8(port_t port, uint8_t value)
 	{
 		asm volatile("outb %0, %1" ::"a"(value), "Nd"(port));
 	}
 
-	inline __attribute__((always_inline)) void out16(port_t port, uint16_t value)
+	always_inline void out16(port_t port, uint16_t value)
 	{
 		asm volatile("outw %0, %1" ::"a"(value), "Nd"(port));
 	}
 
-	inline __attribute__((always_inline)) void out32(port_t port, uint32_t value)
+	always_inline void out32(port_t port, uint32_t value)
 	{
 		asm volatile("outl %0, %1" ::"a"(value), "Nd"(port));
 	}
 
 	template <typename T>
-	inline __attribute__((always_inline)) void out(port_t port, T value)
+	always_inline void out(port_t port, T value)
 	{
 		if constexpr (sizeof(T) == 4)
 		{
@@ -44,7 +46,7 @@ namespace Kernel::IO
 		}
 	}
 
-	inline __attribute__((always_inline)) uint8_t in8(port_t port)
+	always_inline uint8_t in8(port_t port)
 	{
 		uint8_t value;
 
@@ -55,7 +57,7 @@ namespace Kernel::IO
 		return value;
 	}
 
-	inline __attribute__((always_inline)) uint16_t in16(port_t port)
+	always_inline uint16_t in16(port_t port)
 	{
 		uint16_t value;
 
@@ -66,7 +68,7 @@ namespace Kernel::IO
 		return value;
 	}
 
-	inline __attribute__((always_inline)) uint32_t in32(port_t port)
+	always_inline uint32_t in32(port_t port)
 	{
 		uint32_t value;
 
@@ -78,7 +80,7 @@ namespace Kernel::IO
 	}
 
 	template <typename T>
-	inline __attribute__((always_inline)) T in(port_t port)
+	always_inline T in(port_t port)
 	{
 		if constexpr (sizeof(T) == 4)
 			return in32(port);

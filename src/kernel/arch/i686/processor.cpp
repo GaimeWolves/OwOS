@@ -1,6 +1,7 @@
 #include <arch/processor.hpp>
 
 #include <arch/i686/gdt.hpp>
+#include <common_attributes.h>
 
 namespace Kernel::Processor
 {
@@ -22,7 +23,7 @@ namespace Kernel::Processor
 		             : "memory");
 	}
 
-	__attribute__((noreturn)) void halt()
+	__noreturn void halt()
 	{
 		for (;;)
 			asm volatile("cli\n"

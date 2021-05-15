@@ -6,6 +6,7 @@
 #include <devices/SerialPort.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <multiboot.h>
+#include <common_attributes.h>
 #include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>
@@ -16,7 +17,7 @@
 
 namespace Kernel
 {
-	extern "C" __attribute__((noreturn)) void entry(uint32_t magic, multiboot_info_t *multiboot_info)
+	extern "C" __noreturn void entry(uint32_t magic, multiboot_info_t *multiboot_info)
 	{
 		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
 		assert(multiboot_info);
