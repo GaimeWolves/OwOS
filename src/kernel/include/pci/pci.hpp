@@ -139,7 +139,8 @@ namespace Kernel::PCI
 		void enumerate(LibK::function<void(Function &)> callback);
 
 	private:
-		HostBridge() : Function(0, 0, 0)
+		HostBridge()
+		    : Function(0, 0, 0)
 		{
 		}
 

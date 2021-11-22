@@ -1,8 +1,8 @@
 #include <memory/VirtualMemoryManager.hpp>
 
+#include <common_attributes.h>
 #include <memory/PhysicalMemoryManager.hpp>
 #include <panic.hpp>
-#include <common_attributes.h>
 
 #include <libk/kcmalloc.hpp>
 #include <libk/kcstdio.hpp>

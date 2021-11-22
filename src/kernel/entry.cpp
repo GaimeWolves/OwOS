@@ -3,10 +3,10 @@
 
 #include <arch/interrupts.hpp>
 #include <arch/processor.hpp>
+#include <common_attributes.h>
 #include <devices/SerialPort.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <multiboot.h>
-#include <common_attributes.h>
 #include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>

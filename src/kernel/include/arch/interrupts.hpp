@@ -4,8 +4,8 @@
 #include <libk/kstring.hpp>
 #include <libk/kvector.hpp>
 
-#include <panic.hpp>
 #include <common_attributes.h>
+#include <panic.hpp>
 
 #ifdef ARCH_i686
 #	include <arch/i686/interrupts.hpp>

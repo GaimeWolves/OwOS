@@ -1,8 +1,8 @@
 #include <arch/memory.hpp>
 
 #include <arch/processor.hpp>
-#include <memory/PhysicalMemoryManager.hpp>
 #include <common_attributes.h>
+#include <memory/PhysicalMemoryManager.hpp>
 
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>

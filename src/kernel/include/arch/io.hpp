@@ -23,7 +23,10 @@ namespace Kernel::IO
 	{
 	public:
 		Port() = default;
-		Port(port_t address) : m_address(address) {}
+		Port(port_t address)
+		    : m_address(address)
+		{
+		}
 
 		Port offset(port_t offset) const { return Port(m_address + offset); }
 

@@ -11,7 +11,6 @@
 
 namespace Kernel::LibK
 {
-
 	namespace __Printf
 	{
 

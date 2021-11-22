@@ -11,7 +11,10 @@ namespace Kernel::LibK
 	class basic_string : public vector<charT>
 	{
 	public:
-		basic_string() : vector<charT>() {}
+		basic_string()
+		    : vector<charT>()
+		{
+		}
 
 		basic_string(const charT *s)
 		{

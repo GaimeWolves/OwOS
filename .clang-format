@@ -4,6 +4,8 @@ AlignConsecutiveMacros: 'true'
 AlignEscapedNewlines: Left
 AlignTrailingComments: 'true'
 BreakBeforeBraces: Allman
+BreakConstructorInitializers: BeforeComma
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 IndentPPDirectives: AfterHash
 IndentWidth: '4'
 NamespaceIndentation: All

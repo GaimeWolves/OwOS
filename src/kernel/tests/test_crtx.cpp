@@ -1,7 +1,7 @@
 #include <tests.hpp>
 
-#include <libk/kcstdio.hpp>
 #include <common_attributes.h>
+#include <libk/kcstdio.hpp>
 
 namespace Kernel::Tests
 {

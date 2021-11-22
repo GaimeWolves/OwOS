@@ -10,7 +10,6 @@
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
 
-
 #define MAX_INTERRUPTS 256
 
 #define INIT_INTERRUPT(i, n)                                                        \

@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 #include <arch/io.hpp>
+#include <common_attributes.h>
 #include <libk/kcstdio.hpp>
 #include <vga/TextmodeBuffer.hpp>
-#include <common_attributes.h>
 
 #define ROWS 25
 #define COLS 80
@@ -18,14 +18,17 @@
 #define VGA_CURSOR_POS_LOW_REG  0x0F // VGA cursor position low register index
 #define VGA_CURSOR_POS_HIGH_REG 0x0E // VGA cursor position high register index
 
-#define ColorToFourBit(color) (uint8_t(color) & 0x0F)
+#define ColorToFourBit(color)   (uint8_t(color) & 0x0F)
 #define FourBitToColor(fourBit) (Color(fourBit))
 
 namespace Kernel::VGA::Textmode
 {
 	typedef struct vga_char_color
 	{
-		vga_char_color(const Color fg, const Color bg) : fg(ColorToFourBit(fg)), bg(ColorToFourBit(bg)) { }
+		vga_char_color(const Color fg, const Color bg)
+		    : fg(ColorToFourBit(fg)), bg(ColorToFourBit(bg))
+		{
+		}
 
 		//Sadly c++ does not support bit-field Enums so we have to use uint8_t and ugly casts here
 		uint8_t fg : 4;
@@ -40,7 +43,10 @@ namespace Kernel::VGA::Textmode
 
 	typedef struct vga_char
 	{
-		vga_char(const uint8_t ch, const vga_char_color_t color) : ch(ch), color(color) {}
+		vga_char(const uint8_t ch, const vga_char_color_t color)
+		    : ch(ch), color(color)
+		{
+		}
 
 		char ch;
 		vga_char_color_t color;
