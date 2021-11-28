@@ -172,6 +172,131 @@ namespace Kernel::LibK
 		}
 	};
 
+	template <class T>
+	struct atomic<T *>
+	{
+	private:
+		T *m_value{nullptr};
+
+	public:
+		atomic() noexcept = default;
+		atomic &operator=(const atomic &) volatile = delete;
+		atomic &operator=(atomic &&) volatile = delete;
+		atomic(const atomic &) = delete;
+		atomic(atomic &&) = delete;
+
+		constexpr atomic(T *value) noexcept
+		    : m_value(value)
+		{
+		}
+
+		static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(T), 0);
+
+		always_inline bool is_lock_free() const volatile noexcept
+		{
+			return __atomic_is_lock_free(sizeof m_value, &m_value);
+		}
+
+		always_inline void store(T *desired, MemoryOrder order = memory_order_seq_cst) volatile noexcept
+		{
+			__atomic_store_n(&m_value, desired, order);
+		}
+
+		always_inline T *load(MemoryOrder order = memory_order_seq_cst) const volatile noexcept
+		{
+			return __atomic_load_n(&m_value, order);
+		}
+
+		always_inline T *exchange(T *desired, MemoryOrder order = memory_order_seq_cst) volatile noexcept
+		{
+			return __atomic_exchange_n(&m_value, desired, order);
+		}
+
+		always_inline bool compare_exchange_weak(T *&expected, T *desired, MemoryOrder success, MemoryOrder failure) volatile noexcept
+		{
+			return __atomic_compare_exchange_n(&m_value, &expected, desired, true, success, failure);
+		}
+
+		always_inline bool compare_exchange_weak(T *&expected, T *desired, MemoryOrder order = memory_order_seq_cst) volatile noexcept
+		{
+			if (order == memory_order_acq_rel)
+				return __atomic_compare_exchange_n(&m_value, &expected, desired, true, order, memory_order_acquire);
+
+			if (order == memory_order_release)
+				return __atomic_compare_exchange_n(&m_value, &expected, desired, true, order, memory_order_relaxed);
+
+			return __atomic_compare_exchange_n(&m_value, &expected, desired, true, order, order);
+		}
+
+		always_inline bool compare_exchange_strong(T *&expected, T *desired, MemoryOrder success, MemoryOrder failure) volatile noexcept
+		{
+			return __atomic_compare_exchange_n(&m_value, &expected, desired, false, success, failure);
+		}
+
+		always_inline bool compare_exchange_strong(T *&expected, T *desired, MemoryOrder order = memory_order_seq_cst) volatile noexcept
+		{
+			if (order == memory_order_acq_rel)
+				return __atomic_compare_exchange_n(&m_value, &expected, desired, false, order, memory_order_acquire);
+
+			if (order == memory_order_release)
+				return __atomic_compare_exchange_n(&m_value, &expected, desired, false, order, memory_order_relaxed);
+
+			return __atomic_compare_exchange_n(&m_value, &expected, desired, false, order, order);
+		}
+
+		// TODO: Implement is_integral and is_floating in type_traits.hpp
+		always_inline T *fetch_add(ptrdiff_t arg, MemoryOrder order = memory_order_seq_cst) volatile noexcept
+		{
+			return __atomic_fetch_add(&m_value, arg * sizeof(*m_value), order);
+		}
+
+		always_inline T *fetch_sub(ptrdiff_t arg, MemoryOrder order = memory_order_seq_cst) volatile noexcept
+		{
+			return __atomic_fetch_sub(&m_value, arg * sizeof(*m_value), order);
+		}
+
+		always_inline T *operator=(T *desired) volatile noexcept
+		{
+			store(desired);
+			return desired;
+		}
+
+		always_inline operator T *() const volatile noexcept
+		{
+			return load();
+		}
+
+		always_inline T *operator++() volatile noexcept
+		{
+			return fetch_add(1) + 1;
+		}
+
+		always_inline T *operator++(int) volatile noexcept
+		{
+			return fetch_add(1);
+		}
+
+		always_inline T *operator--() volatile noexcept
+		{
+			return fetch_sub(1) + 1;
+		}
+
+		always_inline T *operator--(int) volatile noexcept
+		{
+			return fetch_sub(1);
+		}
+
+		always_inline T *operator+=(ptrdiff_t arg) volatile noexcept
+		{
+			return fetch_add(arg) + arg;
+		}
+
+		always_inline T *operator-=(ptrdiff_t arg) volatile noexcept
+		{
+			return fetch_sub(arg) - arg;
+		}
+	};
+
 	typedef atomic<bool> atomic_bool;
 
 	typedef atomic<char> atomic_char;
