@@ -35,6 +35,11 @@ namespace Kernel::Processor
 		asm volatile("hlt");
 	}
 
+	void pause()
+	{
+		asm volatile("pause");
+	}
+
 	void clear_interrupts()
 	{
 		asm volatile("cli");

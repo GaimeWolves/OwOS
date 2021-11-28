@@ -11,6 +11,7 @@ namespace Kernel::Processor
 
 	__noreturn void halt();
 	void sleep();
+	void pause();
 
 	void clear_interrupts();
 	void enable_interrupts();
