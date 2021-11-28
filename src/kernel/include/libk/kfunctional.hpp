@@ -13,93 +13,123 @@ namespace Kernel::LibK
 	template <class Ret, class... Args>
 	class function<Ret(Args...)>
 	{
+	private:
+		typedef Ret (*invoke_fn_t)(char *, Args &&...);
+		typedef void (*construct_fn_t)(char *, char *);
+		typedef void (*destroy_fn_t)(char *);
+
+		template <typename Functor>
+		static Ret invoke_fn(Functor *functor, Args &&... args)
+		{
+			return (*functor)(LibK::forward<Args>(args)...);
+		}
+
+		template <typename Functor>
+		static void construct_fn(Functor *construct_dst, Functor *construct_src)
+		{
+			new (construct_dst) Functor(*construct_src);
+		}
+
+		template <typename Functor>
+		static void destroy_fn(Functor *f)
+		{
+			f->~Functor();
+		}
+
 	public:
-		function() = default;
-
-		function(LibK::nullptr_t)
-		    : m_callable(nullptr)
+		function()
+		    : m_invoke_fn(nullptr), m_construct_fn(nullptr), m_destroy_fn(nullptr), m_functor_ptr(nullptr), m_functor_size(0)
 		{
 		}
 
-		template <typename F>
-		function(const function &other)
+		template <typename Functor>
+		function(Functor functor)
+		    : m_invoke_fn(reinterpret_cast<invoke_fn_t>(invoke_fn<Functor>))
+		    , m_construct_fn(reinterpret_cast<construct_fn_t>(construct_fn<Functor>))
+		    , m_destroy_fn(reinterpret_cast<destroy_fn_t>(destroy_fn<Functor>))
+		    , m_functor_ptr(new char[sizeof(Functor)])
+		    , m_functor_size(sizeof(Functor))
 		{
-			if (other.m_callable)
-				m_callable = new callable<F>(*other.m_callable);
-			else
-				m_callable = nullptr;
+			m_construct_fn(m_functor_ptr, reinterpret_cast<char *>(&functor));
 		}
 
-		template <typename F>
-		function(F functor)
-		    : m_callable(new callable<F>(move(functor)))
+		function(function const &rhs)
+		    : m_invoke_fn(rhs.m_invoke_fn)
+		    , m_construct_fn(rhs.m_construct_fn)
+		    , m_destroy_fn(rhs.m_destroy_fn)
+		    , m_functor_ptr(nullptr)
+		    , m_functor_size(rhs.m_functor_size)
 		{
+			if (m_invoke_fn)
+			{
+				rhs.m_destroy_fn(rhs.m_functor_ptr);
+				m_functor_ptr = new char[m_functor_size];
+				m_construct_fn(m_functor_ptr, rhs.m_functor_ptr);
+			}
 		}
 
-		template <typename F>
-		function &operator=(F functor)
+		template <typename Functor>
+		function &operator=(Functor functor)
 		{
-			m_callable = new callable<F>(move(functor));
+			if (m_functor_ptr)
+			{
+				m_destroy_fn(m_functor_ptr);
+			}
+
+			m_invoke_fn = reinterpret_cast<invoke_fn_t>(invoke_fn<Functor>);
+			m_construct_fn = reinterpret_cast<construct_fn_t>(construct_fn<Functor>);
+			m_destroy_fn = reinterpret_cast<destroy_fn_t>(destroy_fn<Functor>);
+			m_functor_ptr = new char[sizeof(Functor)];
+			m_functor_size = sizeof(Functor);
+
+			m_construct_fn(m_functor_ptr, reinterpret_cast<char *>(&functor));
+
 			return *this;
 		}
 
-		template <typename F>
-		function &operator=(const function &other)
+		function &operator=(const function &rhs)
 		{
-			if (other.m_callable)
-				m_callable = new callable<F>(*other.m_callable);
-			else
-				m_callable = nullptr;
+			m_invoke_fn = rhs.m_invoke_fn;
+			m_construct_fn = rhs.m_construct_fn;
+			m_destroy_fn = rhs.m_destroy_fn;
+			m_functor_size = rhs.m_functor_size;
 
-			return *this;
-		}
+			if (m_invoke_fn)
+			{
+				if (m_functor_ptr)
+				{
+					m_destroy_fn(m_functor_ptr);
+				}
 
-		function &operator=(LibK::nullptr_t)
-		{
-			m_callable = nullptr;
+				m_functor_ptr = new char[m_functor_size];
+				m_construct_fn(m_functor_ptr, rhs.m_functor_ptr);
+			}
+
 			return *this;
 		}
 
 		~function()
 		{
-			delete m_callable;
+			if (m_functor_ptr)
+			{
+				m_destroy_fn(m_functor_ptr);
+			}
 		}
 
-		Ret operator()(Args... args) const
+		Ret operator()(Args... args)
 		{
-			assert(m_callable);
-			return m_callable->call(forward<Args>(args)...);
+			return m_invoke_fn(m_functor_ptr, LibK::forward<Args>(args)...);
 		}
 
-		explicit operator bool() const noexcept { return m_callable != nullptr; }
+		explicit operator bool() const noexcept { return m_functor_ptr != nullptr; }
 
 	private:
-		struct callable_base
-		{
-		public:
-			virtual ~callable_base() = default;
-			virtual Ret call(Args...) const = 0;
-		};
+		invoke_fn_t m_invoke_fn;
+		construct_fn_t m_construct_fn;
+		destroy_fn_t m_destroy_fn;
 
-		template <typename F>
-		struct callable : callable_base
-		{
-			F functor;
-
-			callable(F &&functor)
-			    : functor(move(functor))
-			{
-			}
-
-			callable(const callable &other)
-			    : functor(other.functor)
-			{
-			}
-
-			Ret call(Args... args) const final override { return functor(forward<Args>(args)...); }
-		};
-
-		// TODO: Implement unique_ptr
-		callable_base *m_callable{nullptr};
+		// TODO: Use an unique_ptr here
+		char *m_functor_ptr;
+		size_t m_functor_size;
 	};
 } // namespace Kernel::LibK
