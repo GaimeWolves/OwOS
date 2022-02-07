@@ -32,39 +32,42 @@ set(LIBK_SOURCES
     libk/printf.hpp)
 
 set(KERNEL_INCLUDES
-	include/multiboot.h
-	include/panic.hpp
-	include/tests.hpp
-	include/arch/io.hpp
-	include/arch/processor.hpp
-	include/arch/memory.hpp
-	include/arch/interrupts.hpp
-	include/crt/icxxabi.hpp
-	include/devices/SerialPort.hpp
-	include/memory/PhysicalMemoryManager.hpp
-	include/memory/VirtualMemoryManager.hpp
-	include/memory/MultibootMap.hpp
-	include/pci/definitions.hpp
-	include/pci/pci.hpp
-	include/vga/textmode.hpp
-)
+    include/common_attributes.h
+    include/multiboot.h
+    include/panic.hpp
+    include/tests.hpp
+    include/arch/io.hpp
+    include/arch/processor.hpp
+    include/arch/memory.hpp
+    include/arch/interrupts.hpp
+    include/crt/icxxabi.hpp
+    include/devices/SerialPort.hpp
+    include/firmware/acpi/Parser.hpp
+    include/firmware/BIOS.hpp
+    include/memory/PhysicalMemoryManager.hpp
+    include/memory/VirtualMemoryManager.hpp
+    include/memory/MultibootMap.hpp
+    include/pci/definitions.hpp
+    include/pci/pci.hpp
+    include/vga/textmode.hpp)
 
 set(KERNEL_SOURCES
-	early_entry.cpp
-	entry.cpp
-	panic.cpp
-	crt/icxxabi.cpp
-	devices/SerialPort.cpp
-	memory/MultibootMap.cpp
-	memory/PhysicalMemoryManager.cpp
-	memory/VirtualMemoryManager.cpp
-	pci/pci.cpp
-	vga/textmode.cpp
-	tests/test_crtx.cpp
-	tests/test_heap.cpp
-	tests/test_printf.cpp
-	tests/test_vmm.cpp
-)
+    early_entry.cpp
+    entry.cpp
+    panic.cpp
+    crt/icxxabi.cpp
+    devices/SerialPort.cpp
+    firmware/acpi/Parser.cpp
+    firmware/BIOS.cpp
+    memory/MultibootMap.cpp
+    memory/PhysicalMemoryManager.cpp
+    memory/VirtualMemoryManager.cpp
+    pci/pci.cpp
+    vga/textmode.cpp
+    tests/test_crtx.cpp
+    tests/test_heap.cpp
+    tests/test_printf.cpp
+    tests/test_vmm.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
@@ -92,8 +95,8 @@ target_include_directories(kernel PRIVATE include)
 target_compile_definitions(kernel PRIVATE ARCH_${ARCH})
 
 if (DEBUG_KERNEL)
-	target_compile_definitions(kernel PRIVATE _DEBUG=1)
-endif(DEBUG_KERNEL)
+    target_compile_definitions(kernel PRIVATE _DEBUG=1)
+endif (DEBUG_KERNEL)
 
 install(TARGETS kernel
-	RUNTIME DESTINATION sysroot/boot)
+    RUNTIME DESTINATION sysroot/boot)

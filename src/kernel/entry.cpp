@@ -1,19 +1,16 @@
-#include <stddef.h>
 #include <stdint.h>
 
 #include <arch/interrupts.hpp>
 #include <arch/processor.hpp>
+#include <arch/spinlock.hpp>
 #include <common_attributes.h>
-#include <devices/SerialPort.hpp>
-#include <memory/VirtualMemoryManager.hpp>
+#include <firmware/acpi/Parser.hpp>
 #include <multiboot.h>
 #include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>
 
-#include <libk/kcmalloc.hpp>
 #include <libk/kcstdio.hpp>
-#include <libk/kcstring.hpp>
 
 namespace Kernel
 {
@@ -21,6 +18,8 @@ namespace Kernel
 	{
 		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
 		assert(multiboot_info);
+
+		ACPI::Parser::instance().init();
 
 		Processor::init();
 		Processor::init_interrupts();
