@@ -1,18 +1,43 @@
 ---
 BasedOnStyle: LLVM
-AlignConsecutiveMacros: 'true'
+Language: Cpp
+AlignConsecutiveMacros: AcrossComments
 AlignEscapedNewlines: Left
-AlignTrailingComments: 'true'
-BreakBeforeBraces: Allman
+AlignTrailingComments: true
 BreakConstructorInitializers: BeforeComma
-ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+PackConstructorInitializers: NextLine
 IndentPPDirectives: AfterHash
-IndentWidth: '4'
+IndentWidth: 4
 NamespaceIndentation: All
 PointerAlignment: Right
-TabWidth: '4'
+TabWidth: 4
 UseTab: ForIndentation
-ColumnLimit: 0
 AccessModifierOffset: -4
+ColumnLimit: 0
+LambdaBodyIndentation: OuterScope
+BinPackArguments: false
+BinPackParameters: false
+FixNamespaceComments: true
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel:  true
+  AfterClass:      true
+  AfterControlStatement: Always
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterNamespace:  true
+  AfterObjCDeclaration: true
+  AfterStruct:     true
+  AfterUnion:      true
+  AfterExternBlock: true
+  BeforeCatch:     true
+  BeforeElse:      true
+  BeforeLambdaBody: false
+  BeforeWhile:     false
+  IndentBraces:    false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
 
 ...

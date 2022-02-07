@@ -2,6 +2,7 @@ bin
 build
 toolchain/
 log.txt
+mount.pid
 
 ### C/C++ ###
 *.o
@@ -17,6 +18,10 @@ log.txt
 .vscode/*
 !.vscode/settings.json
 !.vscode/launch.json
+
+### CLion + CMake ###
+.idea
+cmake-build-*
 
 ### GDB ###
 .gdb_history

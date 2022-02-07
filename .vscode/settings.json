@@ -59,4 +59,7 @@
 	"C_Cpp.default.compilerPath": "${workspaceFolder}/toolchain/bin/i686-elf-gcc",
 	"C_Cpp.default.intelliSenseMode": "gcc-x86",
 	"C_Cpp.default.compilerArgs": ["-ffreestanding"],
+	"clangd.arguments": [
+		"-compile-commands-dir=${workspaceFolder}/build"
+	]
 }

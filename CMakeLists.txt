@@ -37,13 +37,13 @@ add_custom_target(image
 )
 
 add_custom_target(run
-	COMMAND qemu-system-i386 -no-reboot -no-shutdown -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -mon chardev=char0 -hda ${CMAKE_INSTALL_PREFIX}/img
+	COMMAND qemu-system-i386 -no-reboot -no-shutdown -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -mon chardev=char0 -hda ${CMAKE_INSTALL_PREFIX}/img -smp 4
 	DEPENDS ${CMAKE_INSTALL_PREFIX}/img
 	USES_TERMINAL
 )
 
 add_custom_target(debug
-	COMMAND qemu-system-i386 -s -S -no-reboot -no-shutdown -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -mon chardev=char0 -hda ${CMAKE_INSTALL_PREFIX}/img & cd ${CMAKE_SOURCE_DIR} && sleep 1 && ${GDB} -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
+	COMMAND qemu-system-i386 -s -S -no-reboot -no-shutdown -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -mon chardev=char0 -hda ${CMAKE_INSTALL_PREFIX}/img -smp 4 & cd ${CMAKE_SOURCE_DIR} && sleep 1 && ${GDB} -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
 	DEPENDS ${CMAKE_INSTALL_PREFIX}/img
 	USES_TERMINAL
 )

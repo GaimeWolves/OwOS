@@ -7,6 +7,7 @@ all:
 	cmake -H. -Bbuild
 	${MAKE} -C build
 	${MAKE} -C build install
+	${MAKE} -C build image
 
 .PHONY: run
 run: all
