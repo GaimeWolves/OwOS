@@ -23,26 +23,14 @@ namespace Kernel
 		uintptr_t _kernel_end;
 	}
 
-	class TempKeyboardHandler : public Interrupts::IRQHandler
-	{
-	public:
-		TempKeyboardHandler()
-		    : Interrupts::IRQHandler(1)
-		{}
-
-		void handle_interrupt(const Processor::registers_t &regs __unused) override
-		{
-			IO::in<uint8_t>(0x60);
-			LibK::printf_debug_msg("Got kbd interrupt");
-		}
-	};
-
 	extern "C" __noreturn void entry(uint32_t magic, multiboot_info_t *multiboot_info)
 	{
 		auto start = (uintptr_t)&_kernel_start;
 		auto end = (uintptr_t)&_kernel_end;
 		uintptr_t size = end - start;
 		LibK::printf_debug_msg("[KERNEL] Kernel image size: %x", size);
+
+		assert(size <= 0x300000);
 		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
 		assert(multiboot_info);
 
@@ -54,10 +42,6 @@ namespace Kernel
 		Processor::enable_interrupts();
 
 		VGA::Textmode::init();
-
-		TempKeyboardHandler handlerA, handlerB;
-		handlerA.enable_irq();
-		handlerB.enable_irq();
 
 		PCI::HostBridge::instance().init();
 

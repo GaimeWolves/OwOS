@@ -40,6 +40,8 @@ set(KERNEL_INCLUDES
     include/arch/processor.hpp
     include/arch/memory.hpp
     include/arch/interrupts.hpp
+    include/arch/i686/processor.hpp
+    include/arch/stack_tracing.hpp
     include/crt/icxxabi.hpp
     include/devices/SerialPort.hpp
     include/firmware/acpi/Parser.hpp
@@ -49,12 +51,24 @@ set(KERNEL_INCLUDES
     include/memory/MultibootMap.hpp
     include/pci/definitions.hpp
     include/pci/pci.hpp
-    include/vga/textmode.hpp)
+    include/vga/textmode.hpp
+    include/interrupts/InterruptController.hpp
+    include/interrupts/InterruptHandler.hpp
+    include/interrupts/InterruptManager.hpp
+    include/interrupts/LAPIC.hpp
+    include/interrupts/PIC.hpp
+    include/interrupts/UnhandledInterruptHandler.hpp
+    include/interrupts/definitions.hpp
+    include/interrupts/IOAPIC.hpp
+    include/interrupts/IRQHandler.hpp
+    include/interrupts/SharedIRQHandler.hpp
+    include/interrupts/forward.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
     entry.cpp
     panic.cpp
+    arch/stack_tracing.cpp
     crt/icxxabi.cpp
     devices/SerialPort.cpp
     firmware/acpi/Parser.cpp
@@ -67,7 +81,12 @@ set(KERNEL_SOURCES
     tests/test_crtx.cpp
     tests/test_heap.cpp
     tests/test_printf.cpp
-    tests/test_vmm.cpp)
+    tests/test_vmm.cpp
+    interrupts/LAPIC.cpp
+    interrupts/InterruptHandler.cpp
+    interrupts/PIC.cpp
+    interrupts/InterruptManager.cpp
+    interrupts/IOAPIC.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
