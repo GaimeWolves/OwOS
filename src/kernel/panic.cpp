@@ -6,6 +6,7 @@
 #include <libk/kcstdio.hpp>
 
 #include <arch/processor.hpp>
+#include <arch/stack_tracing.hpp>
 
 namespace Kernel
 {
@@ -28,7 +29,7 @@ namespace Kernel
 
 		kputc('\n');
 
-		// TODO: print backtrace
+		Processor::print_stacktrace();
 
 		for (;;)
 			Processor::halt();

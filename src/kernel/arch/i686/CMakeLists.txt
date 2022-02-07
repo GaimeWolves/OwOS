@@ -13,5 +13,6 @@ set(ARCH_SOURCES
     arch/i686/interrupts.cpp
     arch/i686/pic.cpp
     arch/i686/memory.cpp
+    arch/i686/stack_tracing.cpp
     PARENT_SCOPE
 )

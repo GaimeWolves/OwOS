@@ -10,7 +10,7 @@ __noreturn void __assertion_failed(const char *condition, const char *file, unsi
 	Kernel::Processor::clear_interrupts();
 	kprintf("%s:%d %s: Assertion '%s' failed.\n", file, line, function, condition);
 
-	// TODO: print stacktrace
+	Kernel::Processor::print_stacktrace();
 
 	Kernel::Processor::halt();
 }

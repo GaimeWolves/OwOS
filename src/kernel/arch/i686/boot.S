@@ -80,7 +80,7 @@
 			movl %ecx, %cr3
 
 			movl $stack_end, %esp
-			movl %esp, %ebp
+			xor %ebp, %ebp
 
 			push (multiboot_addr)
 			push (multiboot_magic)

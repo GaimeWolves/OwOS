@@ -5,6 +5,10 @@
 
 #include <common_attributes.h>
 
+#ifdef ARCH_i686
+#	include <arch/i686/processor.hpp>
+#endif
+
 namespace Kernel::Processor
 {
 	void init();

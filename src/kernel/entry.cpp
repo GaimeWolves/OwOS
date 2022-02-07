@@ -16,6 +16,10 @@ namespace Kernel
 {
 	extern "C" __noreturn void entry(uint32_t magic, multiboot_info_t *multiboot_info)
 	{
+		auto start = (uintptr_t)&_kernel_start;
+		auto end = (uintptr_t)&_kernel_end;
+		uintptr_t size = end - start;
+		LibK::printf_debug_msg("[KERNEL] Kernel image size: %x", size);
 		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
 		assert(multiboot_info);
 

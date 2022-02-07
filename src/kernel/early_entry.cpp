@@ -1,9 +1,10 @@
 #include <crt/icxxabi.hpp>
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include <arch/processor.hpp>
+#include <panic.hpp>
+#include <arch/stack_tracing.hpp>
 #include <devices/SerialPort.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <multiboot.h>
@@ -43,14 +44,14 @@ namespace Kernel
 			assert(multiboot_info);
 
 			multiboot_info = (multiboot_info_t *)((uintptr_t)multiboot_info + (uintptr_t)&_virtual_addr);
-			multiboot_info_t *new_multiboot_info = (multiboot_info_t *)kmalloc(sizeof(multiboot_info_t));
+			auto *new_multiboot_info = (multiboot_info_t *)kmalloc(sizeof(multiboot_info_t));
 			memmove(new_multiboot_info, multiboot_info, sizeof(multiboot_info_t));
 			multiboot_info = new_multiboot_info;
 
 			assert(multiboot_info->flags & MULTIBOOT_INFO_MEM_MAP);
 
 			multiboot_info->mmap_addr += (uint32_t)&_virtual_addr;
-			multiboot_mmap_entry_t *new_mmap_addr = (multiboot_mmap_entry_t *)kmalloc(multiboot_info->mmap_length);
+			auto *new_mmap_addr = (multiboot_mmap_entry_t *)kmalloc(multiboot_info->mmap_length);
 			memmove(new_mmap_addr, (void *)multiboot_info->mmap_addr, multiboot_info->mmap_length);
 			multiboot_info->mmap_addr = (uint32_t)new_mmap_addr;
 		}
@@ -73,16 +74,19 @@ namespace Kernel
 			// Get debug output really early
 			Devices::SerialPort::init();
 
+			// Get stack traces really early
+			Processor::init_stacktracing();
+
 			// Main kernel entry point
 			entry(magic, multiboot_info);
 
 			for (func_t *dtor = &_start_dtors; dtor < &_end_dtors; dtor++)
 				(*dtor)();
 
-			__cxa_finalize(0);
+			__cxa_finalize(nullptr);
 
 			for (;;)
 				Processor::halt();
 		}
 	}
-}; // namespace Kernel
+} // namespace Kernel
