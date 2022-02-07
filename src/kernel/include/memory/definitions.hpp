@@ -10,6 +10,8 @@ namespace Kernel::Memory
 		uintptr_t address;
 		size_t size;
 
+		void *pointer() const { return (void *)address; }
+
 		bool overlaps(region_t &other) const
 		{
 			uintptr_t t_start = address;
@@ -44,5 +46,12 @@ namespace Kernel::Memory
 		bool present;
 		bool kernel;
 		bool is_mmio;
+
+		// TODO: Maybe refactor this (no separate types for region and memory region)
+		bool operator==(memory_region_t &other) const { return this->region == other.region; }
+		bool operator<(memory_region_t &other) const { return this->region < other.region; }
+		bool operator>(memory_region_t &other) const { return this->region > other.region; }
+		bool operator<=(memory_region_t &other) const { return this->region <= other.region; }
+		bool operator>=(memory_region_t &other) const { return this->region >= other.region; }
 	} memory_region_t;
 } // namespace Kernel::Memory

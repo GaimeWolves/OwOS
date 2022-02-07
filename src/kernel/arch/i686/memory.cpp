@@ -125,7 +125,7 @@ namespace Kernel::Memory::Arch
 		auto &mapping_table = *memory_space.mapping_table;
 		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, false);
 
-		// Clear it immediatly to prevent bugs when we use this page table
+		// Clear it immediately to prevent bugs when we use this page table
 		Processor::invalidate_address((uintptr_t)&get_page_table(pd_index));
 		memset(&get_page_table(pd_index), 0, PAGE_SIZE);
 
@@ -277,6 +277,8 @@ namespace Kernel::Memory::Arch
 			phys_addr += PAGE_SIZE;
 
 			page_table[pt_index] = create_pte(page_address, page_directory[pd_index], is_user, true, false);
+
+			invalidate(virt_addr);
 		});
 	}
 
@@ -299,17 +301,15 @@ namespace Kernel::Memory::Arch
 			auto &page_table = get_page_table(pd_index);
 			assert(page_table[pt_index].present);
 
-			uintptr_t page_address = (uintptr_t)page_table[pt_index].page();
-
 			page_table[pt_index] = null_pt_entry;
-
-			Processor::invalidate_address(page_address);
 
 			if (current != pd_index)
 			{
 				page_tables_to_check[idx] = pd_index;
 				current = pd_index;
 			}
+
+			invalidate(virt_addr);
 		});
 
 		static const page_directory_entry_t null_pd_entry{};
@@ -346,7 +346,7 @@ namespace Kernel::Memory::Arch
 		uintptr_t p_address = (uintptr_t)&_physical_addr;
 
 		uintptr_t page_begin = v_address / PAGE_SIZE * PAGE_SIZE;
-		uintptr_t page_end = LibK::round_up_to_multiple<uintptr_t>(p_address + size + 1, PAGE_SIZE);
+		uintptr_t page_end = LibK::round_up_to_multiple<uintptr_t>(v_address + size + 1, PAGE_SIZE);
 
 		uintptr_t phys_begin = LibK::round_down_to_multiple<uintptr_t>(p_address, PAGE_SIZE);
 

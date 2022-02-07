@@ -22,9 +22,9 @@ namespace Kernel::Tests
 		for (size_t i = 0; i < LibK::size(allocs) - 4; i += 4)
 		{
 			allocs[i + 4] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 1));
-			allocs[i + 5] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 1));
-			allocs[i + 6] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 1));
-			allocs[i + 7] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 1));
+			allocs[i + 5] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 2));
+			allocs[i + 6] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 3));
+			allocs[i + 7] = Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(0x500 * (i + 4));
 			Memory::VirtualMemoryManager::instance().free(allocs[i]);
 			Memory::VirtualMemoryManager::instance().free(allocs[i + 1]);
 			Memory::VirtualMemoryManager::instance().free(allocs[i + 2]);
