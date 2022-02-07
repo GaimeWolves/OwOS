@@ -116,7 +116,7 @@ namespace Kernel::LibK
 			}
 		}
 
-		Ret operator()(Args... args)
+		Ret operator()(Args...args) const
 		{
 			return m_invoke_fn(m_functor_ptr, LibK::forward<Args>(args)...);
 		}

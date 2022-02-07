@@ -101,6 +101,6 @@ namespace Kernel::LibK
 		}
 
 		Container &m_container;
-		size_t m_index;
+		size_t m_index{0};
 	};
 } // namespace Kernel::LibK

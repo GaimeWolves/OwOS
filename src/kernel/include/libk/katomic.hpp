@@ -30,14 +30,14 @@ namespace Kernel::LibK
 		atomic(const atomic &) = delete;
 		atomic(atomic &&) = delete;
 
-		constexpr atomic(T value) noexcept
+		constexpr explicit atomic(T value) noexcept
 		    : m_value(value)
 		{
 		}
 
-		static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(T), 0);
+		static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(T), nullptr);
 
-		always_inline bool is_lock_free() const volatile noexcept
+		[[nodiscard]] always_inline bool is_lock_free() const volatile noexcept
 		{
 			return __atomic_is_lock_free(sizeof m_value, &m_value);
 		}
@@ -121,7 +121,7 @@ namespace Kernel::LibK
 			return desired;
 		}
 
-		always_inline operator T() const volatile noexcept
+		always_inline explicit operator T() const volatile noexcept
 		{
 			return load();
 		}
@@ -185,14 +185,14 @@ namespace Kernel::LibK
 		atomic(const atomic &) = delete;
 		atomic(atomic &&) = delete;
 
-		constexpr atomic(T *value) noexcept
+		constexpr explicit atomic(T *value) noexcept
 		    : m_value(value)
 		{
 		}
 
-		static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(T), 0);
+		static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(T), nullptr);
 
-		always_inline bool is_lock_free() const volatile noexcept
+		[[nodiscard]] always_inline bool is_lock_free() const volatile noexcept
 		{
 			return __atomic_is_lock_free(sizeof m_value, &m_value);
 		}
@@ -261,7 +261,7 @@ namespace Kernel::LibK
 			return desired;
 		}
 
-		always_inline operator T *() const volatile noexcept
+		always_inline explicit operator T *() const volatile noexcept
 		{
 			return load();
 		}

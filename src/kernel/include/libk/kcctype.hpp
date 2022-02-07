@@ -31,7 +31,7 @@ extern "C"
 	always_inline int isxdigit(int c) { return __ctype_lookup[(uint8_t)(c)] & (CT_DIGIT | CT_HEXDG); }
 
 	always_inline int isascii(int c) { return (unsigned)(c) <= 0x7F; }
-	always_inline int toascii(int c) { return (unsigned)(c)&0x7F; }
+	always_inline int toascii(int c) { return (unsigned)(c) & 0x7F; }
 
 	always_inline int tolower(int c)
 	{

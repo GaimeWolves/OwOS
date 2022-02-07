@@ -16,7 +16,7 @@ namespace Kernel::LibK
 			m_array = (T *)kmalloc(sizeof(T) * m_capacity, sizeof(T));
 		}
 
-		vector(size_t n, const T &val = T())
+		explicit vector(size_t n, const T &val = T())
 		{
 			m_capacity = next_power_of_two(n);
 			m_size = n;
@@ -47,7 +47,8 @@ namespace Kernel::LibK
 			return m_array[n];
 		}
 
-		size_t size() const { return m_size; }
+		[[nodiscard]] size_t size() const { return m_size; }
+		[[nodiscard]] bool empty() const { return m_size == 0; }
 
 		void resize(size_t n, T val = T())
 		{
@@ -60,6 +61,16 @@ namespace Kernel::LibK
 				return;
 			}
 
+			ensure_capacity(n);
+
+			for (size_t i = m_size; i < n; i++)
+				m_array[i] = val;
+
+			m_size = n;
+		}
+
+		void ensure_capacity(size_t n)
+		{
 			if (n > m_capacity)
 			{
 				while (m_capacity < n)
@@ -68,11 +79,6 @@ namespace Kernel::LibK
 				m_array = (T *)krealloc(m_array, sizeof(T) * m_capacity, sizeof(T));
 				assert(m_array);
 			}
-
-			for (size_t i = m_size; i < n; i++)
-				m_array[i] = val;
-
-			m_size = n;
 		}
 
 		void push_back(const T &val) { resize(m_size + 1, val); }
@@ -86,13 +92,24 @@ namespace Kernel::LibK
 		iterator begin() { return iterator{*this, 0}; }
 		iterator end() { return iterator{*this, m_size}; }
 
-		const const_iterator begin() const { return const_iterator{*this, 0}; }
-		const const_iterator end() const { return const_iterator{*this, m_size}; }
+		const_iterator begin() const { return const_iterator{*this, 0}; }
+		const_iterator end() const { return const_iterator{*this, m_size}; }
+
+		iterator erase(iterator position)
+		{
+			assert(position.m_index >= 0 && position.m_index < m_size);
+
+			m_array[position.m_index].~T();
+			memmove(&m_array[position.m_index], &m_array[position.m_index + 1], m_size - position.m_index - 1);
+			m_size--;
+
+			return position;
+		}
 
 	protected:
 		size_t m_capacity{4};
 		size_t m_size{0};
 
-		alignas(T) T *m_array{nullptr};
+		T *m_array{nullptr};
 	};
 } // namespace Kernel::LibK

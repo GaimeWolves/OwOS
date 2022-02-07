@@ -5,7 +5,7 @@
 namespace Kernel::LibK
 {
 	template <typename T, typename V>
-	auto min(T a, V b) -> decltype(a + b)
+	constexpr auto min(T a, V b) -> decltype(a + b)
 	{
 		using type = decltype(a + b);
 		if (static_cast<type>(a) < static_cast<type>(b))
@@ -15,7 +15,7 @@ namespace Kernel::LibK
 	}
 
 	template <typename T, typename V>
-	auto max(T a, V b) -> decltype(a + b)
+	constexpr auto max(T a, V b) -> decltype(a + b)
 	{
 		using type = decltype(a + b);
 		if (static_cast<type>(a) > static_cast<type>(b))
@@ -25,7 +25,7 @@ namespace Kernel::LibK
 	}
 
 	template <typename T>
-	T next_power_of_two(T value)
+	constexpr T next_power_of_two(T value)
 	{
 		--value;
 		for (size_t i = 1; i < sizeof(T) * CHAR_BIT; i *= 2)

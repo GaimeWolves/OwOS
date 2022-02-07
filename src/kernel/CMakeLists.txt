@@ -1,35 +1,35 @@
 add_subdirectory(arch/${ARCH})
 
 set(HEAP_SOURCES
-	include/libk/kcmalloc.hpp
-	heap/BitmapHeap.hpp
-	heap/BitmapHeap.cpp
-	heap/kcmalloc.cpp
-)
+    include/libk/kcmalloc.hpp
+    heap/BitmapHeap.hpp
+    heap/BitmapHeap.cpp
+    heap/kcmalloc.cpp)
 
 set(LIBK_INCLUDES
-	include/libk/kcassert.hpp
-	include/libk/kcstdio.hpp
-	include/libk/kcctype.hpp
-	include/libk/kmath.hpp
-	include/libk/kcstdarg.hpp
-	include/libk/kcstring.hpp
-	include/libk/kutility.hpp
-	include/libk/kvector.hpp
-	include/libk/kstring.hpp
-	include/libk/kfunctional.hpp
-	include/libk/ktype_traits.hpp
-	include/libk/kiterator.hpp
-	include/libk/__iterators.hpp
-)
+    include/libk/katomic.hpp
+    include/libk/kcassert.hpp
+    include/libk/kcstdio.hpp
+    include/libk/kcctype.hpp
+    include/libk/kmath.hpp
+    include/libk/kcstdarg.hpp
+    include/libk/kcstring.hpp
+    include/libk/kutility.hpp
+    include/libk/kvector.hpp
+    include/libk/kstring.hpp
+    include/libk/kfunctional.hpp
+    include/libk/ktype_traits.hpp
+    include/libk/kiterator.hpp
+    include/libk/__iterators.hpp
+    include/libk/AVLTree.hpp
+    include/libk/kstack.hpp)
 
 set(LIBK_SOURCES
-	libk/kcassert.cpp
-	libk/kcstdio.cpp
-	libk/kcctype.cpp
-	libk/kcstring.cpp
-	libk/printf.hpp
-)
+    libk/kcassert.cpp
+    libk/kcstdio.cpp
+    libk/kcctype.cpp
+    libk/kcstring.cpp
+    libk/printf.hpp)
 
 set(KERNEL_INCLUDES
 	include/multiboot.h
@@ -67,13 +67,12 @@ set(KERNEL_SOURCES
 )
 
 set(SOURCES
-	${KERNEL_INCLUDES}
-	${ARCH_INCLUDES}
-	${LIBK_INCLUDES}
-	${KERNEL_SOURCES}
-	${ARCH_SOURCES}
-	${LIBK_SOURCES}
-)
+    ${KERNEL_INCLUDES}
+    ${ARCH_INCLUDES}
+    ${LIBK_INCLUDES}
+    ${KERNEL_SOURCES}
+    ${ARCH_SOURCES}
+    ${LIBK_SOURCES})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

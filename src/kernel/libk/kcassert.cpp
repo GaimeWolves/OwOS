@@ -1,6 +1,7 @@
 #include <libk/kcassert.hpp>
 
 #include <arch/processor.hpp>
+#include <arch/stack_tracing.hpp>
 #include <common_attributes.h>
 #include <libk/kcstdio.hpp>
 
@@ -8,6 +9,8 @@ __noreturn void __assertion_failed(const char *condition, const char *file, unsi
 {
 	Kernel::Processor::clear_interrupts();
 	kprintf("%s:%d %s: Assertion '%s' failed.\n", file, line, function, condition);
-	// TODO: Print backtrace when we have it available
+
+	// TODO: print stacktrace
+
 	Kernel::Processor::halt();
 }
