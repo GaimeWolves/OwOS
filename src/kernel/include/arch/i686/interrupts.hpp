@@ -7,6 +7,9 @@
 
 namespace Kernel::Processor
 {
+	inline constexpr uint32_t MAX_INTERRUPTS = 256;
+	inline constexpr uint32_t FIRST_USABLE_INTERRUPT = 32; // 0x00 - 0x19 reserved for exceptions, etc.
+
 	enum class IDTEntryType : uint8_t
 	{
 		TASK_GATE = 0x5,

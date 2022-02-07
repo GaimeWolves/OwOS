@@ -11,25 +11,16 @@
 #	include <arch/i686/interrupts.hpp>
 #endif
 
+namespace Kernel::Interrupts
+{
+	class InterruptHandler;
+} // namespace Kernel::Interrupts
+
+
 namespace Kernel::Processor
 {
-	typedef LibK::function<void(int)> irq_ack_t;
-	typedef LibK::function<void(int, registers_t *)> irqaction_t;
-
-	typedef struct irq_descriptor_t
-	{
-		irq_ack_t acknowledge;
-		LibK::vector<irqaction_t> actions;
-		LibK::string name;
-	} irq_descriptor_t;
-
 	void init_interrupts();
 
-	irq_descriptor_t &get_irq(int id);
-	bool register_irq(int id, irqaction_t action);
-
-	inline void unhandled_interrupt(int id, __unused registers_t *regs)
-	{
-		panic("Unhandled Interrupt - %s", get_irq(id).name.c_str());
-	}
+	bool register_interrupt(Interrupts::InterruptHandler *handler);
+	bool unregister_interrupt(Interrupts::InterruptHandler *handler);
 } // namespace Kernel::Processor

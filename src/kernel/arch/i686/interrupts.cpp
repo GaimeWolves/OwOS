@@ -3,39 +3,58 @@
 #include "interrupt_stubs.hpp"
 
 #include <arch/i686/interrupts.hpp>
-#include <arch/i686/pic.hpp>
 #include <arch/processor.hpp>
 #include <common_attributes.h>
+#include <interrupts/UnhandledInterruptHandler.hpp>
+#include <interrupts/SharedIRQHandler.hpp>
 
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
 
-#define MAX_INTERRUPTS 256
-
-#define INIT_INTERRUPT(i, n)                                                        \
+#define INIT_INTERRUPT(i)                                                           \
 	{                                                                               \
 		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
-		irqs[(i)].name = LibK::string((n));                                         \
+		handlers[(i)] = new Interrupts::UnhandledInterruptHandler((i));             \
 	}
 
-#define INIT_TRAP(i, n)                                                        \
+#define INIT_TRAP(i)                                                           \
 	{                                                                          \
 		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TRAP_GATE); \
-		irqs[(i)].name = LibK::string((n));                                    \
-	}
-
-#define INIT_PIC_INTERRUPT(i, n)                                                    \
-	{                                                                               \
-		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
-		irqs[(i)].name = LibK::string((n));                                         \
-		irqs[(i)].acknowledge = pic_eoi;                                            \
+		handlers[(i)] = new Interrupts::UnhandledInterruptHandler((i));        \
 	}
 
 namespace Kernel::Processor
 {
+	class PageFaultHandler final : public Interrupts::InterruptHandler
+	{
+	public:
+		explicit PageFaultHandler(uint32_t interrupt_number)
+		    : InterruptHandler(interrupt_number)
+		{
+		}
+
+		~PageFaultHandler() override = default;
+
+		void handle_interrupt(const Processor::registers_t &reg __unused) override
+		{
+			uintptr_t address = cr2();
+
+			// TODO: Actually handle page faults
+			LibK::printf_debug_msg("[MEM] Got page fault at address %p", address);
+			LibK::printf_debug_msg("[MEM] With error code %i", reg.error_code);
+			panic();
+		}
+
+		void eoi() override {}
+
+		[[nodiscard]] Type type() const override { return Type::GenericInterrupt; }
+	};
+
 	static idt_entry_t idt[MAX_INTERRUPTS];
 	static idt_descriptor_t idtr;
-	static irq_descriptor_t irqs[MAX_INTERRUPTS];
+	static Interrupts::InterruptHandler *handlers[MAX_INTERRUPTS];
+
+	static PageFaultHandler page_fault_handler = PageFaultHandler(0x0E);
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type);
 
@@ -88,316 +107,360 @@ namespace Kernel::Processor
 
 	extern "C" void common_interrupt_handler(registers_t *regs)
 	{
-		uint32_t n = regs->isr_number;
-		if (irqs[n].acknowledge)
-			irqs[n].acknowledge(n);
-
-		for (auto &action : irqs[n].actions)
-			action(n, regs);
-
-		if (irqs[n].actions.size() == 0)
-			unhandled_interrupt(n, regs);
+		auto handler = handlers[regs->isr_number];
+		assert(handler);
+		handler->handle_interrupt(*regs);
+		handler->eoi();
 	}
 
 	void init_interrupts()
 	{
 		// Initialize first 32 reserved interrupts
-		INIT_INTERRUPT(0x00, "Divide by 0");
-		INIT_INTERRUPT(0x01, "Single step (Debugger)");
-		INIT_INTERRUPT(0x02, "Non Maskable Interrupt (NMI)");
-		INIT_INTERRUPT(0x03, "Breakpoint (Debugger)");
-		INIT_TRAP(0x04, "Overflow");
-		INIT_INTERRUPT(0x05, "Bounds check");
-		INIT_INTERRUPT(0x06, "Invalid opcode");
-		INIT_INTERRUPT(0x07, "Device not available");
-		INIT_INTERRUPT(0x08, "Double Fault");
-		INIT_INTERRUPT(0x09, "Coprocessor segment overrun");
-		INIT_INTERRUPT(0x0A, "Invalid Task State Segment (TSS)");
-		INIT_INTERRUPT(0x0B, "Segment not present");
-		INIT_INTERRUPT(0x0C, "Stack fault exception");
-		INIT_INTERRUPT(0x0D, "General Protection Fault (GPF)");
-		INIT_INTERRUPT(0x0E, "Page Fault");
-		INIT_INTERRUPT(0x0F, "Unassigned");
-		INIT_INTERRUPT(0x10, "x87 FPU Error");
-		INIT_INTERRUPT(0x11, "Aligment Check");
-		INIT_INTERRUPT(0x12, "Machine Check");
-		INIT_INTERRUPT(0x13, "SIMD FPU Exception");
-		INIT_INTERRUPT(0x14, "Intel reserved");
-		INIT_INTERRUPT(0x15, "Intel reserved");
-		INIT_INTERRUPT(0x16, "Intel reserved");
-		INIT_INTERRUPT(0x17, "Intel reserved");
-		INIT_INTERRUPT(0x18, "Intel reserved");
-		INIT_INTERRUPT(0x19, "Intel reserved");
-		INIT_INTERRUPT(0x1A, "Intel reserved");
-		INIT_INTERRUPT(0x1B, "Intel reserved");
-		INIT_INTERRUPT(0x1C, "Intel reserved");
-		INIT_INTERRUPT(0x1D, "Intel reserved");
-		INIT_INTERRUPT(0x1E, "Intel reserved");
-		INIT_INTERRUPT(0x1F, "Intel reserved");
+		INIT_INTERRUPT(0x00);
+		INIT_INTERRUPT(0x01);
+		INIT_INTERRUPT(0x02);
+		INIT_INTERRUPT(0x03);
+		INIT_TRAP(0x04);
+		INIT_INTERRUPT(0x05);
+		INIT_INTERRUPT(0x06);
+		INIT_INTERRUPT(0x07);
+		INIT_INTERRUPT(0x08);
+		INIT_INTERRUPT(0x09);
+		INIT_INTERRUPT(0x0A);
+		INIT_INTERRUPT(0x0B);
+		INIT_INTERRUPT(0x0C);
+		INIT_INTERRUPT(0x0D);
+		INIT_INTERRUPT(0x0E);
+		INIT_INTERRUPT(0x0F);
+		INIT_INTERRUPT(0x10);
+		INIT_INTERRUPT(0x11);
+		INIT_INTERRUPT(0x12);
+		INIT_INTERRUPT(0x13);
+		INIT_INTERRUPT(0x14);
+		INIT_INTERRUPT(0x15);
+		INIT_INTERRUPT(0x16);
+		INIT_INTERRUPT(0x17);
+		INIT_INTERRUPT(0x18);
+		INIT_INTERRUPT(0x19);
+		INIT_INTERRUPT(0x1A);
+		INIT_INTERRUPT(0x1B);
+		INIT_INTERRUPT(0x1C);
+		INIT_INTERRUPT(0x1D);
+		INIT_INTERRUPT(0x1E);
+		INIT_INTERRUPT(0x1F);
 
-		// Remap PIC and initialize corresponding interrupts
-		init_pic();
+		INIT_INTERRUPT(0x20);
+		INIT_INTERRUPT(0x21);
+		INIT_INTERRUPT(0x22);
+		INIT_INTERRUPT(0x23);
+		INIT_INTERRUPT(0x24);
+		INIT_INTERRUPT(0x25);
+		INIT_INTERRUPT(0x26);
+		INIT_INTERRUPT(0x27);
 
-		INIT_PIC_INTERRUPT(0x20, "(PIC) Timer");
-		INIT_PIC_INTERRUPT(0x21, "(PIC) Keyboard");
-		INIT_PIC_INTERRUPT(0x22, "(PIC) Cascade");
-		INIT_PIC_INTERRUPT(0x23, "(PIC) Serial Port 2");
-		INIT_PIC_INTERRUPT(0x24, "(PIC) Serial Port 1");
-		INIT_PIC_INTERRUPT(0x25, "(PIC) Parallel Port 2");
-		INIT_PIC_INTERRUPT(0x26, "(PIC) Diskette drive");
-		INIT_PIC_INTERRUPT(0x27, "(PIC) Parallel Port 1");
+		INIT_INTERRUPT(0x28);
+		INIT_INTERRUPT(0x29);
+		INIT_INTERRUPT(0x2A);
+		INIT_INTERRUPT(0x2B);
+		INIT_INTERRUPT(0x2C);
+		INIT_INTERRUPT(0x2D);
+		INIT_INTERRUPT(0x2E);
+		INIT_INTERRUPT(0x2F);
 
-		INIT_PIC_INTERRUPT(0x28, "(PIC) CMOS RTC");
-		INIT_PIC_INTERRUPT(0x29, "(PIC) CGA vertical retrace");
-		INIT_PIC_INTERRUPT(0x2A, "(PIC) Reserved");
-		INIT_PIC_INTERRUPT(0x2B, "(PIC) Reserved");
-		INIT_PIC_INTERRUPT(0x2C, "(PIC) Auxiliary device");
-		INIT_PIC_INTERRUPT(0x2D, "(PIC) FPU");
-		INIT_PIC_INTERRUPT(0x2E, "(PIC) Hard disk controller");
-		INIT_PIC_INTERRUPT(0x2F, "(PIC) Reserved");
+		INIT_INTERRUPT(0x30);
+		INIT_INTERRUPT(0x31);
+		INIT_INTERRUPT(0x32);
+		INIT_INTERRUPT(0x33);
+		INIT_INTERRUPT(0x34);
+		INIT_INTERRUPT(0x35);
+		INIT_INTERRUPT(0x36);
+		INIT_INTERRUPT(0x37);
+		INIT_INTERRUPT(0x38);
+		INIT_INTERRUPT(0x39);
+		INIT_INTERRUPT(0x3A);
+		INIT_INTERRUPT(0x3B);
+		INIT_INTERRUPT(0x3C);
+		INIT_INTERRUPT(0x3D);
+		INIT_INTERRUPT(0x3E);
+		INIT_INTERRUPT(0x3F);
 
-		INIT_INTERRUPT(0x30, "Unused");
-		INIT_INTERRUPT(0x31, "Unused");
-		INIT_INTERRUPT(0x32, "Unused");
-		INIT_INTERRUPT(0x33, "Unused");
-		INIT_INTERRUPT(0x34, "Unused");
-		INIT_INTERRUPT(0x35, "Unused");
-		INIT_INTERRUPT(0x36, "Unused");
-		INIT_INTERRUPT(0x37, "Unused");
-		INIT_INTERRUPT(0x38, "Unused");
-		INIT_INTERRUPT(0x39, "Unused");
-		INIT_INTERRUPT(0x3A, "Unused");
-		INIT_INTERRUPT(0x3B, "Unused");
-		INIT_INTERRUPT(0x3C, "Unused");
-		INIT_INTERRUPT(0x3D, "Unused");
-		INIT_INTERRUPT(0x3E, "Unused");
-		INIT_INTERRUPT(0x3F, "Unused");
+		INIT_INTERRUPT(0x40);
+		INIT_INTERRUPT(0x41);
+		INIT_INTERRUPT(0x42);
+		INIT_INTERRUPT(0x43);
+		INIT_INTERRUPT(0x44);
+		INIT_INTERRUPT(0x45);
+		INIT_INTERRUPT(0x46);
+		INIT_INTERRUPT(0x47);
+		INIT_INTERRUPT(0x48);
+		INIT_INTERRUPT(0x49);
+		INIT_INTERRUPT(0x4A);
+		INIT_INTERRUPT(0x4B);
+		INIT_INTERRUPT(0x4C);
+		INIT_INTERRUPT(0x4D);
+		INIT_INTERRUPT(0x4E);
+		INIT_INTERRUPT(0x4F);
 
-		INIT_INTERRUPT(0x40, "Unused");
-		INIT_INTERRUPT(0x41, "Unused");
-		INIT_INTERRUPT(0x42, "Unused");
-		INIT_INTERRUPT(0x43, "Unused");
-		INIT_INTERRUPT(0x44, "Unused");
-		INIT_INTERRUPT(0x45, "Unused");
-		INIT_INTERRUPT(0x46, "Unused");
-		INIT_INTERRUPT(0x47, "Unused");
-		INIT_INTERRUPT(0x48, "Unused");
-		INIT_INTERRUPT(0x49, "Unused");
-		INIT_INTERRUPT(0x4A, "Unused");
-		INIT_INTERRUPT(0x4B, "Unused");
-		INIT_INTERRUPT(0x4C, "Unused");
-		INIT_INTERRUPT(0x4D, "Unused");
-		INIT_INTERRUPT(0x4E, "Unused");
-		INIT_INTERRUPT(0x4F, "Unused");
+		INIT_INTERRUPT(0x50);
+		INIT_INTERRUPT(0x51);
+		INIT_INTERRUPT(0x52);
+		INIT_INTERRUPT(0x53);
+		INIT_INTERRUPT(0x54);
+		INIT_INTERRUPT(0x55);
+		INIT_INTERRUPT(0x56);
+		INIT_INTERRUPT(0x57);
+		INIT_INTERRUPT(0x58);
+		INIT_INTERRUPT(0x59);
+		INIT_INTERRUPT(0x5A);
+		INIT_INTERRUPT(0x5B);
+		INIT_INTERRUPT(0x5C);
+		INIT_INTERRUPT(0x5D);
+		INIT_INTERRUPT(0x5E);
+		INIT_INTERRUPT(0x5F);
 
-		INIT_INTERRUPT(0x50, "Unused");
-		INIT_INTERRUPT(0x51, "Unused");
-		INIT_INTERRUPT(0x52, "Unused");
-		INIT_INTERRUPT(0x53, "Unused");
-		INIT_INTERRUPT(0x54, "Unused");
-		INIT_INTERRUPT(0x55, "Unused");
-		INIT_INTERRUPT(0x56, "Unused");
-		INIT_INTERRUPT(0x57, "Unused");
-		INIT_INTERRUPT(0x58, "Unused");
-		INIT_INTERRUPT(0x59, "Unused");
-		INIT_INTERRUPT(0x5A, "Unused");
-		INIT_INTERRUPT(0x5B, "Unused");
-		INIT_INTERRUPT(0x5C, "Unused");
-		INIT_INTERRUPT(0x5D, "Unused");
-		INIT_INTERRUPT(0x5E, "Unused");
-		INIT_INTERRUPT(0x5F, "Unused");
+		INIT_INTERRUPT(0x60);
+		INIT_INTERRUPT(0x61);
+		INIT_INTERRUPT(0x62);
+		INIT_INTERRUPT(0x63);
+		INIT_INTERRUPT(0x64);
+		INIT_INTERRUPT(0x65);
+		INIT_INTERRUPT(0x66);
+		INIT_INTERRUPT(0x67);
+		INIT_INTERRUPT(0x68);
+		INIT_INTERRUPT(0x69);
+		INIT_INTERRUPT(0x6A);
+		INIT_INTERRUPT(0x6B);
+		INIT_INTERRUPT(0x6C);
+		INIT_INTERRUPT(0x6D);
+		INIT_INTERRUPT(0x6E);
+		INIT_INTERRUPT(0x6F);
 
-		INIT_INTERRUPT(0x60, "Unused");
-		INIT_INTERRUPT(0x61, "Unused");
-		INIT_INTERRUPT(0x62, "Unused");
-		INIT_INTERRUPT(0x63, "Unused");
-		INIT_INTERRUPT(0x64, "Unused");
-		INIT_INTERRUPT(0x65, "Unused");
-		INIT_INTERRUPT(0x66, "Unused");
-		INIT_INTERRUPT(0x67, "Unused");
-		INIT_INTERRUPT(0x68, "Unused");
-		INIT_INTERRUPT(0x69, "Unused");
-		INIT_INTERRUPT(0x6A, "Unused");
-		INIT_INTERRUPT(0x6B, "Unused");
-		INIT_INTERRUPT(0x6C, "Unused");
-		INIT_INTERRUPT(0x6D, "Unused");
-		INIT_INTERRUPT(0x6E, "Unused");
-		INIT_INTERRUPT(0x6F, "Unused");
+		INIT_INTERRUPT(0x70);
+		INIT_INTERRUPT(0x71);
+		INIT_INTERRUPT(0x72);
+		INIT_INTERRUPT(0x73);
+		INIT_INTERRUPT(0x74);
+		INIT_INTERRUPT(0x75);
+		INIT_INTERRUPT(0x76);
+		INIT_INTERRUPT(0x77);
+		INIT_INTERRUPT(0x78);
+		INIT_INTERRUPT(0x79);
+		INIT_INTERRUPT(0x7A);
+		INIT_INTERRUPT(0x7B);
+		INIT_INTERRUPT(0x7C);
+		INIT_INTERRUPT(0x7D);
+		INIT_INTERRUPT(0x7E);
+		INIT_INTERRUPT(0x7F);
 
-		INIT_INTERRUPT(0x70, "Unused");
-		INIT_INTERRUPT(0x71, "Unused");
-		INIT_INTERRUPT(0x72, "Unused");
-		INIT_INTERRUPT(0x73, "Unused");
-		INIT_INTERRUPT(0x74, "Unused");
-		INIT_INTERRUPT(0x75, "Unused");
-		INIT_INTERRUPT(0x76, "Unused");
-		INIT_INTERRUPT(0x77, "Unused");
-		INIT_INTERRUPT(0x78, "Unused");
-		INIT_INTERRUPT(0x79, "Unused");
-		INIT_INTERRUPT(0x7A, "Unused");
-		INIT_INTERRUPT(0x7B, "Unused");
-		INIT_INTERRUPT(0x7C, "Unused");
-		INIT_INTERRUPT(0x7D, "Unused");
-		INIT_INTERRUPT(0x7E, "Unused");
-		INIT_INTERRUPT(0x7F, "Unused");
-
-		INIT_INTERRUPT(0x80, "Syscall");
+		INIT_INTERRUPT(0x80);
 
 		// Remaining interrupts
-		INIT_INTERRUPT(0x81, "Unused");
-		INIT_INTERRUPT(0x82, "Unused");
-		INIT_INTERRUPT(0x83, "Unused");
-		INIT_INTERRUPT(0x84, "Unused");
-		INIT_INTERRUPT(0x85, "Unused");
-		INIT_INTERRUPT(0x86, "Unused");
-		INIT_INTERRUPT(0x87, "Unused");
-		INIT_INTERRUPT(0x88, "Unused");
-		INIT_INTERRUPT(0x89, "Unused");
-		INIT_INTERRUPT(0x8A, "Unused");
-		INIT_INTERRUPT(0x8B, "Unused");
-		INIT_INTERRUPT(0x8C, "Unused");
-		INIT_INTERRUPT(0x8D, "Unused");
-		INIT_INTERRUPT(0x8E, "Unused");
-		INIT_INTERRUPT(0x8F, "Unused");
+		INIT_INTERRUPT(0x81);
+		INIT_INTERRUPT(0x82);
+		INIT_INTERRUPT(0x83);
+		INIT_INTERRUPT(0x84);
+		INIT_INTERRUPT(0x85);
+		INIT_INTERRUPT(0x86);
+		INIT_INTERRUPT(0x87);
+		INIT_INTERRUPT(0x88);
+		INIT_INTERRUPT(0x89);
+		INIT_INTERRUPT(0x8A);
+		INIT_INTERRUPT(0x8B);
+		INIT_INTERRUPT(0x8C);
+		INIT_INTERRUPT(0x8D);
+		INIT_INTERRUPT(0x8E);
+		INIT_INTERRUPT(0x8F);
 
-		INIT_INTERRUPT(0x90, "Unused");
-		INIT_INTERRUPT(0x91, "Unused");
-		INIT_INTERRUPT(0x92, "Unused");
-		INIT_INTERRUPT(0x93, "Unused");
-		INIT_INTERRUPT(0x94, "Unused");
-		INIT_INTERRUPT(0x95, "Unused");
-		INIT_INTERRUPT(0x96, "Unused");
-		INIT_INTERRUPT(0x97, "Unused");
-		INIT_INTERRUPT(0x98, "Unused");
-		INIT_INTERRUPT(0x99, "Unused");
-		INIT_INTERRUPT(0x9A, "Unused");
-		INIT_INTERRUPT(0x9B, "Unused");
-		INIT_INTERRUPT(0x9C, "Unused");
-		INIT_INTERRUPT(0x9D, "Unused");
-		INIT_INTERRUPT(0x9E, "Unused");
-		INIT_INTERRUPT(0x9F, "Unused");
+		INIT_INTERRUPT(0x90);
+		INIT_INTERRUPT(0x91);
+		INIT_INTERRUPT(0x92);
+		INIT_INTERRUPT(0x93);
+		INIT_INTERRUPT(0x94);
+		INIT_INTERRUPT(0x95);
+		INIT_INTERRUPT(0x96);
+		INIT_INTERRUPT(0x97);
+		INIT_INTERRUPT(0x98);
+		INIT_INTERRUPT(0x99);
+		INIT_INTERRUPT(0x9A);
+		INIT_INTERRUPT(0x9B);
+		INIT_INTERRUPT(0x9C);
+		INIT_INTERRUPT(0x9D);
+		INIT_INTERRUPT(0x9E);
+		INIT_INTERRUPT(0x9F);
 
-		INIT_INTERRUPT(0xA0, "Unused");
-		INIT_INTERRUPT(0xA1, "Unused");
-		INIT_INTERRUPT(0xA2, "Unused");
-		INIT_INTERRUPT(0xA3, "Unused");
-		INIT_INTERRUPT(0xA4, "Unused");
-		INIT_INTERRUPT(0xA5, "Unused");
-		INIT_INTERRUPT(0xA6, "Unused");
-		INIT_INTERRUPT(0xA7, "Unused");
-		INIT_INTERRUPT(0xA8, "Unused");
-		INIT_INTERRUPT(0xA9, "Unused");
-		INIT_INTERRUPT(0xAA, "Unused");
-		INIT_INTERRUPT(0xAB, "Unused");
-		INIT_INTERRUPT(0xAC, "Unused");
-		INIT_INTERRUPT(0xAD, "Unused");
-		INIT_INTERRUPT(0xAE, "Unused");
-		INIT_INTERRUPT(0xAF, "Unused");
+		INIT_INTERRUPT(0xA0);
+		INIT_INTERRUPT(0xA1);
+		INIT_INTERRUPT(0xA2);
+		INIT_INTERRUPT(0xA3);
+		INIT_INTERRUPT(0xA4);
+		INIT_INTERRUPT(0xA5);
+		INIT_INTERRUPT(0xA6);
+		INIT_INTERRUPT(0xA7);
+		INIT_INTERRUPT(0xA8);
+		INIT_INTERRUPT(0xA9);
+		INIT_INTERRUPT(0xAA);
+		INIT_INTERRUPT(0xAB);
+		INIT_INTERRUPT(0xAC);
+		INIT_INTERRUPT(0xAD);
+		INIT_INTERRUPT(0xAE);
+		INIT_INTERRUPT(0xAF);
 
-		INIT_INTERRUPT(0xB0, "Unused");
-		INIT_INTERRUPT(0xB1, "Unused");
-		INIT_INTERRUPT(0xB2, "Unused");
-		INIT_INTERRUPT(0xB3, "Unused");
-		INIT_INTERRUPT(0xB4, "Unused");
-		INIT_INTERRUPT(0xB5, "Unused");
-		INIT_INTERRUPT(0xB6, "Unused");
-		INIT_INTERRUPT(0xB7, "Unused");
-		INIT_INTERRUPT(0xB8, "Unused");
-		INIT_INTERRUPT(0xB9, "Unused");
-		INIT_INTERRUPT(0xBA, "Unused");
-		INIT_INTERRUPT(0xBB, "Unused");
-		INIT_INTERRUPT(0xBC, "Unused");
-		INIT_INTERRUPT(0xBD, "Unused");
-		INIT_INTERRUPT(0xBE, "Unused");
-		INIT_INTERRUPT(0xBF, "Unused");
+		INIT_INTERRUPT(0xB0);
+		INIT_INTERRUPT(0xB1);
+		INIT_INTERRUPT(0xB2);
+		INIT_INTERRUPT(0xB3);
+		INIT_INTERRUPT(0xB4);
+		INIT_INTERRUPT(0xB5);
+		INIT_INTERRUPT(0xB6);
+		INIT_INTERRUPT(0xB7);
+		INIT_INTERRUPT(0xB8);
+		INIT_INTERRUPT(0xB9);
+		INIT_INTERRUPT(0xBA);
+		INIT_INTERRUPT(0xBB);
+		INIT_INTERRUPT(0xBC);
+		INIT_INTERRUPT(0xBD);
+		INIT_INTERRUPT(0xBE);
+		INIT_INTERRUPT(0xBF);
 
-		INIT_INTERRUPT(0xC0, "Unused");
-		INIT_INTERRUPT(0xC1, "Unused");
-		INIT_INTERRUPT(0xC2, "Unused");
-		INIT_INTERRUPT(0xC3, "Unused");
-		INIT_INTERRUPT(0xC4, "Unused");
-		INIT_INTERRUPT(0xC5, "Unused");
-		INIT_INTERRUPT(0xC6, "Unused");
-		INIT_INTERRUPT(0xC7, "Unused");
-		INIT_INTERRUPT(0xC8, "Unused");
-		INIT_INTERRUPT(0xC9, "Unused");
-		INIT_INTERRUPT(0xCA, "Unused");
-		INIT_INTERRUPT(0xCB, "Unused");
-		INIT_INTERRUPT(0xCC, "Unused");
-		INIT_INTERRUPT(0xCD, "Unused");
-		INIT_INTERRUPT(0xCE, "Unused");
-		INIT_INTERRUPT(0xCF, "Unused");
+		INIT_INTERRUPT(0xC0);
+		INIT_INTERRUPT(0xC1);
+		INIT_INTERRUPT(0xC2);
+		INIT_INTERRUPT(0xC3);
+		INIT_INTERRUPT(0xC4);
+		INIT_INTERRUPT(0xC5);
+		INIT_INTERRUPT(0xC6);
+		INIT_INTERRUPT(0xC7);
+		INIT_INTERRUPT(0xC8);
+		INIT_INTERRUPT(0xC9);
+		INIT_INTERRUPT(0xCA);
+		INIT_INTERRUPT(0xCB);
+		INIT_INTERRUPT(0xCC);
+		INIT_INTERRUPT(0xCD);
+		INIT_INTERRUPT(0xCE);
+		INIT_INTERRUPT(0xCF);
 
-		INIT_INTERRUPT(0xD0, "Unused");
-		INIT_INTERRUPT(0xD1, "Unused");
-		INIT_INTERRUPT(0xD2, "Unused");
-		INIT_INTERRUPT(0xD3, "Unused");
-		INIT_INTERRUPT(0xD4, "Unused");
-		INIT_INTERRUPT(0xD5, "Unused");
-		INIT_INTERRUPT(0xD6, "Unused");
-		INIT_INTERRUPT(0xD7, "Unused");
-		INIT_INTERRUPT(0xD8, "Unused");
-		INIT_INTERRUPT(0xD9, "Unused");
-		INIT_INTERRUPT(0xDA, "Unused");
-		INIT_INTERRUPT(0xDB, "Unused");
-		INIT_INTERRUPT(0xDC, "Unused");
-		INIT_INTERRUPT(0xDD, "Unused");
-		INIT_INTERRUPT(0xDE, "Unused");
-		INIT_INTERRUPT(0xDF, "Unused");
+		INIT_INTERRUPT(0xD0);
+		INIT_INTERRUPT(0xD1);
+		INIT_INTERRUPT(0xD2);
+		INIT_INTERRUPT(0xD3);
+		INIT_INTERRUPT(0xD4);
+		INIT_INTERRUPT(0xD5);
+		INIT_INTERRUPT(0xD6);
+		INIT_INTERRUPT(0xD7);
+		INIT_INTERRUPT(0xD8);
+		INIT_INTERRUPT(0xD9);
+		INIT_INTERRUPT(0xDA);
+		INIT_INTERRUPT(0xDB);
+		INIT_INTERRUPT(0xDC);
+		INIT_INTERRUPT(0xDD);
+		INIT_INTERRUPT(0xDE);
+		INIT_INTERRUPT(0xDF);
 
-		INIT_INTERRUPT(0xE0, "Unused");
-		INIT_INTERRUPT(0xE1, "Unused");
-		INIT_INTERRUPT(0xE2, "Unused");
-		INIT_INTERRUPT(0xE3, "Unused");
-		INIT_INTERRUPT(0xE4, "Unused");
-		INIT_INTERRUPT(0xE5, "Unused");
-		INIT_INTERRUPT(0xE6, "Unused");
-		INIT_INTERRUPT(0xE7, "Unused");
-		INIT_INTERRUPT(0xE8, "Unused");
-		INIT_INTERRUPT(0xE9, "Unused");
-		INIT_INTERRUPT(0xEA, "Unused");
-		INIT_INTERRUPT(0xEB, "Unused");
-		INIT_INTERRUPT(0xEC, "Unused");
-		INIT_INTERRUPT(0xED, "Unused");
-		INIT_INTERRUPT(0xEE, "Unused");
-		INIT_INTERRUPT(0xEF, "Unused");
+		INIT_INTERRUPT(0xE0);
+		INIT_INTERRUPT(0xE1);
+		INIT_INTERRUPT(0xE2);
+		INIT_INTERRUPT(0xE3);
+		INIT_INTERRUPT(0xE4);
+		INIT_INTERRUPT(0xE5);
+		INIT_INTERRUPT(0xE6);
+		INIT_INTERRUPT(0xE7);
+		INIT_INTERRUPT(0xE8);
+		INIT_INTERRUPT(0xE9);
+		INIT_INTERRUPT(0xEA);
+		INIT_INTERRUPT(0xEB);
+		INIT_INTERRUPT(0xEC);
+		INIT_INTERRUPT(0xED);
+		INIT_INTERRUPT(0xEE);
+		INIT_INTERRUPT(0xEF);
 
-		INIT_INTERRUPT(0xF0, "Unused");
-		INIT_INTERRUPT(0xF1, "Unused");
-		INIT_INTERRUPT(0xF2, "Unused");
-		INIT_INTERRUPT(0xF3, "Unused");
-		INIT_INTERRUPT(0xF4, "Unused");
-		INIT_INTERRUPT(0xF5, "Unused");
-		INIT_INTERRUPT(0xF6, "Unused");
-		INIT_INTERRUPT(0xF7, "Unused");
-		INIT_INTERRUPT(0xF8, "Unused");
-		INIT_INTERRUPT(0xF9, "Unused");
-		INIT_INTERRUPT(0xFA, "Unused");
-		INIT_INTERRUPT(0xFB, "Unused");
-		INIT_INTERRUPT(0xFC, "Unused");
-		INIT_INTERRUPT(0xFD, "Unused");
-		INIT_INTERRUPT(0xFE, "Unused");
-		INIT_INTERRUPT(0xFF, "Unused");
+		INIT_INTERRUPT(0xF0);
+		INIT_INTERRUPT(0xF1);
+		INIT_INTERRUPT(0xF2);
+		INIT_INTERRUPT(0xF3);
+		INIT_INTERRUPT(0xF4);
+		INIT_INTERRUPT(0xF5);
+		INIT_INTERRUPT(0xF6);
+		INIT_INTERRUPT(0xF7);
+		INIT_INTERRUPT(0xF8);
+		INIT_INTERRUPT(0xF9);
+		INIT_INTERRUPT(0xFA);
+		INIT_INTERRUPT(0xFB);
+		INIT_INTERRUPT(0xFC);
+		INIT_INTERRUPT(0xFD);
+		INIT_INTERRUPT(0xFE);
+		INIT_INTERRUPT(0xFF);
 
 		idtr.base = (uint32_t)idt;
 		idtr.limit = sizeof(idt);
 
 		asm volatile("lidt %0" ::"m"(idtr)
 		             : "memory");
+
+		page_fault_handler.register_handler();
 	}
 
-	irq_descriptor_t &get_irq(int id)
+	bool register_interrupt(Interrupts::InterruptHandler *handler)
 	{
-		assert(id > 0 && id < MAX_INTERRUPTS);
-		return irqs[id];
-	}
-
-	bool register_irq(int id, irqaction_t action)
-	{
-		if (id < 0 || id >= MAX_INTERRUPTS)
+		if (!handler)
 			return false;
 
-		irqs[id].actions.push_back(action);
+		uint32_t int_num = handler->interrupt_number();
+
+		if (handlers[int_num])
+		{
+			if (handlers[int_num]->type() == Interrupts::InterruptHandler::Type::UnhandledInterrupt)
+			{
+				delete handlers[int_num];
+				handlers[int_num] = nullptr;
+			}
+			else if (handlers[int_num]->type() == Interrupts::InterruptHandler::Type::IRQHandler)
+			{
+				assert(handler->type() == Interrupts::InterruptHandler::Type::IRQHandler);
+
+				((Interrupts::SharedIRQHandler *)handlers[int_num])->add_handler(((Interrupts::IRQHandler *) handler));
+				return true;
+			}
+		}
+
+		if (handler->type() != Interrupts::InterruptHandler::Type::IRQHandler)
+			handlers[int_num] = handler;
+		else
+		{
+			auto irq_handler = (Interrupts::IRQHandler *)handler;
+			uint32_t original_interrupt_number = irq_handler->original_interrupt_number();
+			auto shared_handler = new Interrupts::SharedIRQHandler(original_interrupt_number);
+			shared_handler->add_handler(irq_handler);
+			handlers[int_num] = shared_handler;
+		}
+
+		return true;
+	}
+
+	bool unregister_interrupt(Interrupts::InterruptHandler *handler)
+	{
+		if (!handler)
+			return false;
+
+		uint32_t int_num = handler->interrupt_number();
+
+		if (!handlers[int_num])
+			return false;
+
+		if (handlers[int_num]->type() == Interrupts::InterruptHandler::Type::IRQHandler)
+		{
+			assert(handler->type() == Interrupts::InterruptHandler::Type::IRQHandler);
+
+			auto shared_handler = (Interrupts::SharedIRQHandler *)handlers[int_num];
+			auto irq_handler = (Interrupts::IRQHandler *)handler;
+			shared_handler->remove_handler(irq_handler);
+
+			if (shared_handler->empty())
+				delete shared_handler;
+			else
+				return true;
+		}
+
+		handlers[int_num] = new Interrupts::UnhandledInterruptHandler(int_num);
 		return true;
 	}
 } // namespace Kernel::Processor
