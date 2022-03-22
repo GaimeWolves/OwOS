@@ -1,6 +1,6 @@
 #include <arch/memory.hpp>
 
-#include <arch/processor.hpp>
+#include <arch/Processor.hpp>
 #include <common_attributes.h>
 #include <memory/PhysicalMemoryManager.hpp>
 
@@ -126,7 +126,7 @@ namespace Kernel::Memory::Arch
 		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, false);
 
 		// Clear it immediately to prevent bugs when we use this page table
-		Processor::invalidate_address((uintptr_t)&get_page_table(pd_index));
+		CPU::Processor::invalidate_address((uintptr_t)&get_page_table(pd_index));
 		memset(&get_page_table(pd_index), 0, PAGE_SIZE);
 
 		return raw_create_pde(table_addr, is_user, is_writeable, disable_cache);
@@ -377,11 +377,11 @@ namespace Kernel::Memory::Arch
 		assert(memory_space.page_directory);
 		assert(memory_space.mapping_table);
 
-		Processor::load_page_directory(memory_space.physical_pd_address);
+		CPU::Processor::load_page_directory(memory_space.physical_pd_address);
 	}
 
 	void invalidate(uintptr_t virtual_address)
 	{
-		Processor::invalidate_address(virtual_address);
+		CPU::Processor::invalidate_address(virtual_address);
 	}
 } // namespace Kernel::Memory::Arch

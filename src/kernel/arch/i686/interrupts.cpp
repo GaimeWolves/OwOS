@@ -3,7 +3,7 @@
 #include "interrupt_stubs.hpp"
 
 #include <arch/i686/interrupts.hpp>
-#include <arch/processor.hpp>
+#include <arch/Processor.hpp>
 #include <common_attributes.h>
 #include <interrupts/UnhandledInterruptHandler.hpp>
 #include <interrupts/SharedIRQHandler.hpp>
@@ -11,19 +11,19 @@
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
 
-#define INIT_INTERRUPT(i)                                                           \
-	{                                                                               \
-		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
-		handlers[(i)] = new Interrupts::UnhandledInterruptHandler((i));             \
+#define INIT_INTERRUPT(i)                                                             \
+	{                                                                                 \
+		m_idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
+		m_handlers[(i)] = nullptr;                                                    \
 	}
 
-#define INIT_TRAP(i)                                                           \
-	{                                                                          \
-		idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TRAP_GATE); \
-		handlers[(i)] = new Interrupts::UnhandledInterruptHandler((i));        \
+#define INIT_TRAP(i)                                                             \
+	{                                                                            \
+		m_idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TRAP_GATE); \
+		m_handlers[(i)] = nullptr;                                               \
 	}
 
-namespace Kernel::Processor
+namespace Kernel::CPU
 {
 	class PageFaultHandler final : public Interrupts::InterruptHandler
 	{
@@ -35,9 +35,9 @@ namespace Kernel::Processor
 
 		~PageFaultHandler() override = default;
 
-		void handle_interrupt(const Processor::registers_t &reg __unused) override
+		void handle_interrupt(const CPU::registers_t &reg __unused) override
 		{
-			uintptr_t address = cr2();
+			uintptr_t address = Processor::cr2();
 
 			// TODO: Actually handle page faults
 			LibK::printf_debug_msg("[MEM] Got page fault at address %p", address);
@@ -47,12 +47,8 @@ namespace Kernel::Processor
 
 		void eoi() override {}
 
-		[[nodiscard]] Type type() const override { return Type::GenericInterrupt; }
+		[[nodiscard]] Interrupts::InterruptType type() const override { return Interrupts::InterruptType::GenericInterrupt; }
 	};
-
-	static idt_entry_t idt[MAX_INTERRUPTS];
-	static idt_descriptor_t idtr;
-	static Interrupts::InterruptHandler *handlers[MAX_INTERRUPTS];
 
 	static PageFaultHandler page_fault_handler = PageFaultHandler(0x0E);
 
@@ -60,6 +56,8 @@ namespace Kernel::Processor
 
 	extern "C" __naked void common_interrupt_handler_entry();
 	extern "C" void common_interrupt_handler(registers_t *regs);
+
+	static __noreturn void unhandled_interrupt_handler(registers_t *regs);
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type)
 	{
@@ -107,15 +105,24 @@ namespace Kernel::Processor
 
 	extern "C" void common_interrupt_handler(registers_t *regs)
 	{
-		auto handler = handlers[regs->isr_number];
-		assert(handler);
+		auto handler = Processor::current().get_interrupt_handler(regs->isr_number);
+
+		if (!handler)
+			unhandled_interrupt_handler(regs);
+
 		handler->handle_interrupt(*regs);
 		handler->eoi();
 	}
 
-	void init_interrupts()
+	static __noreturn void unhandled_interrupt_handler(registers_t *regs)
 	{
-		// Initialize first 32 reserved interrupts
+		// TODO: For now we halt on every unhandled interrupt.
+		//       This is probably undesired for anything other than faults. (i.e. interrupts 0 to 31)
+		panic("Unhandled interrupt 0x%2x at %p", regs->isr_number, regs->eip);
+	}
+
+	void Processor::init_idt()
+	{
 		INIT_INTERRUPT(0x00);
 		INIT_INTERRUPT(0x01);
 		INIT_INTERRUPT(0x02);
@@ -254,7 +261,6 @@ namespace Kernel::Processor
 
 		INIT_INTERRUPT(0x80);
 
-		// Remaining interrupts
 		INIT_INTERRUPT(0x81);
 		INIT_INTERRUPT(0x82);
 		INIT_INTERRUPT(0x83);
@@ -390,77 +396,84 @@ namespace Kernel::Processor
 		INIT_INTERRUPT(0xFE);
 		INIT_INTERRUPT(0xFF);
 
-		idtr.base = (uint32_t)idt;
-		idtr.limit = sizeof(idt);
+		m_idtr.base = (uint32_t)m_idt;
+		m_idtr.limit = sizeof(m_idt);
 
-		asm volatile("lidt %0" ::"m"(idtr)
+		asm volatile("lidt %0" ::"m"(m_idtr)
 		             : "memory");
+	}
 
+	void Processor::init_fault_handlers()
+	{
 		page_fault_handler.register_handler();
 	}
 
-	bool register_interrupt(Interrupts::InterruptHandler *handler)
+	void Processor::register_interrupt_handler(Interrupts::InterruptHandler &handler)
 	{
-		if (!handler)
-			return false;
+		enter_critical();
+		uint32_t int_num = handler.interrupt_number();
 
-		uint32_t int_num = handler->interrupt_number();
-
-		if (handlers[int_num])
+		if (m_handlers[int_num] && m_handlers[int_num]->type() == Interrupts::InterruptType::IRQHandler)
 		{
-			if (handlers[int_num]->type() == Interrupts::InterruptHandler::Type::UnhandledInterrupt)
-			{
-				delete handlers[int_num];
-				handlers[int_num] = nullptr;
-			}
-			else if (handlers[int_num]->type() == Interrupts::InterruptHandler::Type::IRQHandler)
-			{
-				assert(handler->type() == Interrupts::InterruptHandler::Type::IRQHandler);
+			assert(handler.type() == Interrupts::InterruptType::IRQHandler);
 
-				((Interrupts::SharedIRQHandler *)handlers[int_num])->add_handler(((Interrupts::IRQHandler *) handler));
-				return true;
-			}
+			static_cast<Interrupts::SharedIRQHandler *>(m_handlers[int_num])->add_handler(static_cast<Interrupts::IRQHandler *>(&handler));
+
+			leave_critical();
+			return;
 		}
 
-		if (handler->type() != Interrupts::InterruptHandler::Type::IRQHandler)
-			handlers[int_num] = handler;
+		if (handler.type() != Interrupts::InterruptType::IRQHandler)
+			m_handlers[int_num] = &handler;
 		else
 		{
-			auto irq_handler = (Interrupts::IRQHandler *)handler;
+			auto irq_handler = static_cast<Interrupts::IRQHandler *>(&handler);
 			uint32_t original_interrupt_number = irq_handler->original_interrupt_number();
 			auto shared_handler = new Interrupts::SharedIRQHandler(original_interrupt_number);
 			shared_handler->add_handler(irq_handler);
-			handlers[int_num] = shared_handler;
+			m_handlers[int_num] = shared_handler;
 		}
 
-		return true;
+		leave_critical();
 	}
 
-	bool unregister_interrupt(Interrupts::InterruptHandler *handler)
+	void Processor::unregister_interrupt_handler(Interrupts::InterruptHandler &handler)
 	{
-		if (!handler)
-			return false;
+		enter_critical();
+		uint32_t int_num = handler.interrupt_number();
 
-		uint32_t int_num = handler->interrupt_number();
-
-		if (!handlers[int_num])
-			return false;
-
-		if (handlers[int_num]->type() == Interrupts::InterruptHandler::Type::IRQHandler)
+		if (m_handlers[int_num]->type() == Interrupts::InterruptType::IRQHandler)
 		{
-			assert(handler->type() == Interrupts::InterruptHandler::Type::IRQHandler);
+			assert(handler.type() == Interrupts::InterruptType::IRQHandler);
 
-			auto shared_handler = (Interrupts::SharedIRQHandler *)handlers[int_num];
-			auto irq_handler = (Interrupts::IRQHandler *)handler;
+			auto shared_handler = static_cast<Interrupts::SharedIRQHandler *>(m_handlers[int_num]);
+			auto irq_handler = static_cast<Interrupts::IRQHandler *>(&handler);
 			shared_handler->remove_handler(irq_handler);
 
 			if (shared_handler->empty())
 				delete shared_handler;
 			else
-				return true;
+			{
+				leave_critical();
+				return;
+			}
 		}
 
-		handlers[int_num] = new Interrupts::UnhandledInterruptHandler(int_num);
-		return true;
+		m_handlers[int_num] = nullptr;
+		leave_critical();
 	}
+
+	[[nodiscard]] uint32_t Processor::get_used_interrupt_count() const
+	{
+		uint32_t count = 0;
+
+		for (size_t i = FIRST_USABLE_INTERRUPT; i < MAX_INTERRUPTS; i++)
+		{
+			if (m_handlers[i]->type() != Interrupts::InterruptType::UnhandledInterrupt)
+				count++;
+		}
+
+		return count;
+	}
+
 } // namespace Kernel::Processor

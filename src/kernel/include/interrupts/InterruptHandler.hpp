@@ -4,28 +4,28 @@
 
 namespace Kernel::Interrupts
 {
+	enum class InterruptType
+	{
+		GenericInterrupt,
+		IRQHandler,
+		UnhandledInterrupt,
+		SpuriousInterrupt,
+	};
+
 	class InterruptHandler
 	{
 	public:
-		enum class Type
-		{
-			GenericInterrupt,
-			IRQHandler,
-			UnhandledInterrupt,
-			SpuriousInterrupt,
-		};
-
 		virtual ~InterruptHandler() = default;
 
 		void register_handler();
 		void unregister_handler();
 
-		virtual void handle_interrupt(const Processor::registers_t &regs) = 0;
+		virtual void handle_interrupt(const CPU::registers_t &regs) = 0;
 		virtual void eoi() = 0;
 
 		[[nodiscard]] uint32_t interrupt_number() const { return m_interrupt_number; }
 
-		[[nodiscard]] virtual Type type() const = 0;
+		[[nodiscard]] virtual InterruptType type() const = 0;
 
 	protected:
 		explicit InterruptHandler(uint32_t interrupt_number);

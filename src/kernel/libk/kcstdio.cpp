@@ -3,12 +3,15 @@
 #include <devices/SerialPort.hpp>
 #include <libk/kcstdarg.hpp>
 #include <vga/textmode.hpp>
+#include <locking/Mutex.hpp>
 
 #include "printf.hpp"
 
 using namespace Kernel::VGA;
 using namespace Kernel::Devices;
 using namespace Kernel::LibK;
+
+static Kernel::Locking::Mutex kernel_print_lock;
 
 extern "C"
 {
@@ -73,6 +76,7 @@ namespace Kernel::LibK
 {
 	void printf_check_msg(bool ok, const char *msg, ...)
 	{
+		kernel_print_lock.lock();
 		kputc('[');
 
 		if (ok)
@@ -98,10 +102,12 @@ namespace Kernel::LibK
 		va_end(ap);
 
 		kputc('\n');
+		kernel_print_lock.unlock();
 	}
 
 	void printf_debug_msg(const char *msg, ...)
 	{
+		kernel_print_lock.lock();
 		kputc('[');
 
 		Textmode::set_color(Textmode::Color::MAGENTA, Textmode::Color::BLACK);
@@ -119,10 +125,12 @@ namespace Kernel::LibK
 		va_end(ap);
 
 		kputc('\n');
+		kernel_print_lock.unlock();
 	}
 
 	void printf_test_msg(const char *msg, ...)
 	{
+		kernel_print_lock.lock();
 		kputc('[');
 
 		Textmode::set_color(Textmode::Color::LIGHT_GREEN, Textmode::Color::BLACK);
@@ -140,5 +148,6 @@ namespace Kernel::LibK
 		va_end(ap);
 
 		kputc('\n');
+		kernel_print_lock.unlock();
 	}
 } // namespace Kernel::LibK

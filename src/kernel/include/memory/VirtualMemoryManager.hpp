@@ -60,6 +60,8 @@ namespace Kernel::Memory
 
 		void *map_physical(uintptr_t phys_addr, size_t size, RegionType type = RegionType::Normal, AllocationStategy strategy = AllocationStategy::BestFit);
 
+		bool try_identity_map(uintptr_t addr, size_t size);
+
 		template <typename T>
 		T *map_typed(uintptr_t phys_addr, RegionType type = RegionType::Normal, AllocationStategy strategy = AllocationStategy::BestFit)
 		{

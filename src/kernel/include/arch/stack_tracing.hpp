@@ -4,7 +4,7 @@
 
 #include <libk/kvector.hpp>
 
-namespace Kernel::Processor
+namespace Kernel::CPU
 {
 	typedef struct symbol_t
 	{

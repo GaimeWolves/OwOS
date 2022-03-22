@@ -1,14 +1,18 @@
 #include <interrupts/LAPIC.hpp>
 
 #include <arch/interrupts.hpp>
+#include <arch/Processor.hpp>
 #include <interrupts/InterruptHandler.hpp>
 #include <memory/VirtualMemoryManager.hpp>
+#include <time/TimeManager.hpp>
+#include <arch/smp.hpp>
 
+#include <libk/katomic.hpp>
 #include <libk/kcstdio.hpp>
 
-#define APIC_SPURIOUS_INTERRUPT (Processor::MAX_INTERRUPTS - 1)
-#define APIC_IPI_INTERRUPT      (Processor::MAX_INTERRUPTS - 2)
-#define APIC_ERROR_INTERRUPT    (Processor::MAX_INTERRUPTS - 3)
+#define APIC_SPURIOUS_INTERRUPT (CPU::MAX_INTERRUPTS - 1)
+#define APIC_IPI_INTERRUPT      (CPU::MAX_INTERRUPTS - 2)
+#define APIC_ERROR_INTERRUPT    (CPU::MAX_INTERRUPTS - 3)
 
 #define APIC_ENABLE (1 << 8)
 
@@ -42,6 +46,7 @@
 
 #define APIC_REGISTER_SIZE 0x400
 
+#define APIC_REG_ID              0x020
 #define APIC_REG_EOI             0x0B0
 #define APIC_REG_SPV             0x0F0
 #define APIC_REG_LVT_CMCI        0x2F0
@@ -68,7 +73,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		virtual void handle_interrupt(const Processor::registers_t &reg __unused) override
+		virtual void handle_interrupt(const CPU::registers_t &reg __unused) override
 		{
 			LibK::printf_debug_msg("[APIC] Got IPI interrupt");
 		}
@@ -78,7 +83,7 @@ namespace Kernel::Interrupts
 			LAPIC::instance().eoi();
 		}
 
-		virtual Type type() const { return Type::GenericInterrupt; }
+		virtual InterruptType type() const { return InterruptType::GenericInterrupt; }
 	};
 
 	class APICErrorInterruptHandler final : public InterruptHandler
@@ -93,7 +98,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		virtual void handle_interrupt(const Processor::registers_t &reg __unused) override
+		virtual void handle_interrupt(const CPU::registers_t &reg __unused) override
 		{
 			LibK::printf_debug_msg("[APIC] Got error interrupt");
 		}
@@ -103,7 +108,7 @@ namespace Kernel::Interrupts
 			LAPIC::instance().eoi();
 		}
 
-		virtual Type type() const { return Type::GenericInterrupt; }
+		virtual InterruptType type() const { return InterruptType::GenericInterrupt; }
 	};
 
 	// TODO: Move into separate class later
@@ -119,7 +124,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		virtual void handle_interrupt(const Processor::registers_t &reg __unused) override
+		virtual void handle_interrupt(const CPU::registers_t &reg __unused) override
 		{
 			LibK::printf_debug_msg("[APIC] Got spurious interrupt");
 		}
@@ -128,7 +133,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		virtual Type type() const { return Type::SpuriousInterrupt; }
+		virtual InterruptType type() const { return InterruptType::SpuriousInterrupt; }
 	};
 
 	typedef union lvt_entry_t
@@ -200,6 +205,12 @@ namespace Kernel::Interrupts
 		command.shorthand = shorthand;
 		command.destination = destination;
 
+		if (delivery_mode == APIC_DELIV_INIT || delivery_mode == APIC_DELIV_START_UP)
+		{
+			command.trigger_mode = APIC_TRIGGER_EDGE;
+			command.level = APIC_LEVEL_ASSERT;
+		}
+
 		write_register(APIC_REG_ICR_HIGH, command.high_dword);
 		write_register(APIC_REG_ICR_LOW, command.low_dword);
 	}
@@ -237,17 +248,59 @@ namespace Kernel::Interrupts
 		write_register(APIC_REG_EOI, 0);
 	}
 
+	void LAPIC::start_smp_boot()
+	{
+		if (m_available_aps == 0)
+			return;
+
+		CPU::Processor::set_core_count(m_available_aps + 1);
+
+		auto kernel_stack_addr = (uintptr_t)Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(PAGE_SIZE * 8 * m_available_aps);
+
+		LibK::vector<uintptr_t> kernel_stacks;
+		for (size_t i = 0; i < m_available_aps; i++)
+			kernel_stacks.push_back(kernel_stack_addr + PAGE_SIZE * 8 * (i + 1));
+
+		auto cpu_id = LibK::atomic_uint32_t(0);
+		auto do_continue = LibK::atomic_uint32_t(0);
+
+		CPU::initialize_smp_boot_environment(kernel_stacks, cpu_id.raw_ptr(), do_continue.raw_ptr());
+
+		write_icr(0, APIC_DELIV_INIT, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
+
+		Time::TimeManager::instance().sleep(10);
+
+		for (int i = 0; i < 2; i++)
+		{
+			write_icr(0x08, APIC_DELIV_START_UP, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
+			Time::TimeManager::instance().usleep(200);
+		}
+
+		while(cpu_id < m_available_aps)
+			Time::TimeManager::instance().usleep(200);
+
+		do_continue = 1;
+
+		CPU::finalize_smp_boot_environment();
+	}
+
+	[[nodiscard]] uint32_t LAPIC::get_ap_id()
+	{
+		uint32_t id = read_register(APIC_REG_ID) >> 24;
+		return id;
+	}
+
 	void LAPIC::write_register(uintptr_t offset, uint32_t value)
 	{
 		assert(offset <= APIC_REGISTER_SIZE);
-		uint32_t volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
+		auto volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
 		*apic_register = value;
 	}
 
 	uint32_t LAPIC::read_register(uintptr_t offset)
 	{
 		assert(offset <= APIC_REGISTER_SIZE);
-		uint32_t volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
+		auto volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
 		return *apic_register;
 	}
 } // namespace Kernel::Interrupts

@@ -15,12 +15,3 @@ namespace Kernel::Interrupts
 {
 	class InterruptHandler;
 } // namespace Kernel::Interrupts
-
-
-namespace Kernel::Processor
-{
-	void init_interrupts();
-
-	bool register_interrupt(Interrupts::InterruptHandler *handler);
-	bool unregister_interrupt(Interrupts::InterruptHandler *handler);
-} // namespace Kernel::Processor

@@ -16,7 +16,7 @@ namespace Kernel::Interrupts
 
 		~UnhandledInterruptHandler() override = default;
 
-		void handle_interrupt(const Processor::registers_t &reg __unused) override
+		void handle_interrupt(const CPU::registers_t &reg __unused) override
 		{
 			panic("Unhandled interrupt handler called [%d]", interrupt_number());
 		}
@@ -26,6 +26,6 @@ namespace Kernel::Interrupts
 			panic("Unhandled interrupt eoi called [%d]", interrupt_number());
 		}
 
-		[[nodiscard]] Type type() const override { return Type::UnhandledInterrupt; }
+		[[nodiscard]] InterruptType type() const override { return InterruptType::UnhandledInterrupt; }
 	};
 } // namespace Kernel::Interrupts

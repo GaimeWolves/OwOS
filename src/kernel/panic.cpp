@@ -5,7 +5,7 @@
 #include <libk/kcstdarg.hpp>
 #include <libk/kcstdio.hpp>
 
-#include <arch/processor.hpp>
+#include <arch/Processor.hpp>
 #include <arch/stack_tracing.hpp>
 
 namespace Kernel
@@ -29,9 +29,9 @@ namespace Kernel
 
 		kputc('\n');
 
-		Processor::print_stacktrace();
+		CPU::print_stacktrace();
 
 		for (;;)
-			Processor::halt();
+			CPU::Processor::halt();
 	}
 } // namespace Kernel

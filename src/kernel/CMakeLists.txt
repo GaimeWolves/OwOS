@@ -37,10 +37,8 @@ set(KERNEL_INCLUDES
     include/panic.hpp
     include/tests.hpp
     include/arch/io.hpp
-    include/arch/processor.hpp
     include/arch/memory.hpp
     include/arch/interrupts.hpp
-    include/arch/i686/processor.hpp
     include/arch/stack_tracing.hpp
     include/crt/icxxabi.hpp
     include/devices/SerialPort.hpp
@@ -62,7 +60,13 @@ set(KERNEL_INCLUDES
     include/interrupts/IOAPIC.hpp
     include/interrupts/IRQHandler.hpp
     include/interrupts/SharedIRQHandler.hpp
-    include/interrupts/forward.hpp)
+    include/interrupts/forward.hpp
+    include/time/Timer.hpp
+    include/time/TimeManager.hpp
+    include/time/PIT.hpp
+    include/arch/smp.hpp
+    include/locking/Mutex.hpp
+    include/arch/Processor.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -86,7 +90,9 @@ set(KERNEL_SOURCES
     interrupts/InterruptHandler.cpp
     interrupts/PIC.cpp
     interrupts/InterruptManager.cpp
-    interrupts/IOAPIC.cpp)
+    interrupts/IOAPIC.cpp
+    time/PIT.cpp
+    time/TimeManager.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
@@ -113,6 +119,7 @@ add_executable(kernel ${SOURCES})
 target_link_libraries(kernel kernel_heap gcc)
 target_include_directories(kernel PRIVATE include)
 
+target_compile_definitions(kernel_heap PRIVATE ARCH_${ARCH})
 target_compile_definitions(kernel PRIVATE ARCH_${ARCH})
 
 if (DEBUG_KERNEL)

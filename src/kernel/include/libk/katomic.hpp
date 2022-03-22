@@ -121,7 +121,7 @@ namespace Kernel::LibK
 			return desired;
 		}
 
-		always_inline explicit operator T() const volatile noexcept
+		always_inline operator T() const volatile noexcept
 		{
 			return load();
 		}
@@ -169,6 +169,11 @@ namespace Kernel::LibK
 		always_inline T operator^=(T arg) volatile noexcept
 		{
 			return fetch_xor(arg) ^ arg;
+		}
+
+		always_inline T *raw_ptr() noexcept
+		{
+			return &m_value;
 		}
 	};
 
@@ -261,7 +266,7 @@ namespace Kernel::LibK
 			return desired;
 		}
 
-		always_inline explicit operator T *() const volatile noexcept
+		always_inline operator T *() const volatile noexcept
 		{
 			return load();
 		}

@@ -2,11 +2,12 @@
 
 #include <stdint.h>
 
-#include <arch/processor.hpp>
+#include <arch/Processor.hpp>
 #include <panic.hpp>
 #include <arch/stack_tracing.hpp>
 #include <devices/SerialPort.hpp>
 #include <memory/VirtualMemoryManager.hpp>
+#include <arch/smp.hpp>
 #include <multiboot.h>
 #include <common_attributes.h>
 
@@ -71,11 +72,15 @@ namespace Kernel
 			for (func_t *ctor = &_start_ctors; ctor < &_end_ctors; ctor++)
 				(*ctor)();
 
+			CPU::Processor::early_initialize(0);
+
+			CPU::prepare_smp_boot_environment();
+
 			// Get debug output really early
 			Devices::SerialPort::init();
 
 			// Get stack traces really early
-			Processor::init_stacktracing();
+			CPU::init_stacktracing();
 
 			// Main kernel entry point
 			entry(magic, multiboot_info);
@@ -86,7 +91,7 @@ namespace Kernel
 			__cxa_finalize(nullptr);
 
 			for (;;)
-				Processor::halt();
+				CPU::Processor::halt();
 		}
 	}
 } // namespace Kernel

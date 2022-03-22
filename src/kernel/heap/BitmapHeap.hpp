@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <libk/kcmalloc.hpp>
+#include <locking/Mutex.hpp>
 
 namespace Kernel::Heap
 {
@@ -22,9 +23,6 @@ namespace Kernel::Heap
 		heap_statistics_t m_stats{0, 0, 0, 0};
 
 	public:
-		BitmapHeap() = default;
-		~BitmapHeap() = default;
-
 		void expand(uintptr_t addr, uint32_t size, uint32_t block_size);
 
 		void *alloc(size_t size, size_t align = 1);
@@ -33,5 +31,7 @@ namespace Kernel::Heap
 		size_t size(void *ptr);
 
 		const heap_statistics_t &getStatistics() { return m_stats; }
+
+		Locking::Mutex m_heap_mutex{};
 	};
 } // namespace Kernel::Heap

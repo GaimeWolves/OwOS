@@ -10,7 +10,7 @@ extern "C"
 	extern uintptr_t _end_text;
 }
 
-namespace Kernel::Processor
+namespace Kernel::CPU
 {
 	// TODO: Somehow check if the actual symbol file exceeds this limit
 	__section(".kernel_symbols") static char kernel_symbols[0x20000];

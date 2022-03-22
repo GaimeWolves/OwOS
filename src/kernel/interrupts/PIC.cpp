@@ -49,8 +49,8 @@ namespace Kernel::Interrupts
 		send_command(icw, Slave);
 
 		// Base IRQ number (begin from IRQ 32)
-		send_data(Processor::FIRST_USABLE_INTERRUPT, Master);
-		send_data(Processor::FIRST_USABLE_INTERRUPT + 8, Slave);
+		send_data(CPU::FIRST_USABLE_INTERRUPT, Master);
+		send_data(CPU::FIRST_USABLE_INTERRUPT + 8, Slave);
 
 		// Cascaded interrupt
 		send_data(0x04, Master); // IRQ 2 -> third bit

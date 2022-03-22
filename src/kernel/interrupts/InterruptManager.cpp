@@ -37,6 +37,8 @@ namespace Kernel::Interrupts
 		LibK::vector<madt_ioapic_override_entry_t> ioapic_redirections;
 		LibK::vector<madt_ioapic_nmi_entry_t> ioapic_nmis;
 
+		uint32_t ap_count = 0;
+
 		madt_entry_t *current_entry = madt.get_table()->entries;
 
 		while ((uintptr_t)current_entry - (uintptr_t)madt.get_table() < madt.get_table()->header.length)
@@ -52,6 +54,9 @@ namespace Kernel::Interrupts
 				    entry->apic_id,
 				    entry->enabled,
 				    entry->capable);
+
+				if (entry->apic_id != 0)
+					ap_count++;
 				break;
 			}
 			case 1:
@@ -168,6 +173,7 @@ namespace Kernel::Interrupts
 		}
 
 		LAPIC::instance().enable();
+		LAPIC::instance().set_available_ap_count(ap_count);
 	}
 
 	InterruptController *InterruptManager::get_responsible_controller(IRQHandler &handler) const
@@ -185,6 +191,6 @@ namespace Kernel::Interrupts
 	uint32_t InterruptManager::get_mapped_interrupt_number(uint32_t interrupt_number)
 	{
 		// TODO: Implement CPU balancing
-		return interrupt_number + Processor::FIRST_USABLE_INTERRUPT;
+		return interrupt_number + CPU::FIRST_USABLE_INTERRUPT;
 	}
 }

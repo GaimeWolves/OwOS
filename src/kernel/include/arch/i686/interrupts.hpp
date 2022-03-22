@@ -5,7 +5,7 @@
 
 #include <common_attributes.h>
 
-namespace Kernel::Processor
+namespace Kernel::CPU
 {
 	inline constexpr uint32_t MAX_INTERRUPTS = 256;
 	inline constexpr uint32_t FIRST_USABLE_INTERRUPT = 32; // 0x00 - 0x19 reserved for exceptions, etc.

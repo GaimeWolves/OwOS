@@ -104,6 +104,37 @@ namespace Kernel::Memory
 		return (void *)(mem_region.region.address + start_offset);
 	}
 
+	bool VirtualMemoryManager::try_identity_map(uintptr_t addr, size_t size)
+	{
+		uintptr_t start_addr = LibK::round_down_to_multiple<uintptr_t>(addr, PAGE_SIZE);
+		uintptr_t start_offset = addr - start_addr;
+		size = LibK::round_up_to_multiple<size_t>(size + start_offset, PAGE_SIZE);
+
+		region_t this_region{
+		    .address = start_addr,
+		    .size = size,
+		};
+
+		bool is_kernel_space = in_kernel_space(addr);
+		bool already_mapped = false;
+
+		traverse_mapped(is_kernel_space, [&](memory_region_t mem_region) {
+			if (mem_region.region.overlaps(this_region)) {
+				already_mapped = true;
+				return false;
+			}
+
+			return true;
+		});
+
+		if (already_mapped)
+			return false;
+
+		map(start_addr, start_addr, size, is_kernel_space);
+
+		return true;
+	}
+
 	region_t VirtualMemoryManager::find_free_region(size_t size, bool is_kernel_space, AllocationStategy strategy) const
 	{
 		assert(size > 0);

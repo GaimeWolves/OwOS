@@ -7,6 +7,7 @@
 #include <common_attributes.h>
 #include <libk/kcstdio.hpp>
 #include <vga/TextmodeBuffer.hpp>
+#include <arch/spinlock.hpp>
 
 #define ROWS 25
 #define COLS 80
@@ -63,6 +64,8 @@ namespace Kernel::VGA::Textmode
 	static uint8_t cursorX = 0, cursorY = 0;
 	static vga_char_color_t color = vga_char_color(Color::WHITE, Color::BLACK);
 	static Textmode::TextmodeBuffer<vga_char_t> buffer(VGA_MEMORY, ROWS, COLS);
+	static Locking::Spinlock vga_lock;
+	static Locking::Spinlock puts_lock;
 
 	static IO::Port controlIndex(VGA_CONTROL_REG);
 	static IO::Port controlData = controlIndex.offset(1);
@@ -135,6 +138,7 @@ namespace Kernel::VGA::Textmode
 
 	void putc(char ch)
 	{
+		vga_lock.lock();
 		if (ch == '\n')
 		{
 			cursorX = 0;
@@ -154,12 +158,15 @@ namespace Kernel::VGA::Textmode
 
 		handle_scrolling();
 		update_cursor();
+		vga_lock.unlock();
 	}
 
 	void puts(const char *str)
 	{
+		puts_lock.lock();
 		for (size_t i = 0; str[i]; i++)
 			putc(str[i]);
+		puts_lock.unlock();
 	}
 
 	void set_color(Color fg, Color bg)

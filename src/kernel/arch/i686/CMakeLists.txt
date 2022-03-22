@@ -3,14 +3,18 @@ set(ARCH_INCLUDES
     include/arch/i686/gdt.hpp
     include/arch/i686/interrupts.hpp
     include/arch/i686/memory.hpp
+    include/arch/i686/Processor.hpp
     PARENT_SCOPE
 )
 
 set(ARCH_SOURCES
     arch/i686/boot.S
-    arch/i686/processor.cpp
+    arch/i686/bootAP.S
+    arch/i686/Processor.cpp
     arch/i686/interrupts.cpp
     arch/i686/memory.cpp
     arch/i686/stack_tracing.cpp
+    arch/i686/smp.cpp
+    arch/i686/gdt.cpp
     PARENT_SCOPE
 )

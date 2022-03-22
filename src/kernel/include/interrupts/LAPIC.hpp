@@ -26,6 +26,11 @@ namespace Kernel::Interrupts
 
 		void eoi();
 
+		void start_smp_boot();
+		void set_available_ap_count(uint32_t count) { m_available_aps = count; }
+
+		[[nodiscard]] uint32_t get_ap_id();
+
 	private:
 		LAPIC() = default;
 		~LAPIC() = default;
@@ -41,5 +46,7 @@ namespace Kernel::Interrupts
 		APICIPIInterruptHandler *m_ipi_interrupt_handler{nullptr};
 		APICErrorInterruptHandler *m_error_interrupt_handler{nullptr};
 		APICSpuriousInterruptHandler *m_spurious_interrupt_handler{nullptr};
+
+		uint32_t m_available_aps{0};
 	};
 } // namespace Kernel::Interrupts

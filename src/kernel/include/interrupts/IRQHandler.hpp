@@ -19,7 +19,7 @@ namespace Kernel::Interrupts
 			assert(m_interrupt_controller);
 		}
 
-		void handle_interrupt(const Processor::registers_t &regs) override = 0;
+		void handle_interrupt(const CPU::registers_t &regs) override = 0;
 
 		void eoi() override
 		{
@@ -50,7 +50,7 @@ namespace Kernel::Interrupts
 			assert(!m_enabled);
 		}
 
-		[[nodiscard]] Type type() const override { return Type::IRQHandler; }
+		[[nodiscard]] InterruptType type() const override { return InterruptType::IRQHandler; }
 		[[nodiscard]] bool is_enabled() const { return m_enabled; }
 		[[nodiscard]] uint32_t original_interrupt_number() const { return m_original_irq_number; }
 

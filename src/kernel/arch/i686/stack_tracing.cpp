@@ -6,7 +6,7 @@
 #include <arch/i686/interrupts.hpp>
 #include <common_attributes.h>
 
-namespace Kernel::Processor
+namespace Kernel::CPU
 {
 	// NOTE: Stack tracing past interrupts:
 	//       To trace past interrupt boundaries check for the function "common_interrupt_handler"
@@ -17,7 +17,6 @@ namespace Kernel::Processor
 	{
 		struct stackframe_t *next;
 		uintptr_t eip;
-		uintptr_t _unused;
 		registers_t *regs; // NOTE: Only used in interrupts
 	} __packed stackframe_t;
 

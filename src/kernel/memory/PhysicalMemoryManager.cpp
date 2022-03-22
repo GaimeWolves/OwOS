@@ -254,4 +254,15 @@ namespace Kernel::Memory
 		m_used_memory -= page_count * PAGE_SIZE;
 		m_explicit_used_memory -= size;
 	}
+
+	void PhysicalMemoryManager::reserve(uintptr_t address, size_t size)
+	{
+		uintptr_t start_page = address / PAGE_SIZE;
+		uintptr_t page_count = LibK::round_up_to_power_of_two<uintptr_t>(size, PAGE_SIZE) / PAGE_SIZE;
+
+		mark_used(start_page, start_page + page_count);
+
+		m_used_memory += page_count * PAGE_SIZE;
+		m_explicit_used_memory += size;
+	}
 } // namespace Kernel::Memory

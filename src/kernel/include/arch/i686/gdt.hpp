@@ -5,8 +5,10 @@
 
 #include <common_attributes.h>
 
-namespace Kernel::Processor
+namespace Kernel::CPU
 {
+	inline constexpr uint32_t GDT_ENTRY_COUNT = 6;
+
 	typedef struct gdt_entry_t
 	{
 		uint32_t limit_low : 16;
@@ -33,22 +35,33 @@ namespace Kernel::Processor
 		uint32_t offset;
 	} __packed gdt_descriptor_t;
 
-	inline gdt_entry_t create_gdt_selector(bool is_userspace, bool is_code)
+	typedef struct tss_entry_t
 	{
-		return gdt_entry_t{
-		    .limit_low = 0xFFFF,
-		    .base_low = 0,
-		    .accessed = 0,
-		    .read_write = 1,
-		    .direction_conforming = 0,
-		    .executable = is_code,
-		    .type = 1,
-		    .privilege = (uint8_t)(is_userspace ? 3 : 0),
-		    .present = 1,
-		    .limit_high = 0x0F,
-		    .size = 1,
-		    .granularity = 1,
-		    .base_high = 0,
-		};
-	}
+		uint32_t link : 16, : 16;
+		uint32_t esp0;
+		uint32_t ss0 : 16, : 16;
+		uint32_t esp1;
+		uint32_t ss1 : 16, : 16;
+		uint32_t esp2;
+		uint32_t ss2 : 16, : 16;
+		uint32_t cr3;
+		uint32_t eip;
+		uint32_t eflags;
+		uint32_t eax;
+		uint32_t ecx;
+		uint32_t edx;
+		uint32_t ebx;
+		uint32_t esp;
+		uint32_t ebp;
+		uint32_t esi;
+		uint32_t edi;
+		uint32_t es : 16, : 16;
+		uint32_t cs : 16, : 16;
+		uint32_t ss : 16, : 16;
+		uint32_t ds : 16, : 16;
+		uint32_t fs : 16, : 16;
+		uint32_t gs : 16, : 16;
+		uint32_t ldtr : 16, : 32;
+		uint16_t iopb;
+	} __packed tss_entry_t;
 } // namespace Kernel::Processor

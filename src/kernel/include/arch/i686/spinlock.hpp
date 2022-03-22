@@ -1,10 +1,10 @@
 #pragma once
 
-#include <arch/processor.hpp>
-#include <common_attributes.h>
-
 #include <libk/katomic.hpp>
 #include <libk/kcassert.hpp>
+
+#include <arch/i686/Processor.hpp>
+#include <common_attributes.h>
 
 namespace Kernel::Locking
 {
@@ -19,10 +19,10 @@ namespace Kernel::Locking
 
 		always_inline void lock()
 		{
-			Processor::clear_interrupts();
+			CPU::Processor::current().enter_critical();
 			while (m_lock.exchange(1, LibK::memory_order_acquire))
 			{
-				Processor::pause();
+				CPU::Processor::pause();
 			}
 		}
 
@@ -31,7 +31,7 @@ namespace Kernel::Locking
 			assert(is_locked());
 
 			m_lock.store(0);
-			Processor::enable_interrupts();
+			CPU::Processor::current().leave_critical();
 		}
 
 		always_inline bool is_locked() const noexcept

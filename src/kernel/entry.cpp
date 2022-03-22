@@ -1,17 +1,18 @@
 #include <stdint.h>
 
 #include <arch/interrupts.hpp>
-#include <arch/processor.hpp>
-#include <arch/spinlock.hpp>
+#include <arch/Processor.hpp>
 #include <common_attributes.h>
 #include <firmware/acpi/Parser.hpp>
 #include <multiboot.h>
 #include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>
-#include <interrupts/PIC.hpp>
+#include <time/TimeManager.hpp>
+#include <interrupts/LAPIC.hpp>
 #include <interrupts/IRQHandler.hpp>
 #include <interrupts/InterruptManager.hpp>
+#include <locking/Mutex.hpp>
 
 #include <libk/kcstdio.hpp>
 
@@ -28,7 +29,9 @@ namespace Kernel
 		auto start = (uintptr_t)&_kernel_start;
 		auto end = (uintptr_t)&_kernel_end;
 		uintptr_t size = end - start;
-		LibK::printf_debug_msg("[KERNEL] Kernel image size: %x", size);
+
+		// TODO: Fix initialization order
+		// LibK::printf_debug_msg("[KERNEL] Kernel image size: %x", size);
 
 		assert(size <= 0x300000);
 		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
@@ -36,10 +39,11 @@ namespace Kernel
 
 		ACPI::Parser::instance().init();
 
-		Processor::init();
-		Processor::init_interrupts();
 		Interrupts::InterruptManager::instance().initialize();
-		Processor::enable_interrupts();
+		CPU::Processor::initialize(0);
+		CPU::Processor::current().enable_interrupts();
+
+		Time::TimeManager::instance().initialize();
 
 		VGA::Textmode::init();
 
@@ -50,11 +54,30 @@ namespace Kernel
 		Tests::test_printf();
 		Tests::test_vmm();
 
+		Interrupts::LAPIC::instance().start_smp_boot();
+
 #ifdef _DEBUG
 		LibK::printf_debug_msg("Reached end of entry");
 #endif
 
 		for (;;)
-			Processor::halt();
+			CPU::Processor::halt();
+	}
+
+	static Locking::Mutex mutex;
+
+	extern "C" __noreturn void ap_entry(uint32_t cpu_id)
+	{
+		mutex.lock();
+		CPU::Processor::early_initialize(cpu_id);
+		CPU::Processor::initialize(cpu_id);
+		mutex.unlock();
+
+		mutex.lock();
+		LibK::printf_debug_msg("Hello from AP %d", cpu_id);
+		mutex.unlock();
+
+		for (;;)
+			CPU::Processor::halt();
 	}
 } // namespace Kernel
