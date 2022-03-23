@@ -4,7 +4,6 @@
 
 namespace Kernel::Interrupts
 {
-	class APICIPIInterruptHandler;
 	class APICErrorInterruptHandler;
 	class APICSpuriousInterruptHandler;
 
@@ -22,14 +21,19 @@ namespace Kernel::Interrupts
 		}
 
 		void initialize(uintptr_t physical_addr);
+		void initialize_ap();
 		void enable();
 
 		void eoi();
+
+		void send_ipi(uint8_t vector, uint8_t core);
+		void broadcast_ipi(uint8_t vector, bool excluding_self);
 
 		void start_smp_boot();
 		void set_available_ap_count(uint32_t count) { m_available_aps = count; }
 
 		[[nodiscard]] uint32_t get_ap_id();
+		void set_ap_id(uint32_t id);
 
 	private:
 		LAPIC() = default;
@@ -43,7 +47,6 @@ namespace Kernel::Interrupts
 		uintptr_t m_physical_addr{0};
 		uintptr_t m_virtual_addr{0};
 
-		APICIPIInterruptHandler *m_ipi_interrupt_handler{nullptr};
 		APICErrorInterruptHandler *m_error_interrupt_handler{nullptr};
 		APICSpuriousInterruptHandler *m_spurious_interrupt_handler{nullptr};
 

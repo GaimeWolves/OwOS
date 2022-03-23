@@ -4,7 +4,6 @@
 
 #include <memory/PhysicalMemoryManager.hpp>
 #include <memory/VirtualMemoryManager.hpp>
-
 #include <arch/Processor.hpp>
 
 namespace Kernel::CPU
@@ -59,5 +58,4 @@ namespace Kernel::CPU
 		Memory::VirtualMemoryManager::instance().free((void *)boot_address);
 		Memory::PhysicalMemoryManager::instance().free((void *)boot_address, ap_boot_code_size);
 	}
-
 }

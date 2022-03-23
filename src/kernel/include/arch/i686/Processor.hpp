@@ -6,6 +6,7 @@
 
 #include <arch/i686/interrupts.hpp>
 #include <arch/i686/gdt.hpp>
+#include <arch/smp.hpp>
 
 #include <interrupts/InterruptHandler.hpp>
 
@@ -52,9 +53,16 @@ namespace Kernel::CPU
 		void unregister_interrupt_handler(Interrupts::InterruptHandler &handler);
 		[[nodiscard]] uint32_t get_used_interrupt_count() const;
 
+		void smp_initialize_messaging();
+		void smp_poke();
+		static void smp_poke_all(bool excluding_self);
+		void smp_enqueue_message(ProcessorMessage *message);
+		void smp_process_messages();
+
 		[[nodiscard]] static uint32_t count();
-		[[nodiscard]] Processor &by_id(uint32_t id) const;
-		void enumerate(const LibK::function<bool(Processor &)> &callback);
+		[[nodiscard]] uint32_t id() const { return m_id; }
+		[[nodiscard]] static Processor &by_id(uint32_t id);
+		static void enumerate(const LibK::function<bool(Processor &)> &callback);
 
 		[[nodiscard]] always_inline static uintptr_t cr2()
 		{
@@ -138,5 +146,9 @@ namespace Kernel::CPU
 		CPU::gdt_entry_t m_gdt[CPU::GDT_ENTRY_COUNT]{};
 		CPU::gdt_descriptor_t m_gdtr{};
 		CPU::tss_entry_t m_tss{};
+
+		// TODO: Implement an actual FIFO data structure
+		//       Refcount ProcessorMessage
+		LibK::vector<ProcessorMessage *> m_queued_messages{};
 	};
 }

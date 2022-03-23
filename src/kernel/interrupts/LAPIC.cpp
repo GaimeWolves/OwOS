@@ -11,8 +11,7 @@
 #include <libk/kcstdio.hpp>
 
 #define APIC_SPURIOUS_INTERRUPT (CPU::MAX_INTERRUPTS - 1)
-#define APIC_IPI_INTERRUPT      (CPU::MAX_INTERRUPTS - 2)
-#define APIC_ERROR_INTERRUPT    (CPU::MAX_INTERRUPTS - 3)
+#define APIC_ERROR_INTERRUPT    (CPU::MAX_INTERRUPTS - 2)
 
 #define APIC_ENABLE (1 << 8)
 
@@ -61,31 +60,6 @@
 
 namespace Kernel::Interrupts
 {
-	class APICIPIInterruptHandler final : public InterruptHandler
-	{
-	public:
-		APICIPIInterruptHandler(uint32_t interrupt_number)
-		    : InterruptHandler(interrupt_number)
-		{
-		}
-
-		virtual ~APICIPIInterruptHandler()
-		{
-		}
-
-		virtual void handle_interrupt(const CPU::registers_t &reg __unused) override
-		{
-			LibK::printf_debug_msg("[APIC] Got IPI interrupt");
-		}
-
-		virtual void eoi()
-		{
-			LAPIC::instance().eoi();
-		}
-
-		virtual InterruptType type() const { return InterruptType::GenericInterrupt; }
-	};
-
 	class APICErrorInterruptHandler final : public InterruptHandler
 	{
 	public:
@@ -193,8 +167,6 @@ namespace Kernel::Interrupts
 
 	void LAPIC::write_icr(uint8_t vector, uint8_t delivery_mode, uint8_t destination_mode, uint8_t shorthand, uint8_t destination)
 	{
-		// TODO handle INIT and Start-Up IPI correctly
-
 		icr_command_t command;
 		command.low_dword = 0;
 		command.high_dword = 0;
@@ -220,14 +192,17 @@ namespace Kernel::Interrupts
 		m_physical_addr = physical_addr;
 		m_virtual_addr = (uintptr_t)Memory::VirtualMemoryManager::instance().map_physical(m_physical_addr, APIC_REGISTER_SIZE);
 
-		m_ipi_interrupt_handler = new APICIPIInterruptHandler(APIC_IPI_INTERRUPT);
 		m_error_interrupt_handler = new APICErrorInterruptHandler(APIC_ERROR_INTERRUPT);
 		m_spurious_interrupt_handler = new APICSpuriousInterruptHandler(APIC_SPURIOUS_INTERRUPT);
 
-		m_ipi_interrupt_handler->register_handler();
 		m_error_interrupt_handler->register_handler();
 		m_spurious_interrupt_handler->register_handler();
 
+		initialize_ap();
+	}
+
+	void LAPIC::initialize_ap()
+	{
 		write_register(APIC_REG_SPV, APIC_SPURIOUS_INTERRUPT);
 		write_register(APIC_REG_LVT_CMCI, make_lvt_entry(0, 0, 0, 0, true).value);
 		write_register(APIC_REG_LVT_TIMER, make_lvt_entry(0, 0, 0, 0, true).value);
@@ -246,6 +221,17 @@ namespace Kernel::Interrupts
 	void LAPIC::eoi()
 	{
 		write_register(APIC_REG_EOI, 0);
+	}
+
+	void LAPIC::send_ipi(uint8_t vector, uint8_t core)
+	{
+		write_icr(vector, APIC_DELIV_FIXED, APIC_DEST_PHYSICAL, APIC_SHORTHAND_NONE, core);
+	}
+
+	void LAPIC::broadcast_ipi(uint8_t vector, bool excluding_self)
+	{
+		uint8_t shorthand = excluding_self ? APIC_SHORTHAND_ALL_EXCL : APIC_SHORTHAND_ALL_INCL;
+		write_icr(vector, APIC_DELIV_FIXED, APIC_DEST_PHYSICAL, shorthand, 0);
 	}
 
 	void LAPIC::start_smp_boot()
@@ -282,12 +268,18 @@ namespace Kernel::Interrupts
 		do_continue = 1;
 
 		CPU::finalize_smp_boot_environment();
+		set_ap_id(0);
 	}
 
 	[[nodiscard]] uint32_t LAPIC::get_ap_id()
 	{
 		uint32_t id = read_register(APIC_REG_ID) >> 24;
 		return id;
+	}
+
+	void LAPIC::set_ap_id(uint32_t id)
+	{
+		write_register(APIC_REG_ID, id << 24);
 	}
 
 	void LAPIC::write_register(uintptr_t offset, uint32_t value)

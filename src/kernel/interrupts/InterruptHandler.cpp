@@ -13,21 +13,31 @@ namespace Kernel::Interrupts
 		assert(interrupt_number < CPU::MAX_INTERRUPTS);
 	}
 
+	bool InterruptHandler::is_registered() const
+	{
+		CPU::Processor &core = CPU::Processor::current();
+		return (m_is_registered >> core.id()) & 1;
+	}
+
 	void InterruptHandler::register_handler()
 	{
-		if (m_is_registered)
+		CPU::Processor &core = CPU::Processor::current();
+
+		if (m_is_registered & 1 << core.id())
 			return;
 
-		CPU::Processor::current().register_interrupt_handler(*this);
-		m_is_registered = true;
+		core.register_interrupt_handler(*this);
+		m_is_registered |= 1 << core.id();
 	}
 
 	void InterruptHandler::unregister_handler()
 	{
-		if (!m_is_registered)
+		CPU::Processor &core = CPU::Processor::current();
+
+		if (!(m_is_registered & 1 << core.id()))
 			return;
 
-		CPU::Processor::current().unregister_interrupt_handler(*this);
-		m_is_registered = false;
+		core.unregister_interrupt_handler(*this);
+		m_is_registered &= ~(1 << core.id());
 	}
 } // namespace Kernel::Interrupts

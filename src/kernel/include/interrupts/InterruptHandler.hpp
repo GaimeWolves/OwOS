@@ -30,10 +30,10 @@ namespace Kernel::Interrupts
 	protected:
 		explicit InterruptHandler(uint32_t interrupt_number);
 
-		[[nodiscard]] bool is_registered() const { return m_is_registered; }
+		[[nodiscard]] bool is_registered() const;
 
 	private:
 		uint32_t m_interrupt_number{0};
-		bool m_is_registered{false};
+		uint32_t m_is_registered{0}; // Bitmap on which cores it is registered
 	};
 } // namespace Kernel::Interrupts
