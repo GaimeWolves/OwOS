@@ -4,6 +4,7 @@
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>
 #include <libk/kmath.hpp>
+#include <libk/kutility.hpp>
 
 namespace Kernel::LibK
 {
@@ -47,6 +48,12 @@ namespace Kernel::LibK
 			return m_array[n];
 		}
 
+		T &front() { return at(0); }
+		const T &front() const { return at(0); }
+
+		T &back() { return at(m_size - 1); }
+		const T &back() const { return at(m_size - 1); }
+
 		[[nodiscard]] size_t size() const { return m_size; }
 		[[nodiscard]] bool empty() const { return m_size == 0; }
 
@@ -82,6 +89,13 @@ namespace Kernel::LibK
 		}
 
 		void push_back(const T &val) { resize(m_size + 1, val); }
+		void push_back(T &&val)
+		{
+			m_size++;
+			ensure_capacity(m_size);
+			m_array[m_size - 1] = move(val);
+		}
+
 		void pop_back() { m_array[m_size-- - 1].~T(); }
 
 		const T *data() const { return m_array; }
