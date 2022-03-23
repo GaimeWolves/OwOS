@@ -18,6 +18,15 @@
 
 namespace Kernel
 {
+	class TestMessage : public CPU::ProcessorMessage
+	{
+	public:
+		void handle() override
+		{
+			LibK::printf_debug_msg("[SMP] Handling test message", CPU::Processor::current().id());
+		}
+	};
+
 	extern "C"
 	{
 		uintptr_t _kernel_start;
@@ -60,6 +69,19 @@ namespace Kernel
 #ifdef _DEBUG
 		LibK::printf_debug_msg("[BSP] Reached end of entry! Halting!");
 #endif
+
+		for (int i = 0; i < 100; i++)
+			Time::TimeManager::instance().sleep(10);
+
+		TestMessage message;
+
+		CPU::Processor::enumerate([&](CPU::Processor &core) {
+			core.smp_enqueue_message(&message);
+			return true;
+		});
+
+		// This should trigger all cores to process their message queues
+		CPU::Processor::smp_poke_all(true);
 
 		for (;;)
 			CPU::Processor::halt();

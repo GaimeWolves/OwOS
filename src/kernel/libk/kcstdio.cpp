@@ -108,10 +108,10 @@ namespace Kernel::LibK
 	void printf_debug_msg(const char *msg, ...)
 	{
 		kernel_print_lock.lock();
-		kputc('[');
+		kprintf("(#%d) [", CPU::Processor::current().id());
 
 		Textmode::set_color(Textmode::Color::MAGENTA, Textmode::Color::BLACK);
-		kputs(" DEBUG");
+		kputs("DEBUG");
 		Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
 
 		kputc(']');

@@ -35,12 +35,12 @@ namespace Kernel::CPU
 
 		~PageFaultHandler() override = default;
 
-		void handle_interrupt(const CPU::registers_t &reg __unused) override
+		void handle_interrupt(const CPU::registers_t &reg) override
 		{
 			uintptr_t address = Processor::cr2();
 
 			// TODO: Actually handle page faults
-			LibK::printf_debug_msg("[MEM] Got page fault at address %p", address);
+			LibK::printf_debug_msg("[MEM] Got page fault at address %p executing %p", address, reg.eip);
 			LibK::printf_debug_msg("[MEM] With error code %i", reg.error_code);
 			panic();
 		}

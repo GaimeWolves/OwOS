@@ -18,6 +18,7 @@ namespace Kernel::CPU
 		struct stackframe_t *next;
 		uintptr_t eip;
 		registers_t *regs; // NOTE: Only used in interrupts
+		registers_t *regs_fault; // NOTE: Only used in interrupts
 	} __packed stackframe_t;
 
 	void print_stacktrace()
@@ -32,7 +33,10 @@ namespace Kernel::CPU
 			symbol_t symbol = get_symbol_by_address(stackframe->eip - 5); // subtract size of call instruction
 
 			if (symbol.address == 0)
+			{
 				kprintf("#%d %p (unknown)\n", current_index, stackframe->eip - 5);
+				return;
+			}
 			else if (symbol.file == nullptr)
 				kprintf("#%d %p in %s\n", current_index, stackframe->eip - 5, symbol.name);
 			else
@@ -42,8 +46,15 @@ namespace Kernel::CPU
 
 			if (strcmp(symbol.name, "common_interrupt_handler") == 0)
 			{
-				kprintf("    <---- Interrupt 0x%.2x ---->\n", stackframe->regs->isr_number);
-				stackframe = (stackframe_t *)stackframe->regs->ebp;
+				// TODO: Investigate, why faults have a different stack layout (I thought I already mitigated this)
+				registers_t *regs = (uintptr_t) stackframe->regs_fault > 0xc0000000 ? stackframe->regs_fault : stackframe->regs;
+
+				kprintf("    <---- Interrupt 0x%.2x ---->\n", regs->isr_number);
+
+				symbol_t interrupted_symbol = get_symbol_by_address(regs->eip);
+				kprintf("#%d %p in %s at %s\n", current_index++, regs->eip, interrupted_symbol.name, interrupted_symbol.file);
+
+				stackframe = (stackframe_t *)regs->ebp;
 				continue;
 			}
 
