@@ -62,7 +62,7 @@ set(KERNEL_INCLUDES
     include/interrupts/SharedIRQHandler.hpp
     include/interrupts/forward.hpp
     include/time/Timer.hpp
-    include/time/TimeManager.hpp
+    include/time/EventManager.hpp
     include/time/PIT.hpp
     include/arch/smp.hpp
     include/locking/Mutex.hpp
@@ -92,7 +92,7 @@ set(KERNEL_SOURCES
     interrupts/InterruptManager.cpp
     interrupts/IOAPIC.cpp
     time/PIT.cpp
-    time/TimeManager.cpp)
+    time/EventManager.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

@@ -8,7 +8,7 @@
 #include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>
-#include <time/TimeManager.hpp>
+#include <time/EventManager.hpp>
 #include <interrupts/LAPIC.hpp>
 #include <interrupts/IRQHandler.hpp>
 #include <interrupts/InterruptManager.hpp>
@@ -53,7 +53,7 @@ namespace Kernel
 		CPU::Processor::current().smp_initialize_messaging();
 		CPU::Processor::current().enable_interrupts();
 
-		Time::TimeManager::instance().initialize();
+		Time::EventManager::instance().initialize();
 
 		VGA::Textmode::init();
 
@@ -70,8 +70,7 @@ namespace Kernel
 		LibK::printf_debug_msg("[BSP] Reached end of entry! Halting!");
 #endif
 
-		for (int i = 0; i < 100; i++)
-			Time::TimeManager::instance().sleep(10);
+		Time::EventManager::instance().sleep(1000);
 
 		TestMessage message;
 

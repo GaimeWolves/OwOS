@@ -19,7 +19,7 @@ namespace Kernel::Time
 			return *instance;
 		}
 
-		void start(uint64_t interval, bool repeat) override;
+		void start(uint64_t interval) override;
 		void stop() override;
 
 		// INFO: Nominal frequency of the PIT = 1193182 Hz
@@ -33,11 +33,10 @@ namespace Kernel::Time
 			: Interrupts::IRQHandler(0)
 		{}
 
-		~PIT() = default;
+		~PIT() override = default;
 
 		void handle_interrupt(const CPU::registers_t &regs) override;
 
-		bool m_is_repeat{false};
 		uint32_t m_current_interval{0};
 
 		IO::Port m_channel_0_data{0x40};

@@ -4,7 +4,7 @@
 #include <arch/Processor.hpp>
 #include <interrupts/InterruptHandler.hpp>
 #include <memory/VirtualMemoryManager.hpp>
-#include <time/TimeManager.hpp>
+#include <time/EventManager.hpp>
 #include <arch/smp.hpp>
 
 #include <libk/katomic.hpp>
@@ -254,16 +254,16 @@ namespace Kernel::Interrupts
 
 		write_icr(0, APIC_DELIV_INIT, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
 
-		Time::TimeManager::instance().sleep(10);
+		Time::EventManager::instance().sleep(10);
 
 		for (int i = 0; i < 2; i++)
 		{
 			write_icr(0x08, APIC_DELIV_START_UP, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
-			Time::TimeManager::instance().usleep(200);
+			Time::EventManager::instance().usleep(200);
 		}
 
 		while(cpu_id < m_available_aps)
-			Time::TimeManager::instance().usleep(200);
+			Time::EventManager::instance().usleep(200);
 
 		do_continue = 1;
 

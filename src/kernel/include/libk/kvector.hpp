@@ -5,6 +5,7 @@
 #include <libk/kcmalloc.hpp>
 #include <libk/kmath.hpp>
 #include <libk/kutility.hpp>
+#include <libk/kcstring.hpp>
 
 namespace Kernel::LibK
 {
@@ -109,12 +110,36 @@ namespace Kernel::LibK
 		const_iterator begin() const { return const_iterator{*this, 0}; }
 		const_iterator end() const { return const_iterator{*this, m_size}; }
 
+		iterator insert(const_iterator position, const T &val)
+		{
+		    ensure_capacity(m_size + 1);
+			memmove(&m_array[position.m_index + 1], &m_array[position.m_index], (m_size - position.m_index) * sizeof(T));
+			m_array[position.m_index] = val;
+			m_size++;
+			return iterator{*this, position.m_index};
+		}
+
+		iterator insert(const_iterator position, size_t n, const T &val)
+		{
+			ensure_capacity(m_size + n);
+			memmove(&m_array[position.m_index + n], &m_array[position.m_index], (m_size - position.m_index) * sizeof(T));
+
+			for (size_t i = 0; i < n; i++)
+				m_array[position.m_index = i] = val;
+
+			m_size += n;
+			return iterator{*this, position.m_index};
+		}
+
+		iterator insert(iterator position, const T &val) { return insert(const_iterator{*this, position.m_index}, val); }
+		iterator insert(iterator position, size_t n, const T &val) { return insert(const_iterator{*this, position.m_index}, n, val); }
+
 		iterator erase(iterator position)
 		{
 			assert(position.m_index >= 0 && position.m_index < m_size);
 
 			m_array[position.m_index].~T();
-			memmove(&m_array[position.m_index], &m_array[position.m_index + 1], m_size - position.m_index - 1);
+			memmove(&m_array[position.m_index], &m_array[position.m_index + 1], (m_size - position.m_index - 1) * sizeof(T));
 			m_size--;
 
 			return position;

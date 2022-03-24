@@ -1,6 +1,6 @@
 #include <time/PIT.hpp>
 
-#include <time/TimeManager.hpp>
+#include <time/EventManager.hpp>
 
 #define CMD_CHANNEL_0 (0b00 << 6)
 #define CMD_CHANNEL_1 (0b01 << 6)
@@ -24,12 +24,11 @@
 
 namespace Kernel::Time
 {
-	void PIT::start(uint64_t interval, bool repeat)
+	void PIT::start(uint64_t interval)
 	{
 		assert(interval <= 65536 && interval > 0);
 
-		uint8_t command = CMD_CHANNEL_0 | CMD_ACCESS_FULL_WORD | CMD_MODE_BINARY;
-		command |= repeat ? CMD_MODE_RATE : CMD_MODE_INT;
+		uint8_t command = CMD_CHANNEL_0 | CMD_ACCESS_FULL_WORD | CMD_MODE_BINARY | CMD_MODE_INT;
 
 		if (interval == 65536)
 			interval = 0;
@@ -48,6 +47,6 @@ namespace Kernel::Time
 
 	void PIT::handle_interrupt(const CPU::registers_t &regs __unused)
 	{
-		m_callback(*this);
+		m_callback();
 	}
 } // namespace Kernel::Time
