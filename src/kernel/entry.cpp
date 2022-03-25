@@ -10,9 +10,9 @@
 #include <vga/textmode.hpp>
 #include <time/EventManager.hpp>
 #include <interrupts/LAPIC.hpp>
-#include <interrupts/IRQHandler.hpp>
 #include <interrupts/InterruptManager.hpp>
 #include <locking/Mutex.hpp>
+#include <time/PIT.hpp>
 
 #include <libk/kcstdio.hpp>
 
@@ -27,25 +27,8 @@ namespace Kernel
 		}
 	};
 
-	extern "C"
+	extern "C" __noreturn void entry()
 	{
-		uintptr_t _kernel_start;
-		uintptr_t _kernel_end;
-	}
-
-	extern "C" __noreturn void entry(uint32_t magic, multiboot_info_t *multiboot_info)
-	{
-		auto start = (uintptr_t)&_kernel_start;
-		auto end = (uintptr_t)&_kernel_end;
-		uintptr_t size = end - start;
-
-		// TODO: Fix initialization order
-		// LibK::printf_debug_msg("[KERNEL] Kernel image size: %x", size);
-
-		assert(size <= 0x300000);
-		assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
-		assert(multiboot_info);
-
 		ACPI::Parser::instance().init();
 
 		Interrupts::InterruptManager::instance().initialize();
@@ -53,7 +36,10 @@ namespace Kernel
 		CPU::Processor::current().smp_initialize_messaging();
 		CPU::Processor::current().enable_interrupts();
 
-		Time::EventManager::instance().initialize();
+		Time::EventManager::instance().register_timer(&Time::PIT::instance());
+
+		Interrupts::APICTimer::instance().initialize();
+		Time::EventManager::instance().register_timer(&Interrupts::APICTimer::instance());
 
 		VGA::Textmode::init();
 
@@ -98,6 +84,7 @@ namespace Kernel
 		CPU::Processor::initialize(cpu_id);
 		CPU::Processor::current().smp_initialize_messaging();
 		CPU::Processor::current().enable_interrupts();
+		Interrupts::APICTimer::instance().initialize();
 		mutex.unlock();
 
 		LibK::printf_debug_msg("[SMP] Initialized AP", cpu_id);

@@ -1,15 +1,9 @@
 #include <time/EventManager.hpp>
 
-#include <time/PIT.hpp>
 #include <arch/Processor.hpp>
 
 namespace Kernel::Time
 {
-	void EventManager::initialize()
-	{
-		register_timer(&PIT::instance());
-	}
-
 	void EventManager::register_timer(Timer *timer)
 	{
 		m_available_timers.push_back(timer);
@@ -92,7 +86,7 @@ namespace Kernel::Time
 
 		for (auto timer : m_available_timers)
 		{
-			if (timer->timer_type() == TimerType::Global && event.core_local)
+			if ((timer->timer_type() != TimerType::CPU && event.core_local) || (timer->timer_type() != TimerType::Global && !event.core_local))
 				continue;
 
 			uint64_t interval = (event.nanoseconds) / timer->get_time_quantum_in_ns();

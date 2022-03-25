@@ -43,20 +43,36 @@
 #define APIC_TRIGGER_EDGE  0
 #define APIC_TRIGGER_LEVEL 1
 
+#define APIC_TIMER_DIVIDE_1   0b1011
+#define APIC_TIMER_DIVIDE_2   0b0000
+#define APIC_TIMER_DIVIDE_4   0b0001
+#define APIC_TIMER_DIVIDE_8   0b0010
+#define APIC_TIMER_DIVIDE_16  0b0011
+#define APIC_TIMER_DIVIDE_32  0b1000
+#define APIC_TIMER_DIVIDE_64  0b1001
+#define APIC_TIMER_DIVIDE_128 0b1010
+
+#define APIC_TIMER_MODE_ONE_SHOT (0b00 << 17)
+#define APIC_TIMER_MODE_PERIODIC (0b01 << 17)
+#define APIC_TIMER_MODE_DEADLINE (0b10 << 17)
+
 #define APIC_REGISTER_SIZE 0x400
 
-#define APIC_REG_ID              0x020
-#define APIC_REG_EOI             0x0B0
-#define APIC_REG_SPV             0x0F0
-#define APIC_REG_LVT_CMCI        0x2F0
-#define APIC_REG_ICR_LOW         0x300
-#define APIC_REG_ICR_HIGH        0x310
-#define APIC_REG_LVT_TIMER       0x320
-#define APIC_REG_LVT_THERMAL     0x330
-#define APIC_REG_LVT_PERFORMANCE 0x340
-#define APIC_REG_LVT_LINT0       0x350
-#define APIC_REG_LVT_LINT1       0x360
-#define APIC_REG_LVT_ERROR       0x370
+#define APIC_REG_ID                  0x020
+#define APIC_REG_EOI                 0x0B0
+#define APIC_REG_SPV                 0x0F0
+#define APIC_REG_LVT_CMCI            0x2F0
+#define APIC_REG_ICR_LOW             0x300
+#define APIC_REG_ICR_HIGH            0x310
+#define APIC_REG_LVT_TIMER           0x320
+#define APIC_REG_LVT_THERMAL         0x330
+#define APIC_REG_LVT_PERFORMANCE     0x340
+#define APIC_REG_LVT_LINT0           0x350
+#define APIC_REG_LVT_LINT1           0x360
+#define APIC_REG_LVT_ERROR           0x370
+#define APIC_REG_TIMER_INITIAL_COUNT 0x380
+#define APIC_REG_TIMER_CURRENT_COUNT 0x390
+#define APIC_REG_TIMER_DIVIDE        0x3E0
 
 namespace Kernel::Interrupts
 {
@@ -294,5 +310,41 @@ namespace Kernel::Interrupts
 		assert(offset <= APIC_REGISTER_SIZE);
 		auto volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
 		return *apic_register;
+	}
+
+	void APICTimer::initialize()
+	{
+		register_handler();
+		LAPIC::instance().write_register(APIC_REG_LVT_TIMER, APIC_TIMER_IRQ | APIC_TIMER_MODE_ONE_SHOT);
+		LAPIC::instance().write_register(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVIDE_16);
+
+		if (m_time_quantum == 0)
+		{
+			LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, UINT32_MAX);
+			Time::EventManager::instance().sleep(10);
+			uint32_t ticks = UINT32_MAX - LAPIC::instance().read_register(APIC_REG_TIMER_CURRENT_COUNT);
+			LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, 0);
+			m_time_quantum = (10 * 1000 * 1000) / ticks;
+		}
+	}
+
+	void APICTimer::handle_interrupt(const CPU::registers_t &regs __unused)
+	{
+		m_callback();
+	}
+
+	void APICTimer::start(uint64_t interval)
+	{
+		LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, interval);
+	}
+
+	void APICTimer::stop()
+	{
+		LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, 0);
+	}
+
+	void APICTimer::eoi()
+	{
+		LAPIC::instance().eoi();
 	}
 } // namespace Kernel::Interrupts

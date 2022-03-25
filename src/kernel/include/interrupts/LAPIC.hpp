@@ -1,14 +1,59 @@
 #pragma once
 
 #include <stdint.h>
+#include <limits.h>
+
+#include <time/Timer.hpp>
+#include <interrupts/IRQHandler.hpp>
+
+#define APIC_TIMER_IRQ (CPU::MAX_INTERRUPTS - 4)
 
 namespace Kernel::Interrupts
 {
 	class APICErrorInterruptHandler;
 	class APICSpuriousInterruptHandler;
 
+	class APICTimer : public Time::Timer, private InterruptHandler
+	{
+	public:
+		static APICTimer &instance()
+		{
+			static APICTimer *instance{nullptr};
+
+			if (!instance)
+				instance = new APICTimer();
+
+			return *instance;
+		}
+
+		void initialize();
+
+		void start(uint64_t interval) override;
+		void stop() override;
+
+		[[nodiscard]] uint64_t get_time_quantum_in_ns() const override { return m_time_quantum; };
+		[[nodiscard]] uint64_t get_maximum_interval() const override { return UINT32_MAX; };
+		[[nodiscard]] Time::TimerType timer_type() const override { return Time::TimerType::CPU; };
+
+		void eoi() override;
+
+		[[nodiscard]] InterruptType type() const override { return InterruptType::GenericInterrupt; }
+
+	private:
+		APICTimer()
+		    : InterruptHandler(APIC_TIMER_IRQ)
+		{}
+
+		~APICTimer() override = default;
+
+		void handle_interrupt(const CPU::registers_t &regs __unused) override;
+
+		uint64_t m_time_quantum{};
+	};
+
 	class LAPIC final
 	{
+		friend APICTimer;
 	public:
 		static LAPIC &instance()
 		{

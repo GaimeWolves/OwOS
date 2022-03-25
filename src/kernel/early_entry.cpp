@@ -23,7 +23,7 @@ namespace Kernel
 {
 	extern "C"
 	{
-		void entry(uint32_t, multiboot_info_t *);
+		void entry();
 
 		typedef void (*func_t)();
 
@@ -35,6 +35,9 @@ namespace Kernel
 
 		func_t _start_dtors;
 		func_t _end_dtors;
+
+		uintptr_t _kernel_start;
+		uintptr_t _kernel_end;
 
 		static void early_preserve_multiboot_info(uint32_t magic, multiboot_info_t *&multiboot_info);
 
@@ -59,6 +62,17 @@ namespace Kernel
 
 		__noreturn void early_entry(uint32_t magic, multiboot_info_t *multiboot_info)
 		{
+			// TODO: Fix initialization order
+			// LibK::printf_debug_msg("[KERNEL] Kernel image size: %x", size);
+
+			auto start = (uintptr_t)&_kernel_start;
+			auto end = (uintptr_t)&_kernel_end;
+			uintptr_t size = end - start;
+
+			assert(size <= 0x300000);
+			assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
+			assert(multiboot_info);
+
 			// Ensure memory management is setup
 			for (func_t *ctor = &_start_heap_ctors; ctor < &_end_heap_ctors; ctor++)
 				(*ctor)();
@@ -83,7 +97,7 @@ namespace Kernel
 			CPU::init_stacktracing();
 
 			// Main kernel entry point
-			entry(magic, multiboot_info);
+			entry();
 
 			for (func_t *dtor = &_start_dtors; dtor < &_end_dtors; dtor++)
 				(*dtor)();

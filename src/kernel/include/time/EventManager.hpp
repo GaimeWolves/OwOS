@@ -31,13 +31,12 @@ namespace Kernel::Time
 			return *instance;
 		}
 
-		void initialize();
 		void register_timer(Timer *timer);
 
 		void usleep(uint64_t usecs);
 		void sleep(uint64_t millis);
 
-		void schedule_event(const LibK::function<void()> &callback, uint64_t millis, bool core_sensitive);
+		void schedule_event(const LibK::function<void()> &callback, uint64_t nanoseconds, bool core_sensitive);
 
 		typedef LibK::vector<event_t> EventQueue;
 
