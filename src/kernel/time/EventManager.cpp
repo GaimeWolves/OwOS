@@ -13,9 +13,6 @@ namespace Kernel::Time
 	void EventManager::register_timer(Timer *timer)
 	{
 		m_available_timers.push_back(timer);
-		timer->set_callback([&]() {
-			handle_event();
-		});
 	}
 
 	void EventManager::usleep(uint64_t usecs)
@@ -46,44 +43,50 @@ namespace Kernel::Time
 			.used_timer = nullptr,
 		};
 
-		for (auto it = m_scheduled_events.begin(); it != m_scheduled_events.end(); ++it)
+		EventQueue &event_queue = core_sensitive ? CPU::Processor::current().get_event_queue() : m_scheduled_events;
+		schedule_on(event, event_queue);
+	}
+
+	void EventManager::schedule_on(const event_t &event, EventQueue &event_queue)
+	{
+		for (auto it = event_queue.begin(); it != event_queue.end(); ++it)
 		{
 			if (event.nanoseconds < it->nanoseconds)
 			{
-				bool reschedule = it == m_scheduled_events.begin();
+				bool reschedule = it == event_queue.begin();
 
 				if (reschedule)
 					it->used_timer->stop();
 
 				it->nanoseconds -= event.nanoseconds;
-				m_scheduled_events.insert(it, event);
+				event_queue.insert(it, event);
 
 				if (reschedule)
-					schedule_next_event();
+					schedule_next_event(event_queue);
 
 				return;
 			}
 		}
 
-		m_scheduled_events.push_back(event);
-		if (m_scheduled_events.size() == 1)
-			schedule_next_event();
+		event_queue.push_back(event);
+		if (event_queue.size() == 1)
+			schedule_next_event(event_queue);
 	}
 
-	void EventManager::handle_event()
+	void EventManager::handle_event(EventQueue &event_queue)
 	{
-		m_scheduled_events.front().callback();
-		m_scheduled_events.erase(m_scheduled_events.begin());
+		event_queue.front().callback();
+		event_queue.erase(event_queue.begin());
 
-		schedule_next_event();
+		schedule_next_event(event_queue);
 	}
 
-	void EventManager::schedule_next_event()
+	void EventManager::schedule_next_event(EventQueue &event_queue)
 	{
-		if (m_scheduled_events.empty())
+		if (event_queue.empty())
 			return;
 
-		event_t &event = m_scheduled_events.front();
+		event_t &event = event_queue.front();
 		uint64_t largest_possible_time = 0;
 		Timer *best_timer;
 
@@ -95,6 +98,7 @@ namespace Kernel::Time
 			uint64_t interval = (event.nanoseconds) / timer->get_time_quantum_in_ns();
 			if (interval <= timer->get_maximum_interval())
 			{
+				timer->set_callback([&event_queue, this](){ handle_event(event_queue); });
 				timer->start(interval);
 				event.used_timer = timer;
 				return;
@@ -119,6 +123,7 @@ namespace Kernel::Time
 		};
 
 		m_scheduled_events.insert(m_scheduled_events.begin(), needed_events, new_event);
+		best_timer->set_callback([&event_queue, this](){ handle_event(event_queue); });
 		best_timer->start(best_timer->get_maximum_interval());
 	}
 } // namespace Kernel::Time

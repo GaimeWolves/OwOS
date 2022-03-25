@@ -39,15 +39,19 @@ namespace Kernel::Time
 
 		void schedule_event(const LibK::function<void()> &callback, uint64_t millis, bool core_sensitive);
 
+		typedef LibK::vector<event_t> EventQueue;
+
 	private:
 		EventManager() = default;
 		~EventManager() = default;
 
-		void handle_event();
-		void schedule_next_event();
+		void handle_event(EventQueue &event_queue);
+		void schedule_next_event(EventQueue &event_queue);
+
+		void schedule_on(const event_t &event, EventQueue &event_queue);
 
 		LibK::vector<Timer *> m_available_timers{};
 		LibK::atomic_uint32_t m_sleeping{0}; // Bitmap of sleeping cores
-		LibK::vector<event_t> m_scheduled_events{}; // TODO: This should use some sort of linked list
+		EventQueue m_scheduled_events{}; // TODO: This should use some sort of linked list
 	};
 }

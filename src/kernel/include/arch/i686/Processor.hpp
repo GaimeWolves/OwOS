@@ -7,8 +7,8 @@
 #include <arch/i686/interrupts.hpp>
 #include <arch/i686/gdt.hpp>
 #include <arch/smp.hpp>
-
 #include <interrupts/InterruptHandler.hpp>
+#include <time/EventManager.hpp>
 
 namespace Kernel::CPU
 {
@@ -58,6 +58,8 @@ namespace Kernel::CPU
 		static void smp_poke_all(bool excluding_self);
 		void smp_enqueue_message(ProcessorMessage *message);
 		void smp_process_messages();
+
+		Time::EventManager::EventQueue &get_event_queue() { return m_scheduled_events; }
 
 		[[nodiscard]] static uint32_t count();
 		[[nodiscard]] uint32_t id() const { return m_id; }
@@ -150,5 +152,6 @@ namespace Kernel::CPU
 		// TODO: Implement an actual FIFO data structure
 		//       Refcount ProcessorMessage
 		LibK::vector<ProcessorMessage *> m_queued_messages{};
+		Time::EventManager::EventQueue m_scheduled_events{};
 	};
 }
