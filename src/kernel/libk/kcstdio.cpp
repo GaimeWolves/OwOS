@@ -4,6 +4,7 @@
 #include <libk/kcstdarg.hpp>
 #include <vga/textmode.hpp>
 #include <locking/Mutex.hpp>
+#include <arch/Processor.hpp>
 
 #include "printf.hpp"
 

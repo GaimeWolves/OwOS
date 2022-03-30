@@ -37,7 +37,7 @@ namespace Kernel::CPU
 		uint32_t base;
 	} __packed idt_descriptor_t;
 
-	typedef struct registers_t
+	typedef struct interrupt_frame_t
 	{
 		uint32_t ss;
 		uint32_t gs;
@@ -57,5 +57,5 @@ namespace Kernel::CPU
 		uint32_t eip;
 		uint32_t cs;
 		uint32_t eflags;
-	} registers_t;
+	} interrupt_frame_t;
 } // namespace Kernel::Processor

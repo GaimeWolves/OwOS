@@ -68,7 +68,7 @@ namespace Kernel::Devices
 
 		void configure(BaudRate rate, DataLength length, StopBits stopBits, ParityType parity);
 
-		void write(const LibK::string &str);
+		void write(const char *str);
 		void write_one(char ch);
 
 		LibK::string read(size_t n);

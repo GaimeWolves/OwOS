@@ -8,7 +8,7 @@
 __noreturn void __assertion_failed(const char *condition, const char *file, unsigned line, const char *function)
 {
 	Kernel::CPU::Processor::current().disable_interrupts();
-	kprintf("%s:%d %s: Assertion '%s' failed.\n", file, line, function, condition);
+	kprintf("(#%d) %s:%d %s: Assertion '%s' failed.\n", Kernel::CPU::Processor::current().id(), file, line, function, condition);
 
 	Kernel::CPU::print_stacktrace();
 

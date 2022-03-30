@@ -2,8 +2,10 @@
 
 #include <libk/kcassert.hpp>
 #include <libk/kcstddef.hpp>
+#include <libk/kcstring.hpp>
 #include <libk/ktype_traits.hpp>
 #include <libk/kutility.hpp>
+#include <libk/kshared_ptr.hpp>
 
 namespace Kernel::LibK
 {
@@ -38,7 +40,6 @@ namespace Kernel::LibK
 
 	public:
 		function()
-		    : m_invoke_fn(nullptr), m_construct_fn(nullptr), m_destroy_fn(nullptr), m_functor_ptr(nullptr), m_functor_size(0)
 		{
 		}
 
@@ -47,89 +48,122 @@ namespace Kernel::LibK
 		    : m_invoke_fn(reinterpret_cast<invoke_fn_t>(invoke_fn<Functor>))
 		    , m_construct_fn(reinterpret_cast<construct_fn_t>(construct_fn<Functor>))
 		    , m_destroy_fn(reinterpret_cast<destroy_fn_t>(destroy_fn<Functor>))
-		    , m_functor_ptr(new char[sizeof(Functor)])
 		    , m_functor_size(sizeof(Functor))
 		{
-			m_construct_fn(m_functor_ptr, reinterpret_cast<char *>(&functor));
+			if (m_functor_size > SMALL_SIZE)
+			{
+				m_functor_ptr = shared_ptr<char>(new char[m_functor_size]);
+				m_construct_fn(m_functor_ptr.get(), reinterpret_cast<char *>(&functor));
+			}
+			else
+				m_construct_fn(m_functor_small, reinterpret_cast<char *>(&functor));
 		}
 
 		function(function const &rhs)
 		    : m_invoke_fn(rhs.m_invoke_fn)
 		    , m_construct_fn(rhs.m_construct_fn)
 		    , m_destroy_fn(rhs.m_destroy_fn)
-		    , m_functor_ptr(nullptr)
+		    , m_functor_ptr(rhs.m_functor_ptr)
 		    , m_functor_size(rhs.m_functor_size)
 		{
-			if (m_invoke_fn)
-			{
-				rhs.m_destroy_fn(rhs.m_functor_ptr);
-				m_functor_ptr = new char[m_functor_size];
-				m_construct_fn(m_functor_ptr, rhs.m_functor_ptr);
-			}
+			if (m_functor_size <= SMALL_SIZE)
+				m_construct_fn(m_functor_small, (char *)rhs.m_functor_small);
 		}
 
 		template <typename Functor>
 		function &operator=(Functor functor)
 		{
-			if (m_functor_ptr)
-			{
-				m_destroy_fn(m_functor_ptr);
-			}
+			this->~function();
 
 			m_invoke_fn = reinterpret_cast<invoke_fn_t>(invoke_fn<Functor>);
 			m_construct_fn = reinterpret_cast<construct_fn_t>(construct_fn<Functor>);
 			m_destroy_fn = reinterpret_cast<destroy_fn_t>(destroy_fn<Functor>);
-			m_functor_ptr = new char[sizeof(Functor)];
 			m_functor_size = sizeof(Functor);
 
-			m_construct_fn(m_functor_ptr, reinterpret_cast<char *>(&functor));
+			if (m_functor_size > SMALL_SIZE)
+			{
+				m_functor_ptr = shared_ptr<char>(new char[m_functor_size]);
+				m_construct_fn(m_functor_ptr.get(), reinterpret_cast<char *>(&functor));
+			}
+			else
+				m_construct_fn(m_functor_small, reinterpret_cast<char *>(&functor));
 
 			return *this;
 		}
 
 		function &operator=(const function &rhs)
 		{
+			this->~function();
+
 			m_invoke_fn = rhs.m_invoke_fn;
 			m_construct_fn = rhs.m_construct_fn;
-			m_destroy_fn = rhs.m_destroy_fn;
 			m_functor_size = rhs.m_functor_size;
+			m_destroy_fn = rhs.m_destroy_fn;
+			m_functor_ptr = rhs.m_functor_ptr;
 
-			if (m_invoke_fn)
-			{
-				if (m_functor_ptr)
-				{
-					m_destroy_fn(m_functor_ptr);
-				}
+			if (m_invoke_fn && m_functor_size <= SMALL_SIZE)
+				m_construct_fn(m_functor_small, (char *)rhs.m_functor_small);
 
-				m_functor_ptr = new char[m_functor_size];
-				m_construct_fn(m_functor_ptr, rhs.m_functor_ptr);
-			}
+			return *this;
+		}
+
+		function &operator=(function &&rhs) noexcept
+		{
+			this->~function();
+
+			m_invoke_fn = rhs.m_invoke_fn;
+			m_construct_fn = rhs.m_construct_fn;
+			m_functor_size = rhs.m_functor_size;
+			m_destroy_fn = rhs.m_destroy_fn;
+			m_functor_ptr = rhs.m_functor_ptr;
+
+			if (m_invoke_fn && m_functor_size <= SMALL_SIZE)
+				m_construct_fn(m_functor_small, (char *)rhs.m_functor_small);
+
+			rhs->~function();
 
 			return *this;
 		}
 
 		~function()
 		{
-			if (m_functor_ptr)
+			if (m_destroy_fn)
 			{
-				m_destroy_fn(m_functor_ptr);
+				if (m_functor_ptr)
+					m_destroy_fn(m_functor_ptr.get());
+				else if (m_functor_size > 0)
+					m_destroy_fn(m_functor_small);
 			}
+
+			// TODO: Investigate why this breaks stuff
+			//m_invoke_fn = nullptr;
+			//m_construct_fn = nullptr;
+			//m_destroy_fn = nullptr;
+			m_functor_size = 0;
+			m_functor_ptr = shared_ptr<char>(nullptr);
 		}
 
 		Ret operator()(Args...args) const
 		{
-			return m_invoke_fn(m_functor_ptr, LibK::forward<Args>(args)...);
+			if (m_functor_ptr)
+				return m_invoke_fn(m_functor_ptr.get(), LibK::forward<Args>(args)...);
+			else
+				return m_invoke_fn((char *)m_functor_small, LibK::forward<Args>(args)...);
 		}
 
-		explicit operator bool() const noexcept { return m_functor_ptr != nullptr; }
+		explicit operator bool() const noexcept { return m_invoke_fn; }
 
 	private:
-		invoke_fn_t m_invoke_fn;
-		construct_fn_t m_construct_fn;
-		destroy_fn_t m_destroy_fn;
+		static constexpr size_t SMALL_SIZE = 32;
+
+		invoke_fn_t m_invoke_fn{nullptr};
+		construct_fn_t m_construct_fn{nullptr};
+		destroy_fn_t m_destroy_fn{nullptr};
 
 		// TODO: Use an unique_ptr here
-		char *m_functor_ptr;
-		size_t m_functor_size;
+		shared_ptr<char> m_functor_ptr{nullptr};
+		size_t m_functor_size{0};
+
+		char m_functor_small[SMALL_SIZE]{};
 	};
 } // namespace Kernel::LibK

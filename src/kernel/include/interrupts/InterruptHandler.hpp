@@ -20,7 +20,7 @@ namespace Kernel::Interrupts
 		void register_handler();
 		void unregister_handler();
 
-		virtual void handle_interrupt(const CPU::registers_t &regs) = 0;
+		virtual void handle_interrupt(const CPU::interrupt_frame_t &regs) = 0;
 		virtual void eoi() = 0;
 
 		[[nodiscard]] uint32_t interrupt_number() const { return m_interrupt_number; }

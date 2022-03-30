@@ -3,7 +3,6 @@
 #include <stddef.h>
 
 #include "kvector.hpp"
-#include "../../../../toolchain/lib/gcc/i686-elf/11.2.0/include/stddef.h"
 
 namespace Kernel::LibK
 {

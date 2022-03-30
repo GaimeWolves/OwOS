@@ -14,7 +14,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		void handle_interrupt(const CPU::registers_t &regs) override
+		void handle_interrupt(const CPU::interrupt_frame_t &regs) override
 		{
 			for (auto handler : m_handlers)
 			{

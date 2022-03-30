@@ -22,7 +22,9 @@ set(LIBK_INCLUDES
     include/libk/kiterator.hpp
     include/libk/__iterators.hpp
     include/libk/AVLTree.hpp
-    include/libk/kstack.hpp)
+    include/libk/kstack.hpp
+    include/libk/kshared_ptr.hpp
+    include/libk/Concurrent.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
@@ -66,7 +68,12 @@ set(KERNEL_INCLUDES
     include/time/PIT.hpp
     include/arch/smp.hpp
     include/locking/Mutex.hpp
-    include/arch/Processor.hpp)
+    include/arch/Processor.hpp
+    include/processes/definitions.hpp
+    include/arch/process.hpp
+    include/processes/CoreScheduler.hpp
+    include/arch/definitions.hpp
+    include/processes/GlobalScheduler.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -92,7 +99,11 @@ set(KERNEL_SOURCES
     interrupts/InterruptManager.cpp
     interrupts/IOAPIC.cpp
     time/PIT.cpp
-    time/EventManager.cpp)
+    time/EventManager.cpp
+    processes/CoreScheduler.cpp
+    locking/Mutex.cpp
+    arch/Processor.cpp
+    processes/GlobalScheduler.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

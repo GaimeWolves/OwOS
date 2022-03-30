@@ -46,7 +46,7 @@ namespace Kernel::Interrupts
 
 		~APICTimer() override = default;
 
-		void handle_interrupt(const CPU::registers_t &regs __unused) override;
+		void handle_interrupt(const CPU::interrupt_frame_t &regs __unused) override;
 
 		uint64_t m_time_quantum{};
 	};

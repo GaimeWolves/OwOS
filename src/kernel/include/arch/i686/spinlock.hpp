@@ -3,7 +3,6 @@
 #include <libk/katomic.hpp>
 #include <libk/kcassert.hpp>
 
-#include <arch/i686/Processor.hpp>
 #include <common_attributes.h>
 
 namespace Kernel::Locking
@@ -17,22 +16,9 @@ namespace Kernel::Locking
 		Spinlock(const Spinlock &) = delete;
 		Spinlock(Spinlock &&) = delete;
 
-		always_inline void lock()
-		{
-			CPU::Processor::current().enter_critical();
-			while (m_lock.exchange(1, LibK::memory_order_acquire))
-			{
-				CPU::Processor::pause();
-			}
-		}
-
-		always_inline void unlock()
-		{
-			assert(is_locked());
-
-			m_lock.store(0);
-			CPU::Processor::current().leave_critical();
-		}
+		bool try_lock();
+		void lock();
+		void unlock();
 
 		always_inline bool is_locked() const noexcept
 		{

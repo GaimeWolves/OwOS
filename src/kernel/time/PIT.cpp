@@ -45,8 +45,8 @@ namespace Kernel::Time
 		disable_irq();
 	}
 
-	void PIT::handle_interrupt(const CPU::registers_t &regs __unused)
+	void PIT::handle_interrupt(const CPU::interrupt_frame_t &regs __unused)
 	{
-		m_callback();
+		m_callback(*this);
 	}
 } // namespace Kernel::Time

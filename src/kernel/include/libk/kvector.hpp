@@ -125,7 +125,7 @@ namespace Kernel::LibK
 			memmove(&m_array[position.m_index + n], &m_array[position.m_index], (m_size - position.m_index) * sizeof(T));
 
 			for (size_t i = 0; i < n; i++)
-				m_array[position.m_index = i] = val;
+				m_array[position.m_index + i] = val;
 
 			m_size += n;
 			return iterator{*this, position.m_index};

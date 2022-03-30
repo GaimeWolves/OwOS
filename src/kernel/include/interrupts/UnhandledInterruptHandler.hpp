@@ -16,7 +16,7 @@ namespace Kernel::Interrupts
 
 		~UnhandledInterruptHandler() override = default;
 
-		void handle_interrupt(const CPU::registers_t &reg __unused) override
+		void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
 			panic("Unhandled interrupt handler called [%d]", interrupt_number());
 		}

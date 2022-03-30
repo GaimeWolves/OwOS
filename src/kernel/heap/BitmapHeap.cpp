@@ -67,7 +67,7 @@ namespace Kernel::Heap
 
 	void BitmapHeap::expand(uintptr_t addr, uint32_t size, uint32_t block_size)
 	{
-		m_heap_mutex.lock();
+		m_heap_lock.lock();
 		heap_block_t *block = (heap_block_t *)addr;
 		block->mem_size = size - sizeof(heap_block_t);
 		block->block_size = block_size;
@@ -99,12 +99,12 @@ namespace Kernel::Heap
 		m_stats.size += size;
 		m_stats.free += size - metadata_size;
 		m_stats.meta += metadata_size;
-		m_heap_mutex.unlock();
+		m_heap_lock.unlock();
 	}
 
 	void *BitmapHeap::alloc(size_t size, size_t align)
 	{
-		m_heap_mutex.lock();
+		m_heap_lock.lock();
 		// Iterate through all blocks
 		for (auto block = m_first_block; block; block = block->next)
 		{
@@ -154,21 +154,21 @@ namespace Kernel::Heap
 				block->used_blocks += count;
 
 				// Update statistics
-				m_stats.free -= needed_blocks * block->block_size;
-				m_stats.used += needed_blocks * block->block_size;
+				m_stats.free -= count * block->block_size;
+				m_stats.used += count * block->block_size;
 
-				m_heap_mutex.unlock();
+				m_heap_lock.unlock();
 				return (void *)(address + offset);
 			}
 		}
-		m_heap_mutex.unlock();
+		m_heap_lock.unlock();
 
 		return nullptr;
 	}
 
 	void BitmapHeap::free(void *ptr)
 	{
-		m_heap_mutex.lock();
+		m_heap_lock.lock();
 		for (auto block = m_first_block; block; block = block->next)
 		{
 			// Pointer is inside block
@@ -178,6 +178,14 @@ namespace Kernel::Heap
 				uintptr_t offset = (uintptr_t)ptr - (uintptr_t)bitmap;
 				uint32_t block_index = offset / block->block_size;
 				uint8_t id = getID(bitmap, block_index);
+
+				assert(id != 0);
+
+				while (getID(bitmap, block_index) == id && block_index != 0)
+					block_index--;
+
+				if (getID(bitmap, block_index) != id)
+					block_index++;
 
 				uint32_t block_count = block->mem_size / block->block_size;
 
@@ -192,11 +200,11 @@ namespace Kernel::Heap
 				m_stats.free += size * block->block_size;
 				m_stats.used -= size * block->block_size;
 
-				m_heap_mutex.unlock();
+				m_heap_lock.unlock();
 				return;
 			}
 		}
-		m_heap_mutex.unlock();
+		m_heap_lock.unlock();
 	}
 
 	size_t BitmapHeap::size(void *ptr)

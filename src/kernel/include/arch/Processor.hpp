@@ -5,3 +5,9 @@
 #else
 #	error No arch-specific Processor.hpp included
 #endif
+
+namespace Kernel::CPU
+{
+	bool is_bsp_initialization_finished();
+	void set_bsp_initialization_finished();
+}

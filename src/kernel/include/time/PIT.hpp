@@ -35,7 +35,7 @@ namespace Kernel::Time
 
 		~PIT() override = default;
 
-		void handle_interrupt(const CPU::registers_t &regs) override;
+		void handle_interrupt(const CPU::interrupt_frame_t &regs) override;
 
 		uint32_t m_current_interval{0};
 

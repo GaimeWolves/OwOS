@@ -10,15 +10,15 @@ namespace Kernel::CPU
 {
 	// NOTE: Stack tracing past interrupts:
 	//       To trace past interrupt boundaries check for the function "common_interrupt_handler"
-	//       it holds an argument "registers_t *regs" which holds the eip and ebp of the function that
+	//       it holds an argument "interrupt_frame_t *regs" which holds the eip and ebp of the function that
 	//       caused the interrupt. Continue tracing using these values.
 
 	typedef struct stackframe_t
 	{
 		struct stackframe_t *next;
 		uintptr_t eip;
-		registers_t *regs; // NOTE: Only used in interrupts
-		registers_t *regs_fault; // NOTE: Only used in interrupts
+		interrupt_frame_t *regs; // NOTE: Only used in interrupts
+		interrupt_frame_t *regs_fault; // NOTE: Only used in interrupts
 	} __packed stackframe_t;
 
 	void print_stacktrace()
@@ -47,7 +47,7 @@ namespace Kernel::CPU
 			if (strcmp(symbol.name, "common_interrupt_handler") == 0)
 			{
 				// TODO: Investigate, why faults have a different stack layout (I thought I already mitigated this)
-				registers_t *regs = (uintptr_t) stackframe->regs_fault > 0xc0000000 ? stackframe->regs_fault : stackframe->regs;
+				interrupt_frame_t *regs = (uintptr_t) stackframe->regs_fault > 0xc0000000 ? stackframe->regs_fault : stackframe->regs;
 
 				kprintf("    <---- Interrupt 0x%.2x ---->\n", regs->isr_number);
 

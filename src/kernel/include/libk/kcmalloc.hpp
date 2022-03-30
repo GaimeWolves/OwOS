@@ -17,6 +17,12 @@ namespace Kernel::Heap
 	const heap_statistics_t &getStatistics();
 } // namespace Kernel::Heap
 
+// These must lie in the std namespace
+namespace std
+{
+	enum class align_val_t : size_t {};
+};
+
 extern "C"
 {
 	__attribute__((malloc)) void *kmalloc(size_t size, size_t align = 1);

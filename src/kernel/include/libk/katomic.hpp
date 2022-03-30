@@ -30,7 +30,7 @@ namespace Kernel::LibK
 		atomic(const atomic &) = delete;
 		atomic(atomic &&) = delete;
 
-		constexpr explicit atomic(T value) noexcept
+		constexpr atomic(T value) noexcept
 		    : m_value(value)
 		{
 		}
@@ -190,7 +190,7 @@ namespace Kernel::LibK
 		atomic(const atomic &) = delete;
 		atomic(atomic &&) = delete;
 
-		constexpr explicit atomic(T *value) noexcept
+		constexpr atomic(T *value) noexcept
 		    : m_value(value)
 		{
 		}

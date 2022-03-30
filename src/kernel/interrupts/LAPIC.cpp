@@ -88,7 +88,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		virtual void handle_interrupt(const CPU::registers_t &reg __unused) override
+		virtual void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
 			LibK::printf_debug_msg("[APIC] Got error interrupt");
 		}
@@ -114,7 +114,7 @@ namespace Kernel::Interrupts
 		{
 		}
 
-		virtual void handle_interrupt(const CPU::registers_t &reg __unused) override
+		virtual void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
 			LibK::printf_debug_msg("[APIC] Got spurious interrupt");
 		}
@@ -270,16 +270,18 @@ namespace Kernel::Interrupts
 
 		write_icr(0, APIC_DELIV_INIT, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
 
-		Time::EventManager::instance().sleep(10);
+		Time::EventManager::instance().early_sleep(10 * 1000);
 
 		for (int i = 0; i < 2; i++)
 		{
 			write_icr(0x08, APIC_DELIV_START_UP, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
-			Time::EventManager::instance().usleep(200);
+			Time::EventManager::instance().early_sleep(200);
 		}
 
 		while(cpu_id < m_available_aps)
-			Time::EventManager::instance().usleep(200);
+			Time::EventManager::instance().early_sleep(200);
+
+		CPU::set_bsp_initialization_finished();
 
 		do_continue = 1;
 
@@ -321,16 +323,16 @@ namespace Kernel::Interrupts
 		if (m_time_quantum == 0)
 		{
 			LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, UINT32_MAX);
-			Time::EventManager::instance().sleep(10);
+			Time::EventManager::instance().early_sleep(10 * 1000);
 			uint32_t ticks = UINT32_MAX - LAPIC::instance().read_register(APIC_REG_TIMER_CURRENT_COUNT);
 			LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, 0);
 			m_time_quantum = (10 * 1000 * 1000) / ticks;
 		}
 	}
 
-	void APICTimer::handle_interrupt(const CPU::registers_t &regs __unused)
+	void APICTimer::handle_interrupt(const CPU::interrupt_frame_t &regs __unused)
 	{
-		m_callback();
+		m_callback(*this);
 	}
 
 	void APICTimer::start(uint64_t interval)

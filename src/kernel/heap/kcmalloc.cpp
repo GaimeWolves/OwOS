@@ -89,6 +89,16 @@ void *operator new[](size_t size)
 	return kmalloc(size);
 }
 
+void *operator new(size_t size, std::align_val_t al)
+{
+	return kmalloc(size, static_cast<size_t>(al));
+}
+
+void *operator new[](size_t size, std::align_val_t al)
+{
+	return kmalloc(size, static_cast<size_t>(al));
+}
+
 void operator delete(void *p)
 {
 	kfree(p);

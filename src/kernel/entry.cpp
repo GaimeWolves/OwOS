@@ -1,10 +1,8 @@
 #include <stdint.h>
 
-#include <arch/interrupts.hpp>
 #include <arch/Processor.hpp>
 #include <common_attributes.h>
 #include <firmware/acpi/Parser.hpp>
-#include <multiboot.h>
 #include <pci/pci.hpp>
 #include <tests.hpp>
 #include <vga/textmode.hpp>
@@ -13,6 +11,8 @@
 #include <interrupts/InterruptManager.hpp>
 #include <locking/Mutex.hpp>
 #include <time/PIT.hpp>
+#include <processes/CoreScheduler.hpp>
+#include <processes/GlobalScheduler.hpp>
 
 #include <libk/kcstdio.hpp>
 
@@ -26,6 +26,48 @@ namespace Kernel
 			LibK::printf_debug_msg("[SMP] Handling test message", CPU::Processor::current().id());
 		}
 	};
+
+	static Locking::Mutex s_dummy_mutex;
+
+	static void dummy_thread_A()
+	{
+		LibK::printf_debug_msg("Thread A starting");
+		LibK::printf_debug_msg("Thread A acquiring lock");
+		s_dummy_mutex.lock();
+		LibK::printf_debug_msg("Thread A acquired lock");
+		Time::EventManager::instance().sleep(1000);
+		LibK::printf_debug_msg("Thread A releasing lock");
+		s_dummy_mutex.unlock();
+		LibK::printf_debug_msg("Thread A released lock");
+		Time::EventManager::instance().sleep(500);
+		LibK::printf_debug_msg("Thread A acquiring lock");
+		s_dummy_mutex.lock();
+		LibK::printf_debug_msg("Thread A acquired lock");
+
+		CoreScheduler::terminate_current();
+	}
+
+	__noreturn static void dummy_thread_B()
+	{
+		LibK::printf_debug_msg("Thread B starting");
+		Time::EventManager::instance().sleep(500);
+		LibK::printf_debug_msg("Thread B acquiring lock");
+		s_dummy_mutex.lock();
+		LibK::printf_debug_msg("Thread B acquired lock");
+		Time::EventManager::instance().sleep(1000);
+		LibK::printf_debug_msg("Thread B releasing lock");
+		s_dummy_mutex.unlock();
+		LibK::printf_debug_msg("Thread B released lock");
+
+		for (;;)
+		{
+			uintptr_t esp = 0;
+			asm("mov %%esp, %0" : "=m"(esp) ::);
+
+			LibK::printf_debug_msg("Heap: %d bytes used --- esp: %p", Heap::getStatistics().used, esp);
+			Time::EventManager::instance().sleep(1000); // TODO: Fix memory leak when sleeping for 1000ms (probably caused by a missing free when merging two events)
+		}
+	}
 
 	extern "C" __noreturn void entry()
 	{
@@ -53,23 +95,16 @@ namespace Kernel
 		Interrupts::LAPIC::instance().start_smp_boot();
 
 #ifdef _DEBUG
-		LibK::printf_debug_msg("[BSP] Reached end of entry! Halting!");
+		LibK::printf_debug_msg("[BSP] Starting scheduler and sleeping until first tick...");
 #endif
 
-		Time::EventManager::instance().sleep(1000);
+		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_A));
+		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_B));
 
-		TestMessage message;
-
-		CPU::Processor::enumerate([&](CPU::Processor &core) {
-			core.smp_enqueue_message(&message);
-			return true;
-		});
-
-		// This should trigger all cores to process their message queues
-		CPU::Processor::smp_poke_all(true);
+		CoreScheduler::initialize();
 
 		for (;;)
-			CPU::Processor::halt();
+			CPU::Processor::sleep();
 	}
 
 	static Locking::Mutex mutex;
@@ -87,9 +122,9 @@ namespace Kernel
 		Interrupts::APICTimer::instance().initialize();
 		mutex.unlock();
 
-		LibK::printf_debug_msg("[SMP] Initialized AP", cpu_id);
+		LibK::printf_debug_msg("[SMP] Starting scheduler and sleeping until first tick...");
 
-		LibK::printf_debug_msg("[SMP] Reached end of entry! Entering sleep...", cpu_id);
+		CoreScheduler::initialize();
 
 		for (;;)
 			CPU::Processor::sleep();

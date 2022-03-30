@@ -19,7 +19,7 @@ namespace Kernel::Interrupts
 			assert(m_interrupt_controller);
 		}
 
-		void handle_interrupt(const CPU::registers_t &regs) override = 0;
+		void handle_interrupt(const CPU::interrupt_frame_t &regs) override = 0;
 
 		void eoi() override
 		{

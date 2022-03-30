@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include <libk/kcmalloc.hpp>
-#include <locking/Mutex.hpp>
+#include <arch/spinlock.hpp>
 
 namespace Kernel::Heap
 {
@@ -32,6 +32,7 @@ namespace Kernel::Heap
 
 		const heap_statistics_t &getStatistics() { return m_stats; }
 
-		Locking::Mutex m_heap_mutex{};
+		Locking::Spinlock m_heap_lock{};
 	};
 } // namespace Kernel::Heap
+

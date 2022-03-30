@@ -9,11 +9,17 @@
 #include <arch/smp.hpp>
 #include <interrupts/InterruptHandler.hpp>
 #include <time/EventManager.hpp>
+#include <processes/definitions.hpp>
+#include <processes/CoreScheduler.hpp>
+#include <processes/GlobalScheduler.hpp>
 
 namespace Kernel::CPU
 {
 	class Processor
 	{
+	private:
+		friend CoreScheduler;
+		friend GlobalScheduler;
 	public:
 		[[nodiscard]] static Processor &current();
 		static void set_core_count(uint32_t core_count);
@@ -53,6 +59,12 @@ namespace Kernel::CPU
 		void unregister_interrupt_handler(Interrupts::InterruptHandler &handler);
 		[[nodiscard]] uint32_t get_used_interrupt_count() const;
 
+		always_inline void set_interrupt_frame(interrupt_frame_t *frame) { m_current_frame = frame; }
+		[[nodiscard]] always_inline interrupt_frame_t *get_interrupt_frame() const { return m_current_frame; }
+
+		always_inline void set_exit_function(const LibK::function<void()> &function) { m_exit_function = function; }
+		[[nodiscard]] always_inline LibK::function<void()> &get_exit_function() { return m_exit_function; }
+
 		void smp_initialize_messaging();
 		void smp_poke();
 		static void smp_poke_all(bool excluding_self);
@@ -60,6 +72,14 @@ namespace Kernel::CPU
 		void smp_process_messages();
 
 		Time::EventManager::EventQueue &get_event_queue() { return m_scheduled_events; }
+
+		static thread_t create_kernel_thread(uintptr_t main_function);
+		static void enter_thread_context(thread_t thread);
+		static void initial_enter_thread_context(thread_t thread);
+		void update_thread_context(thread_t &thread);
+		[[nodiscard]] bool is_scheduler_running() const { return m_scheduler_initialized; }
+		[[nodiscard]] bool is_thread_running() const { return m_current_thread; }
+		[[nodiscard]] thread_t *get_current_thread() const { return m_current_thread; }
 
 		[[nodiscard]] static uint32_t count();
 		[[nodiscard]] uint32_t id() const { return m_id; }
@@ -127,6 +147,8 @@ namespace Kernel::CPU
 		void init_idt();
 		void init_fault_handlers();
 
+		static thread_registers_t create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr);
+
 		always_inline static void sti()
 		{
 			asm volatile("sti");
@@ -137,9 +159,22 @@ namespace Kernel::CPU
 			asm volatile("cli");
 		}
 
+		always_inline static uint32_t eflags()
+		{
+			uintptr_t eflags = 0;
+
+			asm volatile("pushf\n"
+			             "pop %%eax"
+			             : "=a"(eflags));
+
+			return eflags;
+		}
+
 		uint32_t m_id{0};
 		bool m_interrupts_enabled{false};
 		bool m_in_critical{false};
+		interrupt_frame_t *m_current_frame{};
+		LibK::function<void()> m_exit_function{};
 
 		CPU::idt_entry_t m_idt[CPU::MAX_INTERRUPTS]{};
 		CPU::idt_descriptor_t m_idtr{};
@@ -153,5 +188,11 @@ namespace Kernel::CPU
 		//       Refcount ProcessorMessage
 		LibK::vector<ProcessorMessage *> m_queued_messages{};
 		Time::EventManager::EventQueue m_scheduled_events{};
+
+		bool m_scheduler_initialized{false};
+		LibK::vector<thread_t> m_running_threads{};
+		thread_t *m_current_thread{nullptr};
+		size_t m_current_thread_index{0};
+		thread_t m_idle_thread{};
 	};
 }

@@ -35,7 +35,7 @@ namespace Kernel::CPU
 
 		~PageFaultHandler() override = default;
 
-		void handle_interrupt(const CPU::registers_t &reg) override
+		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
 			uintptr_t address = Processor::cr2();
 
@@ -55,9 +55,9 @@ namespace Kernel::CPU
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type);
 
 	extern "C" __naked void common_interrupt_handler_entry();
-	extern "C" void common_interrupt_handler(registers_t *regs);
+	extern "C" void common_interrupt_handler(interrupt_frame_t *regs);
 
-	static __noreturn void unhandled_interrupt_handler(registers_t *regs);
+	static __noreturn void unhandled_interrupt_handler(interrupt_frame_t *regs);
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type)
 	{
@@ -103,18 +103,24 @@ namespace Kernel::CPU
 		    "iret\n");
 	}
 
-	extern "C" void common_interrupt_handler(registers_t *regs)
+	extern "C" void common_interrupt_handler(interrupt_frame_t *regs)
 	{
-		auto handler = Processor::current().get_interrupt_handler(regs->isr_number);
+		Processor &core = Processor::current();
+		core.set_exit_function({});
+		core.set_interrupt_frame(regs);
+		auto handler = core.get_interrupt_handler(regs->isr_number);
 
 		if (!handler)
 			unhandled_interrupt_handler(regs);
 
 		handler->handle_interrupt(*regs);
+		core.set_interrupt_frame(nullptr);
 		handler->eoi();
+		if (core.get_exit_function())
+			core.get_exit_function()();
 	}
 
-	static __noreturn void unhandled_interrupt_handler(registers_t *regs)
+	static __noreturn void unhandled_interrupt_handler(interrupt_frame_t *regs)
 	{
 		// TODO: For now we halt on every unhandled interrupt.
 		//       This is probably undesired for anything other than faults. (i.e. interrupts 0 to 31)

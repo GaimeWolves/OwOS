@@ -126,13 +126,13 @@ namespace Kernel::Devices
 		m_is_faulty = m_data_reg.in<uint8_t>() != 0xAE;
 	}
 
-	void SerialPort::write(const LibK::string &str)
+	void SerialPort::write(const char *str)
 	{
 		if (m_is_faulty)
 			return;
 
-		for (auto ch : str)
-			write_one(ch);
+		while (*str)
+			write_one(*str++);
 	}
 
 	void SerialPort::write_one(char ch)
