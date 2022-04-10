@@ -6,6 +6,7 @@
 #include <libk/kmath.hpp>
 #include <libk/kutility.hpp>
 #include <libk/kcstring.hpp>
+#include <libk/kfunctional.hpp>
 
 namespace Kernel::LibK
 {
@@ -143,6 +144,28 @@ namespace Kernel::LibK
 			m_size--;
 
 			return position;
+		}
+
+		[[nodiscard]] bool any_of(const LibK::function<bool(const T &)> &callback) const
+		{
+			for (const auto &element : *this)
+			{
+				if (callback(element))
+					return true;
+			}
+
+			return false;
+		}
+
+		[[nodiscard]] bool all_of(const LibK::function<bool(const T &)> &callback) const
+		{
+			for (const auto &element : *this)
+			{
+				if (!callback(element))
+					return false;
+			}
+
+			return true;
 		}
 
 	protected:

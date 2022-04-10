@@ -16,126 +16,95 @@ extern "C"
 
 namespace Kernel::Memory
 {
-	static inline bool in_kernel_space(uintptr_t virt_addr);
-
-	static inline bool in_kernel_space(uintptr_t virt_addr)
-	{
-		return virt_addr >= (uintptr_t)&_virtual_addr;
-	}
-
 	void VirtualMemoryManager::init(multiboot_info_t *&mulitboot_info)
 	{
 		PhysicalMemoryManager::instance().init(mulitboot_info);
 
-		m_kernel_memory_space = (memory_space_t *)kcalloc(sizeof(memory_space_t));
-		m_current_memory_space = m_kernel_memory_space;
-		assert(m_kernel_memory_space);
-
-		m_kernel_memory_space->paging_space = Arch::create_kernel_space();
-		Arch::load(m_kernel_memory_space->paging_space);
+		m_kernel_paging_space = Arch::create_kernel_space();
+		Arch::load(m_kernel_paging_space);
 
 		auto kernel_region = Arch::get_kernel_region();
 		auto mapping_region = Arch::get_mapping_region();
 
-		m_kernel_memory_space->kernel_map.insert(kernel_region);
-		m_kernel_memory_space->kernel_map.insert(mapping_region);
+		m_kernel_memory_map.insert(kernel_region);
+		m_kernel_memory_map.insert(mapping_region);
 	}
 
-	void *VirtualMemoryManager::alloc_kernel_buffer(size_t size, RegionType type, AllocationStategy strategy)
+	memory_region_t VirtualMemoryManager::allocate_region(size_t size, mapping_config_t config)
 	{
 		size = LibK::round_up_to_multiple<size_t>(size, PAGE_SIZE);
-
-		region_t region = find_free_region(size, true, strategy);
-
-		uintptr_t phys_addr = 0;
-
-		switch (type)
-		{
-		case RegionType::ISA_DMA: // Respects 64 KiB boundary
-			assert(size <= 65536);
-			phys_addr = (uintptr_t)PhysicalMemoryManager::instance().alloc(size, 0, UINTPTR_MAX, 65536);
-			break;
-		case RegionType::Normal:
-			phys_addr = (uintptr_t)PhysicalMemoryManager::instance().alloc(size);
-		}
-
-		auto mem_region = map(phys_addr, region.address, size, false);
-
-		return (void *)mem_region.region.address;
+		region_t region = find_free_region(size, !config.userspace);
+		uintptr_t phys_addr = reinterpret_cast<uintptr_t>(PhysicalMemoryManager::instance().alloc(size, config.bounds.address, config.bounds.end(), config.alignment));
+		return map(phys_addr, region.address, size, config);
 	}
 
-	// Directly maps the provided physical region to a virtual region
-	void *VirtualMemoryManager::alloc_mmio_buffer(uintptr_t phys_addr, size_t size, __unused RegionType type, AllocationStategy strategy)
+	memory_region_t VirtualMemoryManager::allocate_region_at(uintptr_t virt_addr, size_t size, mapping_config_t config)
 	{
-		size = LibK::round_up_to_multiple<size_t>(size, PAGE_SIZE);
+		uintptr_t address = LibK::round_up_to_multiple<uintptr_t>(virt_addr, PAGE_SIZE);
+		size = LibK::round_up_to_multiple<size_t>(size + (virt_addr - address), PAGE_SIZE);
+		virt_addr = address;
 
-		region_t region = find_free_region(size, true, strategy);
-		auto mem_region = map(phys_addr, region.address, size, false);
-		mem_region.is_mmio = true;
+		region_t virt_region{
+			.address = virt_addr,
+			.size = size,
+		};
 
-		return (void *)mem_region.region.address;
+		if (!check_free(virt_region))
+			return {};
+
+		uintptr_t phys_addr = reinterpret_cast<uintptr_t>(PhysicalMemoryManager::instance().alloc(size, config.bounds.address, config.bounds.end(), config.alignment));
+
+		return map(phys_addr, virt_addr, size, config);
+	}
+
+	memory_region_t VirtualMemoryManager::map_region(uintptr_t phys_addr, size_t size, mapping_config_t config)
+	{
+		uintptr_t address = LibK::round_down_to_multiple<uintptr_t>(phys_addr, PAGE_SIZE);
+		size = LibK::round_up_to_multiple<size_t>(size + (phys_addr - address), PAGE_SIZE);
+		phys_addr = address;
+		region_t region = find_free_region(size, !config.userspace);
+		return map(phys_addr, region.address, size, config);
+	}
+
+	memory_region_t VirtualMemoryManager::map_region_at(uintptr_t phys_addr, uintptr_t virt_addr, size_t size, mapping_config_t config)
+	{
+		uintptr_t address = LibK::round_down_to_multiple<uintptr_t>(virt_addr, PAGE_SIZE);
+		size = LibK::round_up_to_multiple<size_t>(size + (virt_addr - address), PAGE_SIZE);
+		virt_addr = address;
+
+		region_t virt_region{
+		    .address = virt_addr,
+		    .size = size,
+		};
+
+		if (!check_free(virt_region))
+			return {};
+
+		return map(phys_addr, virt_addr, size, config);
 	}
 
 	void VirtualMemoryManager::free(void *ptr)
 	{
 		auto region = find_region((uintptr_t)ptr);
+		assert(region);
+		free(*region);
+	}
 
-		assert(region && region->mapped);
+	void VirtualMemoryManager::free(const memory_region_t &region)
+	{
+		assert(region.mapped);
 
-		unmap(region->region.address);
+		unmap(region);
 
-		if (region->is_mmio)
+		if (!region.allocated)
 			return;
 
-		assert(region->present); // Swapping not yet implemented
+		assert(region.present); // Swapping not yet implemented
 
-		PhysicalMemoryManager::instance().free((void *)region->phys_address, region->region.size);
+		PhysicalMemoryManager::instance().free((void *)region.phys_address, region.size);
 	}
 
-	void *VirtualMemoryManager::map_physical(uintptr_t phys_addr, size_t size, __unused RegionType type, AllocationStategy strategy)
-	{
-		uintptr_t start_addr = LibK::round_down_to_multiple<uintptr_t>(phys_addr, PAGE_SIZE);
-		uintptr_t start_offset = phys_addr - start_addr;
-		size = LibK::round_up_to_multiple<size_t>(size + start_offset, PAGE_SIZE);
-
-		region_t region = find_free_region(size, true, strategy);
-		auto mem_region = map(start_addr, region.address, size, false);
-
-		return (void *)(mem_region.region.address + start_offset);
-	}
-
-	bool VirtualMemoryManager::try_identity_map(uintptr_t addr, size_t size)
-	{
-		uintptr_t start_addr = LibK::round_down_to_multiple<uintptr_t>(addr, PAGE_SIZE);
-		uintptr_t start_offset = addr - start_addr;
-		size = LibK::round_up_to_multiple<size_t>(size + start_offset, PAGE_SIZE);
-
-		region_t this_region{
-		    .address = start_addr,
-		    .size = size,
-		};
-
-		bool is_kernel_space = in_kernel_space(addr);
-		bool already_mapped = false;
-
-		traverse_mapped(is_kernel_space, [&](memory_region_t mem_region) {
-			if (mem_region.region.overlaps(this_region)) {
-				already_mapped = true;
-				return false;
-			}
-
-			return true;
-		});
-
-		if (already_mapped)
-			return false;
-
-		map(start_addr, start_addr, size, is_kernel_space);
-
-		return true;
-	}
-
-	region_t VirtualMemoryManager::find_free_region(size_t size, bool is_kernel_space, AllocationStategy strategy) const
+	region_t VirtualMemoryManager::find_free_region(size_t size, bool is_kernel_space) const
 	{
 		assert(size > 0);
 
@@ -143,29 +112,15 @@ namespace Kernel::Memory
 		region_t min_region{0, 0};
 
 		traverse_unmapped(is_kernel_space, [&](memory_region_t mem_region) {
-			auto region = mem_region.region;
+			auto region = mem_region.virt_region();
 
-			if (strategy == AllocationStategy::FirstFit)
+			if (region.size < min_size && region.size >= size)
 			{
-				if (region.size >= size)
-				{
-					min_region = region;
-					min_size = region.size;
-					return false; // Break traversal
-				}
-			}
-			else
-			{
-				if (region.size < min_size && region.size >= size)
-				{
-					min_region = region;
-					min_size = region.size;
+				min_region = region;
+				min_size = region.size;
 
-					if (min_size == size) // Perfect fit
-						return false;
-				}
-
-				return true;
+				if (min_size == size)
+					return false;
 			}
 
 			return true;
@@ -180,12 +135,12 @@ namespace Kernel::Memory
 
 	const memory_region_t *VirtualMemoryManager::find_region(uintptr_t virtual_addr) const
 	{
-		auto &tree = virtual_addr > (uintptr_t)&_virtual_addr ? m_current_memory_space->kernel_map : m_current_memory_space->userland_map;
+		auto &tree = in_kernel_space(virtual_addr) ? m_kernel_memory_map : m_current_memory_space->userland_map;
 
 		return tree.find([virtual_addr](memory_region_t region) {
-			if (region.region.contains(virtual_addr))
+			if (region.virt_region().contains(virtual_addr))
 				return 0;
-			else if (region.region.address < virtual_addr)
+			else if (region.virt_address < virtual_addr)
 				return -1;
 			else
 				return 1;
@@ -195,13 +150,23 @@ namespace Kernel::Memory
 	void VirtualMemoryManager::enumerate(const LibK::function<bool(memory_region_t)> &callback) const
 	{
 		m_current_memory_space->userland_map.traverse(callback);
-		m_current_memory_space->kernel_map.traverse(callback);
+		m_kernel_memory_map.traverse(callback);
 	}
 
 	void VirtualMemoryManager::load_kernel_space()
 	{
-		m_current_memory_space = m_kernel_memory_space;
-		load_memory_space(m_kernel_memory_space);
+		m_current_memory_space = nullptr;
+		Arch::load(m_kernel_paging_space);
+	}
+
+	memory_space_t VirtualMemoryManager::create_memory_space()
+	{
+		auto paging_space = Arch::create_memory_space(m_kernel_paging_space);
+
+		return {
+			.paging_space = paging_space,
+			.userland_map = {}
+		};
 	}
 
 	void VirtualMemoryManager::load_memory_space(memory_space_t *memory_space)
@@ -212,70 +177,85 @@ namespace Kernel::Memory
 		Arch::load(memory_space->paging_space);
 	}
 
-	memory_region_t VirtualMemoryManager::map(uintptr_t physical_addr, uintptr_t virtual_addr, size_t size, bool is_user)
+	memory_region_t VirtualMemoryManager::map(uintptr_t phys_address, uintptr_t virt_address, size_t size, mapping_config_t config)
 	{
-		auto is_kernel_space = in_kernel_space(virtual_addr);
-		auto &tree = is_kernel_space ? m_current_memory_space->kernel_map : m_current_memory_space->userland_map;
+		auto &tree = in_kernel_space(virt_address) ? m_kernel_memory_map : m_current_memory_space->userland_map;
 
 		auto region = memory_region_t{
-		    .region = {virtual_addr, size},
-		    .phys_address = physical_addr,
+		    .virt_address = virt_address,
+		    .phys_address = phys_address,
+		    .size = size,
 		    .mapped = true,
 		    .present = true,
-		    .kernel = !is_user,
-		    .is_mmio = false,
+		    .allocated = false,
+		    .config = config,
 		};
 
 		tree.insert(region);
 
-		Arch::map(m_current_memory_space->paging_space, physical_addr, virtual_addr, size, is_user);
+		if (m_current_memory_space)
+			Arch::map(m_current_memory_space->paging_space, phys_address, virt_address, size, config);
+		else
+			Arch::map(m_kernel_paging_space, phys_address, virt_address, size, config);
 
 		return region;
 	}
 
-	void VirtualMemoryManager::unmap(uintptr_t virtual_addr)
+	void VirtualMemoryManager::unmap(const memory_region_t &region)
 	{
-		auto is_kernel_space = in_kernel_space(virtual_addr);
-		auto &tree = is_kernel_space ? m_current_memory_space->kernel_map : m_current_memory_space->userland_map;
+		auto &tree = in_kernel_space(region.virt_address) ? m_kernel_memory_map : m_current_memory_space->userland_map;
 
-		auto *region = tree.find([virtual_addr](memory_region_t region) {
-			if (region.region.contains(virtual_addr))
-				return 0;
-			else if (region.region.address < virtual_addr)
-				return -1;
-			else
-				return 1;
+		if (m_current_memory_space)
+			Arch::unmap(m_current_memory_space->paging_space, region.virt_address, region.size);
+		else
+			Arch::unmap(m_kernel_paging_space, region.virt_address, region.size);
+
+		tree.remove(region);
+	}
+
+	bool VirtualMemoryManager::check_free(const region_t &region) const
+	{
+		bool free = true;
+
+		traverse_mapped(in_kernel_space(region.address), [&](memory_region_t mem_region) {
+			if (mem_region.virt_region().overlaps(region))
+			{
+				free = false;
+				return false;
+			}
+
+			return true;
 		});
 
-		if (region)
-		{
-			Arch::unmap(m_current_memory_space->paging_space, region->region.address, region->region.size);
-			tree.remove(*region);
-		}
+		return free;
 	}
 
 	void VirtualMemoryManager::traverse_all(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const
 	{
 		memory_region_t last;
 		last.mapped = false;
-		last.region.size = 0;
-		last.region.address = is_kernel_space ? (uintptr_t)&_virtual_addr : 0;
+		last.size = 0;
+		last.virt_address = is_kernel_space ? (uintptr_t)&_virtual_addr : 0;
 		bool do_continue = true;
 
 		auto traversal_callback = [&last, &do_continue, is_kernel_space, &callback](memory_region_t region) {
-			uintptr_t start = last.region.end() + 1;
-			uintptr_t end = region.region.address;
+			uintptr_t start = last.virt_region().end() + 1;
+			uintptr_t end = region.virt_address;
 
 			if (start != end)
 			{
-				do_continue = callback({
-				    .region = {start, end - start},
+				memory_region_t free_region = {
+				    .virt_address = start,
 				    .phys_address = 0,
+				    .size = end - start,
 				    .mapped = false,
 				    .present = false,
-				    .kernel = is_kernel_space,
-				    .is_mmio = false,
-				});
+				    .allocated = false,
+				    .config = {},
+				};
+
+				region.config.userspace = !is_kernel_space;
+				do_continue = callback(free_region);
 			}
 
 			last = region;
@@ -289,7 +269,7 @@ namespace Kernel::Memory
 		};
 
 		if (is_kernel_space)
-			m_current_memory_space->kernel_map.traverse(traversal_callback);
+			m_kernel_memory_map.traverse(traversal_callback);
 		else
 			m_current_memory_space->userland_map.traverse(traversal_callback);
 
@@ -300,18 +280,23 @@ namespace Kernel::Memory
 		uintptr_t start;
 
 		if (last.mapped)
-			start = last.region.end() + 1;
+			start = last.virt_region().end() + 1;
 		else
 			start = is_kernel_space ? (uintptr_t)&_virtual_addr : 0;
 
-		callback({
-		    .region = {start, end - start},
+		memory_region_t region = {
+		    .virt_address = start,
 		    .phys_address = 0,
+		    .size = end - start,
 		    .mapped = false,
 		    .present = false,
-		    .kernel = is_kernel_space,
-		    .is_mmio = false,
-		});
+		    .allocated = false,
+		    .config = {},
+		};
+
+		region.config.userspace = !is_kernel_space;
+
+		callback(region);
 	}
 
 	void VirtualMemoryManager::traverse_unmapped(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const
@@ -332,5 +317,10 @@ namespace Kernel::Memory
 
 			return true;
 		});
+	}
+
+	bool VirtualMemoryManager::in_kernel_space(uintptr_t virt_address) const
+	{
+		return virt_address >= reinterpret_cast<uintptr_t>(&virt_address) || !m_current_memory_space;
 	}
 } // namespace Kernel::Memory

@@ -5,6 +5,7 @@
 #include <libk/kcstdio.hpp>
 
 #include <interrupts/LAPIC.hpp>
+#include <memory/VirtualMemoryManager.hpp>
 
 #define APIC_IPI_INTERRUPT (CPU::MAX_INTERRUPTS - 3)
 
@@ -133,15 +134,18 @@ namespace Kernel::CPU
 		}
 	}
 
-	thread_registers_t Processor::create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr)
+	thread_registers_t Processor::create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr, bool is_userspace_thread, Memory::Arch::paging_space_t paging_space)
 	{
+		uint32_t cs = is_userspace_thread ? 0x18 : 0x08;
+		uint32_t ds = is_userspace_thread ? 0x20 : 0x10;
+
 		return {
-		    .cs = 8,
-		    .ss = 16,
-		    .gs = 16,
-		    .fs = 16,
-		    .es = 16,
-		    .ds = 16,
+		    .cs = cs,
+		    .ss = ds,
+		    .gs = ds,
+		    .fs = ds,
+		    .es = ds,
+		    .ds = ds,
 		    .edi = 0,
 		    .esi = 0,
 		    .ebp = 0,
@@ -151,7 +155,7 @@ namespace Kernel::CPU
 		    .ecx = 0,
 		    .eax = 0,
 		    .eflags = eflags(),
-		    .cr3 = get_page_directory(),
+		    .cr3 = paging_space.physical_pd_address,
 		    .eip = main_ptr,
 		    .frame = 0,
 		};
@@ -162,19 +166,51 @@ namespace Kernel::CPU
 		uintptr_t stack = (uintptr_t)kmalloc(KERNEL_STACK_SIZE) + KERNEL_STACK_SIZE - sizeof(uintptr_t);
 
 		return thread_t{
-		    .registers = create_initial_state(stack, main_function),
+		    .registers = create_initial_state(stack, main_function, false, Memory::Arch::get_kernel_paging_space()),
 		    .has_started = false,
 		    .kernel_stack = stack,
 		    .state = ThreadState::Waiting,
 		    .lock = nullptr,
+		    .parent_process = nullptr,
+		};
+	}
+
+	thread_t Processor::create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memory_space)
+	{
+		uintptr_t kernel_stack = (uintptr_t)kmalloc(KERNEL_STACK_SIZE) + KERNEL_STACK_SIZE - sizeof(uintptr_t);
+
+		// TODO: Do this in the process/thread spawning code
+		Memory::mapping_config_t config;
+		config.userspace = true;
+		uintptr_t userspace_stack = (uintptr_t)Memory::VirtualMemoryManager::instance().allocate_region_at(0xb0000000, KERNEL_STACK_SIZE, config).virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
+
+		return thread_t{
+		    .registers = create_initial_state(userspace_stack, main_function, true, memory_space.paging_space),
+		    .has_started = false,
+		    .kernel_stack = kernel_stack,
+		    .state = ThreadState::Waiting,
+		    .lock = nullptr,
+		    .parent_process = nullptr,
 		};
 	}
 
 	void Processor::enter_thread_context(thread_t thread)
 	{
+		uint32_t esp0 = (uint32_t)thread.registers.frame + sizeof(interrupt_frame_t);
+
+		// Adjust in case we are not entering ring 3
+		if (thread.registers.cs == 0x10)
+			esp0 -= 8;
+
+		update_tss(esp0);
+
+		uintptr_t old_cr3 = get_page_directory();
+
 		asm volatile(
-		    "movl %[cr3], %%eax\n"
-		    "movl %%eax, %%cr3\n"
+		    "cmpl %[old_cr3], %[new_cr3]\n"
+		    "jz 1f\n"
+		    "movl %[new_cr3], %%cr3\n"
+		    "1:\n"
 		    "movl %[esp], %%esp\n"
 		    "popl %%ss\n"
 		    "popl %%gs\n"
@@ -186,30 +222,47 @@ namespace Kernel::CPU
 		    "iret\n"
 		    :
 		    : [esp] "m" (thread.registers.frame),
-		      [cr3] "m" (thread.registers.cr3)
+		      [new_cr3] "a" (thread.registers.cr3),
+		      [old_cr3] "b" (old_cr3)
 		    : "memory");
 	}
 
 	void Processor::initial_enter_thread_context(thread_t thread)
 	{
+		update_tss(thread.kernel_stack);
+
 		asm volatile(
 		    "movl %[ds], %%eax\n"
+		    "cmpl $0x20, %%eax\n"
+		    "jnz 1f\n"
+		    "or $3, %%eax\n"
+		    "1:\n"
 		    "mov %%ax, %%ds\n"
 		    "mov %%ax, %%es\n"
 		    "mov %%ax, %%fs\n"
 		    "mov %%ax, %%gs\n"
 		    "movl %[ss], %%eax\n"
-		    "cmp $16, %%eax\n"
+		    "cmp $0x10, %%eax\n"
 		    "jnz 1f\n"
 		    "mov %[esp], %%esp\n"
 		    "1:\n"
 		    "cmp $16, %%eax\n"
-		    "jz 1f\n"
-		    "pushl %[ss]\n"
+		    "jz 2f\n"
+		    "movl %[ss], %%eax\n"
+		    "cmpl $0x20, %%eax\n"
+		    "jnz 1f\n"
+		    "or $3, %%eax\n"
+		    "1:"
+		    "pushl %%eax\n"
 		    "pushl %[esp]\n"
-		    "1:\n"
+		    "2:\n"
 		    "pushl %[flag]\n"
-		    "pushl %[cs]\n"
+		    "movl %[cs], %%eax\n"
+		    "cmpl $0x18, %%eax\n"
+		    "jnz 1f\n"
+		    "or $3, %%eax\n"
+		    "1:"
+		    "pushl %%eax\n"
 		    "pushl %[eip]\n"
 		    "movl %[cr3], %%eax\n"
 		    "movl %%eax, %%cr3\n"
@@ -259,6 +312,6 @@ namespace Kernel::CPU
 		thread.registers.eflags = m_current_frame->eflags;
 		thread.registers.cr3 = get_page_directory();
 		thread.registers.eip = m_current_frame->eip;
-		thread.registers.frame = (uintptr_t)m_current_frame;
+		thread.registers.frame = m_current_frame;
 	}
 }

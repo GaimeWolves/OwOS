@@ -81,7 +81,7 @@ namespace Kernel::LibK
 			return remove(find_node(comparator));
 		}
 
-		void traverse(const LibK::function<bool(T)> &callback)
+		void traverse(const LibK::function<bool(T)> &callback) const
 		{
 			node_t *node = m_tree;
 			Kernel::LibK::stack<node_t *> nodes;
@@ -106,7 +106,7 @@ namespace Kernel::LibK
 			}
 		}
 
-		const T *find(const LibK::function<int(T)> &comparator)
+		const T *find(const LibK::function<int(T)> &comparator) const
 		{
 			node_t *node = find_node(comparator);
 			return node ? &node->value : nullptr;
@@ -185,7 +185,7 @@ namespace Kernel::LibK
 			return true;
 		}
 
-		node_t *find_node(T value)
+		node_t *find_node(T value) const
 		{
 			node_t *current = m_tree;
 
@@ -202,7 +202,7 @@ namespace Kernel::LibK
 			return nullptr;
 		}
 
-		node_t *find_node(const LibK::function<int(T)> &comparator)
+		node_t *find_node(const LibK::function<int(T)> &comparator) const
 		{
 			node_t *current = m_tree;
 

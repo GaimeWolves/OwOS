@@ -7,6 +7,7 @@
 #include <common_attributes.h>
 #include <interrupts/UnhandledInterruptHandler.hpp>
 #include <interrupts/SharedIRQHandler.hpp>
+#include <syscall/SyscallDispatcher.hpp>
 
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
@@ -50,7 +51,29 @@ namespace Kernel::CPU
 		[[nodiscard]] Interrupts::InterruptType type() const override { return Interrupts::InterruptType::GenericInterrupt; }
 	};
 
+	class SyscallHandler final : public Interrupts::InterruptHandler
+	{
+	public:
+		explicit SyscallHandler()
+		    : InterruptHandler(0x80)
+		{
+		}
+
+		~SyscallHandler() override = default;
+
+		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
+		{
+			uint32_t ret_code = SyscallDispatcher::handle_syscall(reg.eax, reg.ebx, reg.ecx, reg.edx, reg.esi, reg.edi);
+			Processor::current().get_interrupt_frame()->eax	= ret_code;
+		}
+
+		void eoi() override {}
+
+		[[nodiscard]] Interrupts::InterruptType type() const override { return Interrupts::InterruptType::GenericInterrupt; }
+	};
+
 	static PageFaultHandler page_fault_handler = PageFaultHandler(0x0E);
+	static SyscallHandler syscall_handler = SyscallHandler();
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type);
 
@@ -266,6 +289,7 @@ namespace Kernel::CPU
 		INIT_INTERRUPT(0x7F);
 
 		INIT_INTERRUPT(0x80);
+		m_idt[0x80].privilege = 3;
 
 		INIT_INTERRUPT(0x81);
 		INIT_INTERRUPT(0x82);
@@ -412,6 +436,7 @@ namespace Kernel::CPU
 	void Processor::init_fault_handlers()
 	{
 		page_fault_handler.register_handler();
+		syscall_handler.register_handler();
 	}
 
 	void Processor::register_interrupt_handler(Interrupts::InterruptHandler &handler)

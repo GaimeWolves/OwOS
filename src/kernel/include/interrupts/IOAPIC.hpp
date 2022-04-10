@@ -6,6 +6,7 @@
 #include <interrupts/IRQHandler.hpp>
 #include <interrupts/definitions.hpp>
 #include <common_attributes.h>
+#include <memory/MMIO.hpp>
 
 namespace Kernel::Interrupts
 {
@@ -31,17 +32,17 @@ namespace Kernel::Interrupts
 	private:
 		always_inline uint32_t read_register(uint32_t reg)
 		{
-			*((uint32_t volatile *) m_register_address) = reg;
-			return *((uint32_t volatile *)(m_register_address + 0x10));
+			*((uint32_t volatile *) &m_registers[0]) = reg;
+			return *((uint32_t volatile *) &m_registers[4]);
 		}
 
 		always_inline void write_register(uint32_t reg, uint32_t data)
 		{
-			*((uint32_t volatile *) m_register_address) = reg;
-			*((uint32_t volatile *)(m_register_address + 0x10)) = data;
+			*((uint32_t volatile *) &m_registers[0]) = reg;
+			*((uint32_t volatile *) &m_registers[4]) = data;
 		}
 
-		uintptr_t m_register_address{0};
+		Memory::MMIO<uint32_t> m_registers;
 		uint32_t m_gsi_base{0};
 		uint32_t m_gsi_count{0};
 		uint32_t *m_interrupt_mask{nullptr};

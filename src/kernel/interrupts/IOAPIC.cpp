@@ -53,7 +53,7 @@ namespace Kernel::Interrupts
 	IOAPIC::IOAPIC(uintptr_t address, uint32_t gsi_base)
 		: m_gsi_base(gsi_base)
 	{
-		m_register_address = (uintptr_t)Memory::VirtualMemoryManager::instance().map_physical(address, 0x20);
+		m_registers = Memory::MMIO<uint32_t>(address, 0x20);
 		uint32_t reg = read_register(REGISTER_IOAPICVER);
 		m_gsi_count = ((reg >> 16) & 0xFF) + 1;
 		m_interrupt_mask = new uint32_t[LibK::round_up_to_multiple(m_gsi_count, 32ul) / 32];

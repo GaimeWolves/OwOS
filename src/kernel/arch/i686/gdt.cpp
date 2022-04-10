@@ -46,6 +46,7 @@ namespace Kernel::CPU
 	{
 		memset(&m_tss, 0, sizeof(tss_entry_t));
 		m_tss.ss0 = 0x10;
+		m_tss.iopb = sizeof(tss_entry_t);
 
 		m_gdt[0] = gdt_entry_t();
 		m_gdt[1] = create_gdt_selector(0, true);
@@ -59,5 +60,15 @@ namespace Kernel::CPU
 
 		asm volatile("lgdt %0" ::"m"(m_gdtr)
 		             : "memory");
+
+		asm volatile(
+		    "ltr %%ax"
+		    : : "a" (0x28)
+		    :);
+	}
+
+	void Processor::update_tss(uint32_t esp0)
+	{
+		m_tss.esp0 = esp0;
 	}
 }

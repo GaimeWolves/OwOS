@@ -205,8 +205,9 @@ namespace Kernel::Interrupts
 
 	void LAPIC::initialize(uintptr_t physical_addr)
 	{
-		m_physical_addr = physical_addr;
-		m_virtual_addr = (uintptr_t)Memory::VirtualMemoryManager::instance().map_physical(m_physical_addr, APIC_REGISTER_SIZE);
+		Memory::mapping_config_t config;
+		config.cacheable = false;
+		m_registers = Memory::MMIO<uint8_t>(physical_addr, APIC_REGISTER_SIZE);
 
 		m_error_interrupt_handler = new APICErrorInterruptHandler(APIC_ERROR_INTERRUPT);
 		m_spurious_interrupt_handler = new APICSpuriousInterruptHandler(APIC_SPURIOUS_INTERRUPT);
@@ -257,7 +258,7 @@ namespace Kernel::Interrupts
 
 		CPU::Processor::set_core_count(m_available_aps + 1);
 
-		auto kernel_stack_addr = (uintptr_t)Memory::VirtualMemoryManager::instance().alloc_kernel_buffer(PAGE_SIZE * 8 * m_available_aps);
+		auto kernel_stack_addr = (uintptr_t)kmalloc(PAGE_SIZE * 8 * m_available_aps);
 
 		LibK::vector<uintptr_t> kernel_stacks;
 		for (size_t i = 0; i < m_available_aps; i++)
@@ -303,14 +304,14 @@ namespace Kernel::Interrupts
 	void LAPIC::write_register(uintptr_t offset, uint32_t value)
 	{
 		assert(offset <= APIC_REGISTER_SIZE);
-		auto volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
+		auto volatile *apic_register = reinterpret_cast<uint32_t volatile *>(&m_registers[offset]);
 		*apic_register = value;
 	}
 
 	uint32_t LAPIC::read_register(uintptr_t offset)
 	{
 		assert(offset <= APIC_REGISTER_SIZE);
-		auto volatile *apic_register = (uint32_t volatile *)(m_virtual_addr + offset);
+		auto volatile *apic_register = reinterpret_cast<uint32_t volatile *>(&m_registers[offset]);
 		return *apic_register;
 	}
 

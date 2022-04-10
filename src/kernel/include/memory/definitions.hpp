@@ -10,9 +10,9 @@ namespace Kernel::Memory
 		uintptr_t address;
 		size_t size;
 
-		void *pointer() const { return (void *)address; }
+		[[nodiscard]] void *pointer() const { return (void *)address; }
 
-		bool overlaps(region_t &other) const
+		[[nodiscard]] bool overlaps(const region_t &other) const
 		{
 			uintptr_t t_start = address;
 			uintptr_t t_end = end();
@@ -23,35 +23,56 @@ namespace Kernel::Memory
 			return t_start <= o_end && o_start <= t_end;
 		}
 
-		bool contains(uintptr_t ptr) const
+		[[nodiscard]] bool contains(uintptr_t ptr) const
 		{
 			return ptr >= address && ptr <= end();
 		}
 
-		bool operator==(region_t &other) const { return this->address == other.address; }
-		bool operator<(region_t &other) const { return this->address < other.address; }
-		bool operator>(region_t &other) const { return this->address > other.address; }
-		bool operator<=(region_t &other) const { return this->address <= other.address; }
-		bool operator>=(region_t &other) const { return this->address >= other.address; }
+		bool operator==(const region_t &other) const { return this->address == other.address; }
+		bool operator<(const region_t &other) const { return this->address < other.address; }
+		bool operator>(const region_t &other) const { return this->address > other.address; }
+		bool operator<=(const region_t &other) const { return this->address <= other.address; }
+		bool operator>=(const region_t &other) const { return this->address >= other.address; }
 
 		size_t end() const { return address + size - 1; }
 	} region_t;
 
+	typedef struct mapping_config_t
+	{
+		bool readable = true;
+		bool writeable = true;
+		bool userspace = false;
+		bool cacheable = true;
+
+		region_t bounds = {
+		    .address = 0,
+		    .size = SIZE_MAX,
+		};
+
+		size_t alignment = 0;
+	} mapping_config_t;
+
 	typedef struct memory_region_t
 	{
-		region_t region;
+		uintptr_t virt_address;
 		uintptr_t phys_address;
+		size_t size;
 
 		bool mapped;
 		bool present;
-		bool kernel;
-		bool is_mmio;
+		bool allocated;
+
+		mapping_config_t config;
+
+		region_t virt_region() const { return {virt_address, size}; };
+		region_t phys_region() const { return {phys_address, size}; };
+		void *virtual_offset(uintptr_t orig_phys_addr) const { return reinterpret_cast<void *>(virt_address + (orig_phys_addr - phys_address)); }
 
 		// TODO: Maybe refactor this (no separate types for region and memory region)
-		bool operator==(memory_region_t &other) const { return this->region == other.region; }
-		bool operator<(memory_region_t &other) const { return this->region < other.region; }
-		bool operator>(memory_region_t &other) const { return this->region > other.region; }
-		bool operator<=(memory_region_t &other) const { return this->region <= other.region; }
-		bool operator>=(memory_region_t &other) const { return this->region >= other.region; }
+		bool operator==(const memory_region_t &other) const { return this->virt_address == other.virt_address; }
+		bool operator<(const memory_region_t &other) const { return this->virt_address < other.virt_address; }
+		bool operator>(const memory_region_t &other) const { return this->virt_address > other.virt_address; }
+		bool operator<=(const memory_region_t &other) const { return this->virt_address <= other.virt_address; }
+		bool operator>=(const memory_region_t &other) const { return this->virt_address >= other.virt_address; }
 	} memory_region_t;
 } // namespace Kernel::Memory

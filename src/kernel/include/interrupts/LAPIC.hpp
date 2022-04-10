@@ -5,6 +5,7 @@
 
 #include <time/Timer.hpp>
 #include <interrupts/IRQHandler.hpp>
+#include <memory/MMIO.hpp>
 
 #define APIC_TIMER_IRQ (CPU::MAX_INTERRUPTS - 4)
 
@@ -89,8 +90,7 @@ namespace Kernel::Interrupts
 
 		void write_icr(uint8_t vector, uint8_t delivery_mode, uint8_t destination_mode, uint8_t shorthand, uint8_t destination);
 
-		uintptr_t m_physical_addr{0};
-		uintptr_t m_virtual_addr{0};
+		Memory::MMIO<uint8_t> m_registers{};
 
 		APICErrorInterruptHandler *m_error_interrupt_handler{nullptr};
 		APICSpuriousInterruptHandler *m_spurious_interrupt_handler{nullptr};

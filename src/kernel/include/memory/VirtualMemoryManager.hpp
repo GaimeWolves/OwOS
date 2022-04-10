@@ -16,22 +16,8 @@ namespace Kernel::Memory
 	typedef struct memory_space_t
 	{
 		Arch::paging_space_t paging_space;
-
-		LibK::AVLTree<memory_region_t> kernel_map;
 		LibK::AVLTree<memory_region_t> userland_map;
 	} memory_space_t;
-
-	enum class AllocationStategy
-	{
-		FirstFit,
-		BestFit,
-	};
-
-	enum class RegionType
-	{
-		Normal,  // No contstraints
-		ISA_DMA, // Low physical, 64K boundary
-	};
 
 	class VirtualMemoryManager
 	{
@@ -51,22 +37,28 @@ namespace Kernel::Memory
 
 		void init(multiboot_info_t *&mulitboot_info);
 
-		// TODO: Add posibility to mark allocated memory uncached or read-/writeonly
-		// TODO: Extend API to make it easier to map specific physical addresses (which would need an use counter)
-		// TODO: Add API to remap (resize) mapped regions
-		void *alloc_kernel_buffer(size_t size, RegionType type = RegionType::Normal, AllocationStategy strategy = AllocationStategy::BestFit);
-		void *alloc_mmio_buffer(uintptr_t phys_addr, size_t size, RegionType type = RegionType::Normal, AllocationStategy strategy = AllocationStategy::BestFit);
-		void free(void *ptr);
+		memory_region_t allocate_region(size_t size, mapping_config_t config = {});
+		memory_region_t allocate_region_at(uintptr_t virt_addr, size_t size, mapping_config_t config = {});
 
-		void *map_physical(uintptr_t phys_addr, size_t size, RegionType type = RegionType::Normal, AllocationStategy strategy = AllocationStategy::BestFit);
+		// NOTE: These methods won't mark the physical regions as used, as such other users may change the memory
+		memory_region_t map_region(uintptr_t phys_addr, size_t size, mapping_config_t config = {});
+		memory_region_t map_region_at(uintptr_t phys_addr, uintptr_t virt_addr, size_t size, mapping_config_t config = {});
 
-		bool try_identity_map(uintptr_t addr, size_t size);
+		memory_region_t map_region_identity(uintptr_t phys_addr, size_t size, mapping_config_t config = {})
+		{
+			return map_region_at(phys_addr, phys_addr, size, config);
+		}
 
 		template <typename T>
-		T *map_typed(uintptr_t phys_addr, RegionType type = RegionType::Normal, AllocationStategy strategy = AllocationStategy::BestFit)
+		T *map_typed(uintptr_t phys_addr, mapping_config_t config = {})
 		{
-			return (T *)map_physical(phys_addr, sizeof(T), type, strategy);
+			size_t offset = phys_addr - LibK::round_down_to_multiple<size_t>(phys_addr, PAGE_SIZE);
+			auto region = map_region(phys_addr, sizeof(T) + offset, config);
+			return reinterpret_cast<T *>(region.virt_address + offset);
 		}
+
+		void free(void *ptr);
+		void free(const memory_region_t &region);
 
 		[[nodiscard]] const memory_region_t *find_region(uintptr_t virtual_addr) const;
 
@@ -74,21 +66,28 @@ namespace Kernel::Memory
 
 		void load_kernel_space();
 		void load_memory_space(memory_space_t *memory_space);
+		[[nodiscard]] memory_space_t create_memory_space();
 
 	private:
 		VirtualMemoryManager() = default;
 		~VirtualMemoryManager() = default;
 
-		region_t find_free_region(size_t size, bool is_kernel_space, AllocationStategy strategy = AllocationStategy::BestFit) const;
+		[[nodiscard]] bool check_free(const region_t &region) const;
 
-		memory_region_t map(uintptr_t physical_addr, uintptr_t virtual_addr, size_t size, bool kernel);
-		void unmap(uintptr_t virtual_addr);
+		[[nodiscard]] region_t find_free_region(size_t size, bool is_kernel_space) const;
+
+		memory_region_t map(uintptr_t phys_address, uintptr_t virt_address, size_t size, mapping_config_t config);
+		void unmap(const memory_region_t &region);
 
 		void traverse_all(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
 		void traverse_unmapped(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
 		void traverse_mapped(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
 
-		memory_space_t *m_current_memory_space;
-		memory_space_t *m_kernel_memory_space;
+		bool in_kernel_space(uintptr_t virt_address) const;
+
+		memory_space_t *m_current_memory_space{nullptr};
+
+		Arch::paging_space_t m_kernel_paging_space{};
+		LibK::AVLTree<memory_region_t> m_kernel_memory_map{};
 	};
 } // namespace Kernel::Memory

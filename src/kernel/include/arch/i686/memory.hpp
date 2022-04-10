@@ -65,4 +65,6 @@ namespace Kernel::Memory::Arch
 		page_directory_t *page_directory;
 		page_table_t *mapping_table;
 	};
+
+	Arch::paging_space_t get_kernel_paging_space();
 } // namespace Kernel::Memory::Arch

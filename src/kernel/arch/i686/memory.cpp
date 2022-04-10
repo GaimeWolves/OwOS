@@ -54,6 +54,8 @@ namespace Kernel::Memory::Arch
 
 	static void for_page_in_range(uintptr_t virt_addr, size_t size, LibK::function<void(uintptr_t)> callback);
 
+	static paging_space_t s_kernel_paging_space{};
+
 	inline static constexpr size_t to_page_address(uintptr_t phys_addr)
 	{
 		return phys_addr & (TABLE_MASK | DIRECTORY_MASK);
@@ -123,7 +125,7 @@ namespace Kernel::Memory::Arch
 		uintptr_t table_addr = (uintptr_t)PhysicalMemoryManager::instance().alloc(PAGE_SIZE);
 
 		auto &mapping_table = *memory_space.mapping_table;
-		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, false);
+		mapping_table[pd_index] = raw_create_pte(table_addr, is_user, is_writeable, disable_cache);
 
 		// Clear it immediately to prevent bugs when we use this page table
 		CPU::Processor::invalidate_address((uintptr_t)&get_page_table(pd_index));
@@ -135,7 +137,7 @@ namespace Kernel::Memory::Arch
 	static page_table_entry_t create_pte(uintptr_t page_address, page_directory_entry_t &pde, bool is_user, bool is_writeable, bool disable_cache)
 	{
 		// User pages are only allowed in user page directories
-		assert(!is_user || (is_user && !pde.user));
+		assert(!is_user || (is_user && pde.user));
 
 		return raw_create_pte(page_address, is_user, is_writeable, disable_cache);
 	}
@@ -214,11 +216,13 @@ namespace Kernel::Memory::Arch
 			page_table[pt_index] = raw_create_pte(page_address, false, true, false);
 		}
 
-		return paging_space_t{
-		    .physical_pd_address = pd_address,
-		    .page_directory = &page_directory,
-		    .mapping_table = &mapping_table,
+		s_kernel_paging_space = paging_space_t{
+			.physical_pd_address = pd_address,
+			.page_directory = &page_directory,
+			.mapping_table = &mapping_table,
 		};
+
+		return s_kernel_paging_space;
 	}
 
 	// Create a new empty memory space where only kernel space is mapped and userspace is empty
@@ -254,7 +258,7 @@ namespace Kernel::Memory::Arch
 		};
 	}
 
-	void map(paging_space_t &memory_space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, bool is_user)
+	void map(paging_space_t &memory_space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, mapping_config_t config)
 	{
 		assert(virt_addr + size < PAGE_TABLE_ARRAY_ADDR);
 
@@ -265,7 +269,7 @@ namespace Kernel::Memory::Arch
 			auto &page_directory = get_page_directory();
 
 			if (page_directory[pd_index].value() == 0)
-				page_directory[pd_index] = create_pde(pd_index, memory_space, is_user, true, false);
+				page_directory[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, !config.cacheable);
 
 			assert(page_directory[pd_index].present);
 
@@ -276,7 +280,7 @@ namespace Kernel::Memory::Arch
 			uintptr_t page_address = to_page_address(phys_addr);
 			phys_addr += PAGE_SIZE;
 
-			page_table[pt_index] = create_pte(page_address, page_directory[pd_index], is_user, true, false);
+			page_table[pt_index] = create_pte(page_address, page_directory[pd_index], config.userspace, config.writeable, !config.cacheable);
 
 			invalidate(virt_addr);
 		});
@@ -351,24 +355,26 @@ namespace Kernel::Memory::Arch
 		uintptr_t phys_begin = LibK::round_down_to_multiple<uintptr_t>(p_address, PAGE_SIZE);
 
 		return memory_region_t{
-		    .region = {page_begin, page_end - page_begin},
+		    .virt_address = page_begin,
 		    .phys_address = phys_begin,
+		    .size = page_end - page_begin,
 		    .mapped = true,
 		    .present = true,
-		    .kernel = true,
-		    .is_mmio = false,
+		    .allocated = true,
+		    .config = {},
 		};
 	}
 
 	memory_region_t get_mapping_region()
 	{
 		return memory_region_t{
-		    .region = {PAGE_TABLE_ARRAY_ADDR, TABLE_SIZE},
-		    .phys_address = 0, // does not apply
+		    .virt_address = PAGE_TABLE_ARRAY_ADDR,
+		    .phys_address = 0, // does not apply here
+		    .size = TABLE_SIZE,
 		    .mapped = true,
 		    .present = true,
-		    .kernel = true,
-		    .is_mmio = false,
+		    .allocated = true,
+		    .config = {},
 		};
 	}
 
@@ -383,5 +389,10 @@ namespace Kernel::Memory::Arch
 	void invalidate(uintptr_t virtual_address)
 	{
 		CPU::Processor::invalidate_address(virtual_address);
+	}
+
+	Arch::paging_space_t get_kernel_paging_space()
+	{
+		return s_kernel_paging_space;
 	}
 } // namespace Kernel::Memory::Arch

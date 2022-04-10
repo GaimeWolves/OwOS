@@ -20,7 +20,7 @@ namespace Kernel::Memory::Arch
 	paging_space_t create_kernel_space();
 	paging_space_t create_memory_space(paging_space_t &kernel_space);
 
-	void map(paging_space_t &memory_space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, bool is_user);
+	void map(paging_space_t &memory_space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, mapping_config_t config);
 	void unmap(paging_space_t &memory_space, uintptr_t virt_addr, size_t size);
 	uintptr_t as_physical(uintptr_t virt_addr);
 

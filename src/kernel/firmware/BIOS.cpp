@@ -8,57 +8,26 @@ namespace Kernel
 	{
 		Memory::memory_region_t map_bda_rom()
 		{
-			return Memory::memory_region_t{
-			    .region = {
-			        .address = (uintptr_t)Memory::VirtualMemoryManager::instance().map_physical(0x400, 0x100),
-			        .size = 0x100,
-			    },
-			    .phys_address = 0x400,
-			    .mapped = true,
-			    .present = true,
-			    .kernel = true,
-			    .is_mmio = false,
-			};
+			return Memory::VirtualMemoryManager::instance().map_region(0x400, 0x100);
 		}
 
 		Memory::memory_region_t map_ebda_rom()
 		{
 			auto bda_region = map_bda_rom();
-			auto bda_ptr = bda_region.region.pointer();
 
-			uintptr_t ebda_base_addr = *(uint16_t *)(bda_region.region.address + 0x0E);
+			uintptr_t ebda_base_addr = *(uint16_t *)(bda_region.virt_address + 0x0E);
 			ebda_base_addr <<= 4;
 
-			uint16_t ebda_size = *(uint16_t *)(bda_region.region.address + 0x13);
+			uint16_t ebda_size = *(uint16_t *)(bda_region.virt_address + 0x13);
 
-			Memory::VirtualMemoryManager::instance().free(bda_ptr);
+			Memory::VirtualMemoryManager::instance().free(bda_region);
 
-			return Memory::memory_region_t{
-			    .region = {
-			        .address = (uintptr_t)Memory::VirtualMemoryManager::instance().map_physical(ebda_base_addr, ebda_size),
-			        .size = ebda_size,
-			    },
-			    .phys_address = ebda_base_addr,
-			    .mapped = true,
-			    .present = true,
-			    .kernel = true,
-			    .is_mmio = false,
-			};
+			return Memory::VirtualMemoryManager::instance().map_region(ebda_base_addr, ebda_size);
 		}
 
 		Memory::memory_region_t map_bios_rom()
 		{
-			return Memory::memory_region_t{
-			    .region = {
-			        .address = (uintptr_t)Memory::VirtualMemoryManager::instance().map_physical(0xE0000, 0x20000),
-			        .size = 0x20000,
-			    },
-			    .phys_address = 0xE0000,
-			    .mapped = true,
-			    .present = true,
-			    .kernel = true,
-			    .is_mmio = false,
-			};
+			return Memory::VirtualMemoryManager::instance().map_region(0xE0000, 0x20000);
 		}
 
 	} // namespace BIOS

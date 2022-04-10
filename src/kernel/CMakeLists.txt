@@ -73,7 +73,10 @@ set(KERNEL_INCLUDES
     include/arch/process.hpp
     include/processes/CoreScheduler.hpp
     include/arch/definitions.hpp
-    include/processes/GlobalScheduler.hpp)
+    include/processes/GlobalScheduler.hpp
+    include/syscall/SyscallDispatcher.hpp
+    include/syscall/syscalls.hpp
+    include/processes/Process.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -103,7 +106,9 @@ set(KERNEL_SOURCES
     processes/CoreScheduler.cpp
     locking/Mutex.cpp
     arch/Processor.cpp
-    processes/GlobalScheduler.cpp)
+    processes/GlobalScheduler.cpp
+    syscall/SyscallDispatcher.cpp
+    processes/Process.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

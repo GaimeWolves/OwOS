@@ -13,6 +13,8 @@
 #include <time/PIT.hpp>
 #include <processes/CoreScheduler.hpp>
 #include <processes/GlobalScheduler.hpp>
+#include <memory/VirtualMemoryManager.hpp>
+#include <syscall/SyscallDispatcher.hpp>
 
 #include <libk/kcstdio.hpp>
 
@@ -69,6 +71,14 @@ namespace Kernel
 		}
 	}
 
+	__noreturn void dummy_thread_C()
+	{
+		asm("int $0x80" : : "b" (0x55555500), "a" (0) : "memory");
+
+		for (;;)
+			;
+	}
+
 	extern "C" __noreturn void entry()
 	{
 		ACPI::Parser::instance().init();
@@ -94,12 +104,28 @@ namespace Kernel
 
 		Interrupts::LAPIC::instance().start_smp_boot();
 
+		SyscallDispatcher::initialize();
+
 #ifdef _DEBUG
 		LibK::printf_debug_msg("[BSP] Starting scheduler and sleeping until first tick...");
 #endif
 
 		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_A));
 		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_B));
+
+		auto dtc_mem_space = Memory::VirtualMemoryManager::instance().create_memory_space();
+		Memory::VirtualMemoryManager::instance().load_memory_space(&dtc_mem_space);
+		Memory::mapping_config_t config;
+		config.userspace = true;
+		Memory::VirtualMemoryManager::instance().allocate_region_at(0x55555000, 4096, config);
+		memmove((void *)0x55555000, (void *)dummy_thread_C, 100);
+
+		static char str[] = "Hello from Ring 3 using a syscall :D";
+		memmove((void *)0x55555500, (void *)str, 100);
+
+		GlobalScheduler::start_userspace_thread(0x55555000, dtc_mem_space);
+
+		Memory::VirtualMemoryManager::instance().load_kernel_space();
 
 		CoreScheduler::initialize();
 

@@ -9,6 +9,8 @@ namespace Kernel
 {
 	constexpr size_t KERNEL_STACK_SIZE = 32 * 1024;
 
+	class Process;
+
 	enum class ThreadState
 	{
 		Running,
@@ -18,7 +20,6 @@ namespace Kernel
 		Terminated,
 	};
 
-	// Currently, this only holds the register state to use when switching contexts.
 	typedef struct thread_t
 	{
 		thread_registers_t registers;
@@ -26,5 +27,6 @@ namespace Kernel
 		uintptr_t kernel_stack;
 		ThreadState state;
 		Locking::Mutex *lock;
+		Process *parent_process;
 	} thread_t;
 }

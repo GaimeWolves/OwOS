@@ -74,8 +74,9 @@ namespace Kernel::CPU
 		Time::EventManager::EventQueue &get_event_queue() { return m_scheduled_events; }
 
 		static thread_t create_kernel_thread(uintptr_t main_function);
-		static void enter_thread_context(thread_t thread);
-		static void initial_enter_thread_context(thread_t thread);
+		static thread_t create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memorySpace);
+		void enter_thread_context(thread_t thread);
+		void initial_enter_thread_context(thread_t thread);
 		void update_thread_context(thread_t &thread);
 		[[nodiscard]] bool is_scheduler_running() const { return m_scheduler_initialized; }
 		[[nodiscard]] bool is_thread_running() const { return m_current_thread; }
@@ -147,7 +148,9 @@ namespace Kernel::CPU
 		void init_idt();
 		void init_fault_handlers();
 
-		static thread_registers_t create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr);
+		void update_tss(uint32_t esp0);
+
+		static thread_registers_t create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr, bool is_userspace_thread, Memory::Arch::paging_space_t paging_space);
 
 		always_inline static void sti()
 		{

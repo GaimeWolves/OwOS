@@ -19,15 +19,14 @@ namespace Kernel::ACPI
 			static const char *rsdp_signature = "RSD PTR ";
 
 			auto ebda_region = BIOS::map_ebda_rom();
-			auto edba_ptr = ebda_region.region.pointer();
 
 			rsdp_descriptor_t *rsdp = nullptr;
 
-			for (uintptr_t i = 0; i < ebda_region.region.size - 8; i++)
+			for (uintptr_t i = 0; i < ebda_region.size - 8; i++)
 			{
-				if (strncmp((char *)(ebda_region.region.address + i), rsdp_signature, 8) == 0)
+				if (strncmp((char *)(ebda_region.virt_address + i), rsdp_signature, 8) == 0)
 				{
-					rsdp = (rsdp_descriptor_t *)(ebda_region.region.address + i);
+					rsdp = (rsdp_descriptor_t *)(ebda_region.virt_address + i);
 
 					if (!check_rsdp_checksum(rsdp))
 					{
@@ -41,18 +40,17 @@ namespace Kernel::ACPI
 				}
 			}
 
-			Memory::VirtualMemoryManager::instance().free(edba_ptr);
+			Memory::VirtualMemoryManager::instance().free(ebda_region);
 
 			if (!rsdp)
 			{
 				auto bios_region = BIOS::map_bios_rom();
-				auto bios_ptr = bios_region.region.pointer();
 
-				for (uintptr_t i = 0; i < bios_region.region.size - 8; i++)
+				for (uintptr_t i = 0; i < bios_region.size - 8; i++)
 				{
-					if (strncmp((char *)(bios_region.region.address + i), rsdp_signature, 8) == 0)
+					if (strncmp((char *)(bios_region.virt_address + i), rsdp_signature, 8) == 0)
 					{
-						rsdp = (rsdp_descriptor_t *)(bios_region.region.address + i);
+						rsdp = (rsdp_descriptor_t *)(bios_region.virt_address + i);
 
 						if (!check_rsdp_checksum(rsdp))
 						{
@@ -66,7 +64,7 @@ namespace Kernel::ACPI
 					}
 				}
 
-				Memory::VirtualMemoryManager::instance().free(bios_ptr);
+				Memory::VirtualMemoryManager::instance().free(bios_region);
 			}
 
 			if (rsdp)
@@ -118,9 +116,9 @@ namespace Kernel::ACPI
 			auto *header = Memory::VirtualMemoryManager::instance().map_typed<acpi_sdt_table_t>(phys_header_addr);
 			size_t actual_size = header->length;
 			Memory::VirtualMemoryManager::instance().free(header);
-			auto *table = Memory::VirtualMemoryManager::instance().map_physical(phys_header_addr, actual_size);
+		    auto table = Memory::VirtualMemoryManager::instance().map_region(phys_header_addr, actual_size);
 
-			m_header = (acpi_sdt_table_t *)table;
+			m_header = (acpi_sdt_table_t *)table.virtual_offset(phys_header_addr);
 
 			uint32_t checksum = 0;
 			auto start = (uint8_t *)m_header;

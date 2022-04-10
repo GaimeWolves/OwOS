@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <common_attributes.h>
+#include <arch/interrupts.hpp>
 
 namespace Kernel
 {
@@ -25,6 +26,6 @@ namespace Kernel
 		uint32_t eflags;
 		uint32_t cr3;
 		uint32_t eip;
-		uintptr_t frame;
+		CPU::interrupt_frame_t *frame;
 	} __packed thread_registers_t;
 }

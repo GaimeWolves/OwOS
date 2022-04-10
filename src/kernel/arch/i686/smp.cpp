@@ -33,7 +33,8 @@ namespace Kernel::CPU
 	{
 		// Reserve memory space for boot code
 		Memory::PhysicalMemoryManager::instance().alloc(ap_boot_code_size, boot_address);
-		assert(Memory::VirtualMemoryManager::instance().try_identity_map(boot_address, ap_boot_code_size));
+		auto region = Memory::VirtualMemoryManager::instance().map_region_identity(boot_address, ap_boot_code_size);
+		assert(region.mapped);
 
 		// Copy AP boot code to 0x8000
 		memcpy((void *)boot_address, (void *)(&_start_ap_boot), ap_boot_code_size);
