@@ -5,7 +5,7 @@
 #include <arch/Processor.hpp>
 #include <panic.hpp>
 #include <arch/stack_tracing.hpp>
-#include <devices/SerialPort.hpp>
+#include <devices/SerialDevice.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <arch/smp.hpp>
 #include <multiboot.h>
@@ -89,9 +89,6 @@ namespace Kernel
 			CPU::Processor::early_initialize(0);
 
 			CPU::prepare_smp_boot_environment();
-
-			// Get debug output really early
-			Devices::SerialPort::init();
 
 			// Get stack traces really early
 			CPU::init_stacktracing();

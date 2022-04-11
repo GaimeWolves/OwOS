@@ -1,6 +1,6 @@
 #include <libk/kcstdio.hpp>
 
-#include <devices/SerialPort.hpp>
+#include <devices/SerialDevice.hpp>
 #include <libk/kcstdarg.hpp>
 #include <vga/textmode.hpp>
 #include <locking/Mutex.hpp>
@@ -9,7 +9,6 @@
 #include "printf.hpp"
 
 using namespace Kernel::VGA;
-using namespace Kernel::Devices;
 using namespace Kernel::LibK;
 
 static Kernel::Locking::Mutex kernel_print_lock;
@@ -21,8 +20,8 @@ extern "C"
 		if (Textmode::is_initialized())
 			Textmode::putc(ch);
 
-		if (SerialPort::is_initialized())
-			SerialPort::get(SerialPort::COM1).write_one(ch);
+		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
+			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, &ch);
 	}
 
 	void kputs(const char *str)
@@ -30,8 +29,8 @@ extern "C"
 		if (Textmode::is_initialized())
 			Textmode::puts(str);
 
-		if (SerialPort::is_initialized())
-			SerialPort::get(SerialPort::COM1).write(str);
+		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
+			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), str);
 	}
 
 	void kvprintf(const char *fmt, va_list ap)

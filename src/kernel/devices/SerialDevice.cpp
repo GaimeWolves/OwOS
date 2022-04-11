@@ -1,4 +1,4 @@
-#include <devices/SerialPort.hpp>
+#include <devices/SerialDevice.hpp>
 
 // Interrupt Enable register bits
 #define INT_ENABLE_ERBFI 0b00000001 // Enable received data available interrupt
@@ -52,11 +52,14 @@
 #define MODEM_STATUS_RI   0b01000000 // Ring indicator
 #define MODEM_STATUS_DCD  0b10000000 // Data carrier detect
 
-namespace Kernel::Devices
+namespace Kernel
 {
-	SerialPort SerialPort::m_instances[];
-
-	static bool initialized = false;
+	SerialDevice SerialDevice::s_instances[] = {
+	    SerialDevice(0),
+	    SerialDevice(1),
+	    SerialDevice(2),
+	    SerialDevice(3),
+	};
 
 	static inline bool can_send(IO::Port &line_status);
 	static inline bool can_receive(IO::Port &line_status);
@@ -71,25 +74,12 @@ namespace Kernel::Devices
 		return (line_status.in<uint8_t>() & LINE_STATUS_DR) != 0;
 	}
 
-	void SerialPort::init()
+	SerialDevice &SerialDevice::get(size_t port)
 	{
-		for (size_t i = 0; i < 4; i++)
-			m_instances[i] = SerialPort(i);
-
-		initialized = true;
+		return s_instances[port];
 	}
 
-	bool SerialPort::is_initialized()
-	{
-		return initialized;
-	}
-
-	SerialPort &SerialPort::get(size_t port)
-	{
-		return m_instances[port];
-	}
-
-	void SerialPort::configure(BaudRate rate, DataLength length, StopBits stopBits, ParityType parity)
+	void SerialDevice::configure(BaudRate rate, DataLength length, StopBits stopBits, ParityType parity)
 	{
 		// Disable interrupts
 		m_int_enable_reg.out<uint8_t>(0);
@@ -116,7 +106,7 @@ namespace Kernel::Devices
 		}
 	}
 
-	void SerialPort::test()
+	void SerialDevice::test()
 	{
 		// Set modem in loopback mode with OUT#2 and RTS bits enabled
 		m_modem_ctl_reg.out<uint8_t>(MODEM_CTL_LOOP | MODEM_CTL_OUT_2 | MODEM_CTL_RTS);
@@ -126,47 +116,35 @@ namespace Kernel::Devices
 		m_is_faulty = m_data_reg.in<uint8_t>() != 0xAE;
 	}
 
-	void SerialPort::write(const char *str)
+	size_t SerialDevice::read(size_t offset __unused, size_t bytes, char *buffer)
 	{
 		if (m_is_faulty)
-			return;
+			return 0;
 
-		while (*str)
-			write_one(*str++);
+		for (size_t i = 0; i < bytes; i++)
+		{
+			while (!can_receive(m_line_status_reg))
+				;
+
+			buffer[i] = m_data_reg.in<char>();
+		}
+
+		return bytes;
 	}
 
-	void SerialPort::write_one(char ch)
+	size_t SerialDevice::write(size_t offset __unused, size_t bytes, const char *buffer)
 	{
 		if (m_is_faulty)
-			return;
+			return 0;
 
-		while (!can_send(m_line_status_reg))
-			;
+		for (size_t i = 0; i < bytes; i++)
+		{
+			while (!can_send(m_line_status_reg))
+				;
 
-		m_data_reg.out(ch);
-	}
+			m_data_reg.out(buffer[i]);
+		}
 
-	LibK::string SerialPort::read(size_t n)
-	{
-		LibK::string ret;
-
-		if (m_is_faulty)
-			return ret;
-
-		while (n--)
-			ret += read_one();
-
-		return ret;
-	}
-
-	char SerialPort::read_one()
-	{
-		if (m_is_faulty)
-			return -1;
-
-		while (!can_receive(m_line_status_reg))
-			;
-
-		return m_data_reg.in<char>();
+		return bytes;
 	}
 } // namespace Kernel::Devices

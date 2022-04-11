@@ -17,15 +17,11 @@ namespace Kernel::LibK
 		}
 
 		basic_string(const charT *s)
+			: vector<charT>(strlen(s))
 		{
 			assert(s);
-			size_t len = strlen(s);
-
-			this->m_capacity = next_power_of_two(len);
-			this->m_size = len;
-			this->m_array = (charT *)kmalloc(this->m_capacity, sizeof(charT));
-
 			assert(this->m_array);
+
 			memcpy(this->m_array, s, this->m_size);
 		}
 

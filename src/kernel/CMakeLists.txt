@@ -43,7 +43,7 @@ set(KERNEL_INCLUDES
     include/arch/interrupts.hpp
     include/arch/stack_tracing.hpp
     include/crt/icxxabi.hpp
-    include/devices/SerialPort.hpp
+    include/devices/SerialDevice.hpp
     include/firmware/acpi/Parser.hpp
     include/firmware/BIOS.hpp
     include/memory/PhysicalMemoryManager.hpp
@@ -76,7 +76,14 @@ set(KERNEL_INCLUDES
     include/processes/GlobalScheduler.hpp
     include/syscall/SyscallDispatcher.hpp
     include/syscall/syscalls.hpp
-    include/processes/Process.hpp)
+    include/processes/Process.hpp
+    include/filesystem/File.hpp
+    include/filesystem/FileSystem.hpp
+    include/devices/Device.hpp
+    include/devices/CharacterDevice.hpp
+    include/filesystem/VirtualFileSystem.hpp
+    include/filesystem/FileContext.hpp
+    include/filesystem/definitions.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -84,7 +91,7 @@ set(KERNEL_SOURCES
     panic.cpp
     arch/stack_tracing.cpp
     crt/icxxabi.cpp
-    devices/SerialPort.cpp
+    devices/SerialDevice.cpp
     firmware/acpi/Parser.cpp
     firmware/BIOS.cpp
     memory/MultibootMap.cpp
@@ -108,7 +115,8 @@ set(KERNEL_SOURCES
     arch/Processor.cpp
     processes/GlobalScheduler.cpp
     syscall/SyscallDispatcher.cpp
-    processes/Process.cpp)
+    processes/Process.cpp
+    filesystem/FileContext.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

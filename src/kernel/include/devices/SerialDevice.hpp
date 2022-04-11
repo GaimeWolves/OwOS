@@ -3,13 +3,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <arch/io.hpp>
-
 #include <libk/kstring.hpp>
 
-namespace Kernel::Devices
+#include <arch/io.hpp>
+#include <devices/CharacterDevice.hpp>
+
+namespace Kernel
 {
-	class SerialPort
+	class SerialDevice : public CharacterDevice
 	{
 	public:
 		enum class BaudRate : uint16_t
@@ -62,40 +63,27 @@ namespace Kernel::Devices
 			COM4 = 3,
 		};
 
-		static void init();
-		static bool is_initialized();
-		static SerialPort &get(size_t port);
+		static SerialDevice &get(size_t port);
 
 		void configure(BaudRate rate, DataLength length, StopBits stopBits, ParityType parity);
 
-		void write(const char *str);
-		void write_one(char ch);
+		const LibK::string &name() override { return m_name; };
 
-		LibK::string read(size_t n);
-		char read_one();
+		size_t read(size_t offset, size_t bytes, char *buffer) override;
+		size_t write(size_t offset, size_t bytes, const char *buffer) override;
 
 		bool is_faulty() const { return m_is_faulty; }
 
 	private:
-		IO::Port m_data_reg;
-		IO::Port m_int_enable_reg;
-		IO::Port m_baud_rate_low_reg;
-		IO::Port m_baud_rate_high_reg;
-		IO::Port m_int_ident_reg;
-		IO::Port m_fifo_ctl_reg;
-		IO::Port m_line_ctl_reg;
-		IO::Port m_modem_ctl_reg;
-		IO::Port m_line_status_reg;
-		IO::Port m_modem_status_reg;
-		IO::Port m_scratch_reg;
-
-		bool m_is_faulty;
-
-		SerialPort() = default;
-
-		SerialPort(size_t port)
+		SerialDevice()
+		    : CharacterDevice(4, 0)
 		{
-			m_data_reg.set(m_io_ports[port]);
+		}
+
+		explicit SerialDevice(size_t port)
+			: CharacterDevice(4, port) // TODO: Do major number allocation (for now we hardcode the numbers linux uses)
+		{
+			m_data_reg.set(s_io_ports[port]);
 			m_int_enable_reg = m_data_reg.offset(1);
 			m_baud_rate_low_reg = m_data_reg.offset(0);
 			m_baud_rate_high_reg = m_data_reg.offset(1);
@@ -106,19 +94,39 @@ namespace Kernel::Devices
 			m_line_status_reg = m_data_reg.offset(5);
 			m_modem_status_reg = m_data_reg.offset(6);
 			m_scratch_reg = m_data_reg.offset(7);
+			m_is_faulty = false;
+
+			// Todo: This should be handled by /proc/devices using the (future) device manager
+			m_name = LibK::string("ttyS");
+			m_name += '0' + port;
 
 			configure(BaudRate::B115200, DataLength::L8, StopBits::S1, ParityType::NONE);
 		}
 
 		void test();
 
-		static constexpr size_t m_io_ports[4]{
+		static constexpr size_t s_io_ports[4]{
 		    0x3f8,
 		    0x2f8,
 		    0x3e8,
 		    0x2e8,
 		};
 
-		static SerialPort m_instances[4];
+		IO::Port m_data_reg{};
+		IO::Port m_int_enable_reg{};
+		IO::Port m_baud_rate_low_reg{};
+		IO::Port m_baud_rate_high_reg{};
+		IO::Port m_int_ident_reg{};
+		IO::Port m_fifo_ctl_reg{};
+		IO::Port m_line_ctl_reg{};
+		IO::Port m_modem_ctl_reg{};
+		IO::Port m_line_status_reg{};
+		IO::Port m_modem_status_reg{};
+		IO::Port m_scratch_reg{};
+
+		bool m_is_faulty{false};
+		LibK::string m_name{};
+
+		static SerialDevice s_instances[4];
 	};
 } // namespace Kernel::Devices

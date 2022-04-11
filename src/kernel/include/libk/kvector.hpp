@@ -32,7 +32,8 @@ namespace Kernel::LibK
 
 		~vector()
 		{
-			kfree(m_array);
+			if (m_array)
+				kfree(m_array);
 		}
 
 		T &operator[](size_t n) { return at(n); }
