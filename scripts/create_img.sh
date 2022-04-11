@@ -18,13 +18,14 @@ safe_exit() {
 trap safe_exit EXIT
 
 if [ ! -e "$BIN_DIR"/img ]; then
-    qemu-img create "$BIN_DIR"/img 100M
-    mkfs.ext2 -q "$BIN_DIR"/img
+    qemu-img create -f raw "$BIN_DIR"/img 100M
+    parted -s "$BIN_DIR"/img mklabel gpt mkpart primary ext2 63s 100% -a minimal
+    mke2fs -E offset=32256 "$BIN_DIR"/img 102352k
 fi
 
 mkdir -p "$BIN_DIR"/mnt
 
-guestmount -a "$BIN_DIR"/img -m /dev/sda --pid-file mount.pid "$BIN_DIR"/mnt
+guestmount -a "$BIN_DIR"/img -m /dev/sda1 --pid-file mount.pid "$BIN_DIR"/mnt
 pid="$(cat mount.pid)"
 rm -rf "${BIN_DIR:?}"/mnt/*
 cp -r "$BIN_DIR"/sysroot/* "$BIN_DIR"/mnt
