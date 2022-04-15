@@ -72,7 +72,7 @@ namespace Kernel
 		size_t read(size_t offset, size_t bytes, char *buffer) override;
 		size_t write(size_t offset, size_t bytes, const char *buffer) override;
 
-		bool is_faulty() const { return m_is_faulty; }
+		[[nodiscard]] bool is_faulty() const { return m_is_faulty; }
 
 	private:
 		SerialDevice()

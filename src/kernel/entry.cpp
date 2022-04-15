@@ -15,6 +15,7 @@
 #include <processes/GlobalScheduler.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <syscall/SyscallDispatcher.hpp>
+#include <storage/ata/AHCIManager.hpp>
 
 #include <libk/kcstdio.hpp>
 
@@ -96,6 +97,7 @@ namespace Kernel
 		VGA::Textmode::init();
 
 		PCI::HostBridge::instance().init();
+		AHCIManager::instance().initialize();
 
 		Tests::test_crtx();
 		Tests::test_heap();

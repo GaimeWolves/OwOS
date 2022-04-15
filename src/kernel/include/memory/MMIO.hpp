@@ -77,6 +77,8 @@ namespace Kernel::Memory
 
 		T *operator()() { return m_ref; }
 
+		T *operator->() const { return m_ref; }
+
 	private:
 		T *m_ref{nullptr};
 		memory_region_t m_region{};

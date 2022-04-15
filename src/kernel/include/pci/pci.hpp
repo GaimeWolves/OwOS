@@ -20,6 +20,8 @@ namespace Kernel::PCI
 	class Function
 	{
 	public:
+		Function() = default;
+
 		Function(uint8_t bus, uint8_t device, uint8_t function)
 		    : m_address(Address(bus, device, function))
 		{
@@ -58,7 +60,9 @@ namespace Kernel::PCI
 		uint16_t get_vendor_id();
 
 		uint16_t get_status();
+
 		void set_command(uint16_t command);
+		uint16_t get_command();
 
 		uint8_t get_revision_id();
 

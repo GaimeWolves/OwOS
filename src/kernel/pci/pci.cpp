@@ -65,6 +65,11 @@ namespace Kernel::PCI
 		write_16(PCI_REG_COMMAND, command);
 	}
 
+	uint16_t Function::get_command()
+	{
+		return read_16(PCI_REG_COMMAND);
+	}
+
 	uint8_t Function::get_revision_id()
 	{
 		return read_8(PCI_REG_REVISION_ID);

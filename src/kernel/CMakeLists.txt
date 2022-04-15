@@ -83,7 +83,15 @@ set(KERNEL_INCLUDES
     include/devices/CharacterDevice.hpp
     include/filesystem/VirtualFileSystem.hpp
     include/filesystem/FileContext.hpp
-    include/filesystem/definitions.hpp)
+    include/filesystem/definitions.hpp
+    include/devices/BlockDevice.hpp
+    include/storage/StorageDevice.hpp
+    include/storage/PartitionDevice.hpp
+    include/storage/ata/AHCIManager.hpp
+    include/storage/ata/AHCIController.hpp
+    include/storage/ata/AHCIPort.hpp
+    include/storage/ata/AHCICommandSlot.hpp
+    include/storage/ata/definitions.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -116,7 +124,11 @@ set(KERNEL_SOURCES
     processes/GlobalScheduler.cpp
     syscall/SyscallDispatcher.cpp
     processes/Process.cpp
-    filesystem/FileContext.cpp)
+    filesystem/FileContext.cpp
+    storage/ata/AHCIController.cpp
+    storage/ata/AHCIManager.cpp
+    storage/ata/AHCIPort.cpp
+    storage/ata/AHCICommandSlot.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
