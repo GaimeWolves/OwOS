@@ -3,6 +3,7 @@
 #include <memory/VirtualMemoryManager.hpp>
 
 #define NUM_PRTDS 8
+#define MAX_PRTD_BYTE_COUNT (4 * MiB)
 
 namespace Kernel
 {
@@ -29,18 +30,18 @@ namespace Kernel
 	}
 
 	// TODO: implement using multiple buffers, a dynamic number of PRDTs, bounds checking
-	size_t AHCICommandSlot::prepare_read(uint64_t start_sector, size_t byte_count, uintptr_t buffer)
+	size_t AHCICommandSlot::prepare_transfer(AHCI::TransferAction action, uint64_t start_sector, size_t byte_count, uintptr_t buffer)
 	{
 		assert(!(byte_count & 1)); // byte count must be word aligned
-		size_t prtd_count = LibK::round_up_to_multiple<size_t>(byte_count, 4 * 1024 * 1024) / (4 * 1024 * 1024); // each PRDT can handle at max 4MiB
+		size_t prtd_count = LibK::round_up_to_multiple<size_t>(byte_count, MAX_PRTD_BYTE_COUNT) / MAX_PRTD_BYTE_COUNT;
 		prtd_count = LibK::min(prtd_count, NUM_PRTDS); // no dynamic number of PRDTs for now
-		size_t actual_byte_count = LibK::min(prtd_count * (4 * 1024 * 1024), byte_count);
-		auto sector_count = LibK::round_up_to_multiple<size_t>(actual_byte_count, 512) / 512;
+		size_t actual_byte_count = LibK::min(prtd_count * MAX_PRTD_BYTE_COUNT, byte_count);
+		auto sector_count = LibK::round_up_to_multiple<size_t>(actual_byte_count, 512) / 512; // TODO: Determine device sector size
 
 		memset(m_command_table, 0, sizeof (command_table_t) + prtd_count * sizeof (prdt_t));
 		auto cfis = reinterpret_cast<volatile AHCI::h2d_register_fis_t *>(m_command_table->cfis);
 		cfis->type = AHCI::FisType::RegisterH2D;
-		cfis->command = 0x25; // READ DMA EXT
+		cfis->command = static_cast<uint8_t>(action == AHCI::TransferAction::Read ? ATA::Command::READ_DMA_EXT : ATA::Command::WRITE_DMA_EXT); // READ DMA EXT / WRITE DMA EXT
 		cfis->device = 0;
 		cfis->c = 1;
 		cfis->lba0 = start_sector & 0xFF;
@@ -55,6 +56,7 @@ namespace Kernel
 		m_command_header->prdtl = prtd_count;
 		m_command_header->prdbc = actual_byte_count;
 		m_command_header->cfl = sizeof (AHCI::h2d_register_fis_t) / sizeof (uint32_t);
+		m_command_header->w = action == AHCI::TransferAction::Write;
 
 		size_t ret = actual_byte_count;
 
@@ -62,16 +64,14 @@ namespace Kernel
 		{
 			m_command_table->prdt[i].dba = buffer;
 			m_command_table->prdt[i].dbau = 0;
-			m_command_table->prdt[i].dbc = 4 * 1024 * 1024 - 1;
-			buffer += 4 * 1024 * 1024;
-			actual_byte_count -= 4 * 1024 * 1024;
+			m_command_table->prdt[i].dbc = MAX_PRTD_BYTE_COUNT - 1;
+			buffer += MAX_PRTD_BYTE_COUNT;
+			actual_byte_count -= MAX_PRTD_BYTE_COUNT;
 		}
 
 		m_command_table->prdt[prtd_count - 1].dba = buffer;
 		m_command_table->prdt[prtd_count - 1].dbau = 0;
 		m_command_table->prdt[prtd_count - 1].dbc = actual_byte_count - 1;
-
-		m_issued = true;
 
 		return ret;
 	}
@@ -81,14 +81,14 @@ namespace Kernel
 		memset(m_command_table, 0, sizeof (command_table_t) + sizeof (prdt_t));
 		auto cfis = reinterpret_cast<volatile AHCI::h2d_register_fis_t *>(m_command_table->cfis);
 		cfis->type = AHCI::FisType::RegisterH2D;
-		cfis->command = 0xEC; // ATA IDENTIFY
+		cfis->command = static_cast<uint8_t>(ATA::Command::ATA_IDENTIFY);
 		cfis->device = 0;
 		cfis->c = 1;
 		m_command_header->prdtl = 1;
-		m_command_header->prdbc = 512;
+		m_command_header->prdbc = sizeof (AHCI::ata_identify_block_t);
 		m_command_header->cfl = sizeof (AHCI::h2d_register_fis_t) / sizeof (uint32_t);
 		m_command_table->prdt[0].dba = buffer;
 		m_command_table->prdt[0].dbau = 0;
-		m_command_table->prdt[0].dbc = 512 - 1;
+		m_command_table->prdt[0].dbc = sizeof (AHCI::ata_identify_block_t) - 1;
 	}
 }

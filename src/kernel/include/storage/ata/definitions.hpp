@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include <common_attributes.h>
 
@@ -9,8 +10,27 @@ namespace Kernel
 	class AHCIController;
 	class AHCIPort;
 
+	namespace ATA
+	{
+		enum class Command : uint8_t
+		{
+			READ_DMA_EXT = 0x25,
+			WRITE_DMA_EXT = 0x35,
+			ATA_IDENTIFY = 0xEC,
+		};
+	}
+
 	namespace AHCI
 	{
+		constexpr size_t NUM_PORTS = 32;
+		constexpr size_t NUM_SLOTS = 32;
+
+		enum class TransferAction
+		{
+			Read,
+			Write,
+		};
+
 		enum class DeviceDetection : uint32_t
 		{
 			None = 0,

@@ -52,6 +52,25 @@
 #define PCI_CLASS_BRIDGE               0x06
 #define PCI_BRIDGE_SUBCLASS_PCI_TO_PCI 0x04
 
+#define PCI_CMD_ID   (1 << 10) // interrupt disable
+#define PCI_CMD_FBE  (1 << 9)  // fast back-to-back enable
+#define PCI_CMD_SEE  (1 << 8)  // SERR# enable
+#define PCI_CMD_WCC  (1 << 7)  // wait cycle enable
+#define PCI_CMD_PEE  (1 << 6)  // parity error response enable
+#define PCI_CMD_VGA  (1 << 5)  // vga palette snooping enable
+#define PCI_CMD_MWIE (1 << 4)  // memory write and invalidate enable
+#define PCI_CMD_SCE  (1 << 3)  // special cycle enable
+#define PCI_CMD_BME  (1 << 2)  // bus master enable
+#define PCI_CMD_MSE  (1 << 1)  // memory space enable
+#define PCI_CMD_IOSE 1         // I/O space enable
+
+#define PCI_CAP_ID(cap) (cap & 0xFF)
+#define PCI_CAP_NEXT(cap) ((cap >> 8) & 0xFC)
+
+#define PCI_MSI_CAP_ID 0x05
+#define PCI_MSI_CONTROL 2
+#define PCI_MSI_ENABLE 1
+
 namespace Kernel::PCI
 {
 	class Address

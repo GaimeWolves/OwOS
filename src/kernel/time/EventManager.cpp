@@ -17,7 +17,7 @@ namespace Kernel::Time
 		thread_t *current_thread = CPU::Processor::current().get_current_thread();
 
 		schedule_event([current_thread](){
-			current_thread->state = CPU::Processor::current().get_current_thread() == current_thread ? ThreadState::Running : ThreadState::Waiting;
+			current_thread->state = CPU::Processor::current().get_current_thread() == current_thread ? ThreadState::Running : ThreadState::Ready;
 		}, usecs * 1000,true);
 
 		current_thread->state = ThreadState::Sleeping;

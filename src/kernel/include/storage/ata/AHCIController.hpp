@@ -83,7 +83,7 @@ namespace Kernel
 	private:
 		PCI::Function m_controller{};
 		Memory::MMIO<hba_memory_registers_t> m_hba_memory{};
-		AHCIPort m_ports[32];
+		AHCIPort *m_ports;
 
 		void handle_interrupt(const CPU::interrupt_frame_t &regs) override;
 	};

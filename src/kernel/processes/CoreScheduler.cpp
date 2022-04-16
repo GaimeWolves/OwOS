@@ -31,7 +31,7 @@ namespace Kernel
 		//	LibK::printf_debug_msg("[CoreScheduler] CPU idling");
 
 		if (current_thread && current_thread->state == ThreadState::Running)
-			current_thread->state = ThreadState::Waiting;
+			current_thread->state = ThreadState::Ready;
 		next_thread->state = ThreadState::Running;
 		core.m_current_thread = next_thread;
 
@@ -71,7 +71,7 @@ namespace Kernel
 
 			switch (next->state)
 			{
-			case ThreadState::Waiting:
+			case ThreadState::Ready:
 				return next;
 			case ThreadState::Blocked:
 				if (!next->lock->is_locked() && next->lock->try_lock())
@@ -97,6 +97,17 @@ namespace Kernel
 		} while (core.m_current_thread_index != start);
 
 		return &core.m_idle_thread;
+	}
+
+	void CoreScheduler::suspend(thread_t *thread)
+	{
+		thread->state = ThreadState::Suspended;
+		CPU::Processor::sleep();
+	}
+
+	void CoreScheduler::resume(thread_t *thread)
+	{
+		thread->state = ThreadState::Ready;
 	}
 
 	void CoreScheduler::block(Locking::Mutex *lock)

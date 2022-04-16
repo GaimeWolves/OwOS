@@ -9,6 +9,9 @@ namespace Kernel
 	public:
 		static void initialize();
 
+		static void suspend(thread_t *thread);
+		static void resume(thread_t *thread);
+
 		static void block(Locking::Mutex *lock);
 		static void terminate(thread_t *thread);
 		static void terminate_current();

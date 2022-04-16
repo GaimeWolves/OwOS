@@ -169,7 +169,7 @@ namespace Kernel::CPU
 		    .registers = create_initial_state(stack, main_function, false, Memory::Arch::get_kernel_paging_space()),
 		    .has_started = false,
 		    .kernel_stack = stack,
-		    .state = ThreadState::Waiting,
+		    .state = ThreadState::Ready,
 		    .lock = nullptr,
 		    .parent_process = nullptr,
 		};
@@ -188,7 +188,7 @@ namespace Kernel::CPU
 		    .registers = create_initial_state(userspace_stack, main_function, true, memory_space.paging_space),
 		    .has_started = false,
 		    .kernel_stack = kernel_stack,
-		    .state = ThreadState::Waiting,
+		    .state = ThreadState::Ready,
 		    .lock = nullptr,
 		    .parent_process = nullptr,
 		};

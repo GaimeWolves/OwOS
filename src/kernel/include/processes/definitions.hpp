@@ -14,8 +14,9 @@ namespace Kernel
 	enum class ThreadState
 	{
 		Running,
-		Waiting,
+		Ready,
 		Blocked,
+		Suspended,
 		Sleeping,
 		Terminated,
 	};
