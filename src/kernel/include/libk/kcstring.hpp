@@ -9,10 +9,14 @@ extern "C"
 	char *strrev(char *str);
 	int strcmp(const char *lhs, const char *rhs);
 	int strncmp(const char *lhs, const char *rhs, size_t count);
+	char *strchr(char *str, int character);
 
 	unsigned long strtoul(const char *str, char **str_end, int base);
 
 	void *memset(void *dest, int ch, size_t count);
 	void *memmove(void *dest, const void *src, size_t count);
 	void *memcpy(void *dest, const void *src, size_t count);
+	int memcmp(const void *ptr1, const void *ptr2, size_t num);
 }
+
+const char *strchr(const char *str, int character);

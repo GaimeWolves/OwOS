@@ -19,7 +19,7 @@ namespace Kernel
 		bool remove() override { return false; }
 		bool rename(const LibK::string &new_file_name __unused) override { return false; }
 
-		LibK::vector<File> read_directory() override { return {}; }
+		LibK::vector<File *> read_directory() override { return {}; }
 		File *find_file(const LibK::string &file_name __unused) override { return nullptr; }
 		File *make_file(const LibK::string &file_name __unused) override { return nullptr; }
 		bool is_directory() override { return false; }

@@ -116,10 +116,12 @@ namespace Kernel
 		m_is_faulty = m_data_reg.in<uint8_t>() != 0xAE;
 	}
 
-	size_t SerialDevice::read(size_t offset __unused, size_t bytes, char *buffer)
+	size_t SerialDevice::read(size_t offset __unused, size_t bytes, Memory::memory_region_t region)
 	{
 		if (m_is_faulty)
 			return 0;
+
+		char *buffer = reinterpret_cast<char *>(region.virt_address);
 
 		for (size_t i = 0; i < bytes; i++)
 		{
@@ -132,10 +134,12 @@ namespace Kernel
 		return bytes;
 	}
 
-	size_t SerialDevice::write(size_t offset __unused, size_t bytes, const char *buffer)
+	size_t SerialDevice::write(size_t offset __unused, size_t bytes, Memory::memory_region_t region)
 	{
 		if (m_is_faulty)
 			return 0;
+
+		const char *buffer = reinterpret_cast<const char *>(region.virt_address);
 
 		for (size_t i = 0; i < bytes; i++)
 		{

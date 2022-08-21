@@ -20,7 +20,7 @@ namespace Kernel
 
 		void initialize();
 
-		[[nodiscard]] const LibK::vector<StorageDevice> &devices() const { return m_connected_devices; }
+		[[nodiscard]] LibK::vector<StorageDevice> &devices() { return m_connected_devices; }
 
 	private:
 		AHCIManager() = default;

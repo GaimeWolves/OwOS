@@ -67,10 +67,10 @@ namespace Kernel
 
 		void configure(BaudRate rate, DataLength length, StopBits stopBits, ParityType parity);
 
-		const LibK::string &name() override { return m_name; };
+		LibK::StringView name() override { return LibK::StringView(m_name); };
 
-		size_t read(size_t offset, size_t bytes, char *buffer) override;
-		size_t write(size_t offset, size_t bytes, const char *buffer) override;
+		size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) override;
+		size_t write(size_t offset, size_t bytes, Memory::memory_region_t region) override;
 
 		[[nodiscard]] bool is_faulty() const { return m_is_faulty; }
 

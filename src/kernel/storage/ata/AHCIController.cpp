@@ -8,6 +8,10 @@ namespace Kernel
 	    : Interrupts::IRQHandler(function.get_interrupt_line()) // TODO: Let's just assume it is in PIC mode for now
 	{
 		m_controller = function;
+	}
+
+	void AHCIController::initialize()
+	{
 		LibK::printf_debug_msg("[AHCI] Controller - ABAR: %p Pin: %c Line: 0x%x", m_controller.get_bar5(), 'A' + m_controller.get_interrupt_pin(), m_controller.get_interrupt_line());
 
 		m_controller.set_command(PCI_CMD_MSE | PCI_CMD_BME | PCI_CMD_MWIE | PCI_CMD_PEE | PCI_CMD_SEE | PCI_CMD_FBE);

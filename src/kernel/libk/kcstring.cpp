@@ -43,10 +43,10 @@ extern "C"
 
 	int strncmp(const char *lhs, const char *rhs, size_t count)
 	{
-		char c1 = *lhs++;
-		char c2 = *rhs++;
+		char c1 = *lhs;
+		char c2 = *rhs;
 
-		while (c1 == c2 && c1 && count--)
+		while (c1 == c2 && c1 && count)
 		{
 			c1 = *lhs++;
 			c2 = *rhs++;
@@ -158,4 +158,36 @@ extern "C"
 
 		return dest;
 	}
+
+	int memcmp(const void *ptr1, const void *ptr2, size_t num)
+	{
+		const char *p1 = (const char *)ptr1;
+		const char *p2 = (const char *)ptr2;
+
+		while (*p1 == *p2 && --num)
+		{
+			p1++;
+			p2++;
+		}
+
+		return *p1 - *p2;
+	}
+
+	char *strchr(char *str, int character)
+	{
+		return const_cast<char *>(strchr(const_cast<const char *>(str), character));
+	}
+}
+
+const char *strchr(const char *str, int character)
+{
+	char ch = (char)character;
+
+	while(*str != ch)
+	{
+		if (*str++ == 0)
+			return nullptr;
+	}
+
+	return str;
 }

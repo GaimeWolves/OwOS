@@ -1,12 +1,36 @@
 #pragma once
 
-#include <storage/StorageDevice.hpp>
+#include <stddef.h>
+
+#include <storage/definitions.hpp>
+#include <devices/BlockDevice.hpp>
 
 namespace Kernel
 {
-	class PartitionDevice : public BlockDevice
+	class PartitionDevice final : public BlockDevice
 	{
+	public:
+		PartitionDevice()
+		    : BlockDevice(0, 0)
+		{
+		}
+
+		PartitionDevice(StorageDevice *device, size_t offset, size_t length);
+
+		size_t read(size_t, size_t, Memory::memory_region_t) override { return 0; };
+		size_t write(size_t, size_t, Memory::memory_region_t) override { return 0; };
+
+		size_t read_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
+		size_t write_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
+
+		size_t block_size() const override;
+
+		LibK::StringView name() override { return LibK::StringView(m_name); }
+
 	private:
-		StorageDevice *m_storage_device;
+		size_t m_offset{};
+		size_t m_length{};
+		StorageDevice *m_storage_device{nullptr};
+		LibK::string m_name{};
 	};
 }

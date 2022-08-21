@@ -14,10 +14,7 @@ namespace Kernel::LibK
 	class vector
 	{
 	public:
-		vector()
-		{
-			m_array = (T *)kmalloc(sizeof(T) * m_capacity, sizeof(T));
-		}
+		vector() = default;
 
 		explicit vector(size_t n, const T &val = T())
 		{
@@ -33,7 +30,38 @@ namespace Kernel::LibK
 		~vector()
 		{
 			if (m_array)
+			{
 				kfree(m_array);
+				m_array = nullptr;
+			}
+		}
+
+		vector(const vector &other) = delete;
+		vector &operator=(const vector &other) = delete;
+
+		vector(vector &&other) noexcept
+		    : m_capacity(other.m_capacity)
+		    , m_size(other.m_size)
+		    , m_array(other.m_array)
+		{
+			other.m_capacity = 0;
+			other.m_size = 0;
+			other.m_array = nullptr;
+		}
+
+		vector &operator=(vector &&other) noexcept
+		{
+			this->~vector();
+
+			m_capacity = other.m_capacity;
+			m_size = other.m_size;
+			m_array = other.m_array;
+
+			other.m_capacity = 0;
+			other.m_size = 0;
+			other.m_array = nullptr;
+
+			return *this;
 		}
 
 		T &operator[](size_t n) { return at(n); }
@@ -83,10 +111,14 @@ namespace Kernel::LibK
 		{
 			if (n > m_capacity)
 			{
+				if (m_capacity == 0)
+					m_capacity = 4;
+
 				while (m_capacity < n)
 					m_capacity *= 2;
 
 				m_array = (T *)krealloc(m_array, sizeof(T) * m_capacity, sizeof(T));
+
 				assert(m_array);
 			}
 		}
@@ -97,6 +129,14 @@ namespace Kernel::LibK
 			m_size++;
 			ensure_capacity(m_size);
 			m_array[m_size - 1] = move(val);
+		}
+
+		template <class ...Args>
+		void emplace_back(Args &&...args)
+		{
+			m_size++;
+			ensure_capacity(m_size);
+			new (&m_array[m_size - 1]) T(forward<Args>(args)...);
 		}
 
 		void pop_back() { m_array[m_size-- - 1].~T(); }
@@ -170,7 +210,7 @@ namespace Kernel::LibK
 		}
 
 	protected:
-		size_t m_capacity{4};
+		size_t m_capacity{0};
 		size_t m_size{0};
 
 		T *m_array{nullptr};

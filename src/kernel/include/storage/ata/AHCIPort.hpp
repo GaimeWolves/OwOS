@@ -37,6 +37,7 @@ namespace Kernel
 		[[nodiscard]] bool implemented() const { return m_implemented; }
 		[[nodiscard]] bool attached() const { return m_device_attached; }
 		[[nodiscard]] AHCI::DeviceType type() const { return m_type; }
+		[[nodiscard]] size_t block_size() const { return 512; }
 
 	private:
 		uint32_t find_slot();

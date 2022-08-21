@@ -1,5 +1,7 @@
 #pragma once
 
+#include <libk/ArrayView.hpp>
+
 #include <pci/pci.hpp>
 #include <common_attributes.h>
 #include <memory/MMIO.hpp>
@@ -9,7 +11,7 @@
 
 namespace Kernel
 {
-	class AHCIController : public Interrupts::IRQHandler
+	class AHCIController final : public Interrupts::IRQHandler
 	{
 		typedef volatile struct __hba_capabilities_t
 		{
@@ -79,6 +81,9 @@ namespace Kernel
 		} __packed hba_memory_registers_t;
 	public:
 		explicit AHCIController(PCI::Function &function);
+		void initialize();
+
+		[[nodiscard]] AHCIPort *ports() const { return m_ports; };
 
 	private:
 		PCI::Function m_controller{};

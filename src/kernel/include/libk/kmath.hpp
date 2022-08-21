@@ -43,6 +43,15 @@ namespace Kernel::LibK
 	}
 
 	template <typename T>
+	constexpr T ceil_div(T value, T multiple)
+	{
+		if (multiple == 0)
+			return value;
+
+		return (value + multiple - 1) / multiple;
+	}
+
+	template <typename T>
 	constexpr T round_down_to_multiple(T value, T multiple)
 	{
 		if (multiple == 0)

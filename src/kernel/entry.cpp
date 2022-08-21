@@ -16,6 +16,7 @@
 #include <memory/VirtualMemoryManager.hpp>
 #include <syscall/SyscallDispatcher.hpp>
 #include <storage/ata/AHCIManager.hpp>
+#include <filesystem/VirtualFileSystem.hpp>
 
 #include <libk/kcstdio.hpp>
 
@@ -68,7 +69,7 @@ namespace Kernel
 			asm("mov %%esp, %0" : "=m"(esp) ::);
 
 			LibK::printf_debug_msg("Heap: %d bytes used --- esp: %p", Heap::getStatistics().used, esp);
-			Time::EventManager::instance().sleep(1000); // TODO: Fix memory leak when sleeping for 1000ms (probably caused by a missing free when merging two events)
+			Time::EventManager::instance().sleep(1000);
 		}
 	}
 
@@ -107,6 +108,9 @@ namespace Kernel
 		Interrupts::LAPIC::instance().start_smp_boot();
 
 		SyscallDispatcher::initialize();
+
+		// TODO: Get root partition through cmdline arguments
+		VirtualFileSystem::instance().initialize(AHCIManager::instance().devices()[0].partitions()[0]);
 
 #ifdef _DEBUG
 		LibK::printf_debug_msg("[BSP] Starting scheduler and sleeping until first tick...");

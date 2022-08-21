@@ -24,7 +24,10 @@ set(LIBK_INCLUDES
     include/libk/AVLTree.hpp
     include/libk/kstack.hpp
     include/libk/kshared_ptr.hpp
-    include/libk/Concurrent.hpp)
+    include/libk/Concurrent.hpp
+    include/libk/GUID.hpp
+    include/libk/ArrayView.hpp
+    include/libk/StringView.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
@@ -91,7 +94,10 @@ set(KERNEL_INCLUDES
     include/storage/ata/AHCIController.hpp
     include/storage/ata/AHCIPort.hpp
     include/storage/ata/AHCICommandSlot.hpp
-    include/storage/ata/definitions.hpp)
+    include/storage/ata/definitions.hpp
+    include/storage/GPT.hpp
+    include/storage/definitions.hpp
+    include/filesystem/Ext2FileSystem.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -128,7 +134,13 @@ set(KERNEL_SOURCES
     storage/ata/AHCIController.cpp
     storage/ata/AHCIManager.cpp
     storage/ata/AHCIPort.cpp
-    storage/ata/AHCICommandSlot.cpp)
+    storage/ata/AHCICommandSlot.cpp
+    storage/StorageDevice.cpp
+    storage/PartitionDevice.cpp
+    storage/GPT.cpp
+    filesystem/Ext2FileSystem.cpp
+    filesystem/VirtualFileSystem.cpp
+    filesystem/File.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
