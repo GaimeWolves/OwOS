@@ -1,9 +1,11 @@
 #include <tests.hpp>
 
+#include "definitions.hpp"
+
 #include <memory/VirtualMemoryManager.hpp>
 
 #include <libk/kcstdarg.hpp>
-#include <libk/kcstdio.hpp>
+#include <logging/logger.hpp>
 #include <libk/kcstring.hpp>
 #include <libk/kutility.hpp>
 
@@ -11,7 +13,7 @@ namespace Kernel::Tests
 {
 	bool test_vmm()
 	{
-		LibK::printf_test_msg("Virtual Memory Manager (+ Physical Memory Manager)");
+		log("TEST", "Virtual Memory Manager (+ Physical Memory Manager)");
 
 		void *allocs[100];
 		allocs[0] = (void *)Memory::VirtualMemoryManager::instance().allocate_region(0x500).virt_address;
@@ -36,7 +38,7 @@ namespace Kernel::Tests
 		Memory::VirtualMemoryManager::instance().free(allocs[LibK::size(allocs) - 2]);
 		Memory::VirtualMemoryManager::instance().free(allocs[LibK::size(allocs) - 1]);
 
-		LibK::printf_check_msg(true, "Pseudo-random allocations");
+		log(get_tag(true), "Pseudo-random allocations");
 
 		char *buffer = (char *)Memory::VirtualMemoryManager::instance().allocate_region(0x6000).virt_address;
 
@@ -46,7 +48,7 @@ namespace Kernel::Tests
 
 		Memory::VirtualMemoryManager::instance().free(buffer);
 
-		LibK::printf_check_msg(true, "Write to buffer");
+		log(get_tag(true), "Write to buffer");
 
 		return true;
 	}

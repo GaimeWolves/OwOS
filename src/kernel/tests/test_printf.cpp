@@ -1,8 +1,11 @@
 #include <tests.hpp>
 
+#include "definitions.hpp"
+
 #include <libk/kcstdarg.hpp>
-#include <libk/kcstdio.hpp>
+#include <logging/logger.hpp>
 #include <libk/kcstring.hpp>
+#include <libk/kcstdio.hpp>
 
 namespace Kernel::Tests
 {
@@ -21,19 +24,17 @@ namespace Kernel::Tests
 
 		if (strcmp(expected, buffer))
 		{
-			LibK::printf_check_msg(false, "%s - Expected: %s Got: %s", fmt, expected, buffer);
+			log(get_tag(false), "%s - Expected: %s Got: %s", fmt, expected, buffer);
 			ok = false;
 			return;
 		}
 
-		LibK::printf_check_msg(true, "%s", fmt);
+		log(get_tag(true), "%s", fmt);
 	}
 
 	bool test_printf()
 	{
-		LibK::printf_test_msg("printf");
-
-		bool ok = true;
+		log("TEST", "printf");
 
 		test_format("%c", "A", 'A');
 		test_format("%10c", "         A", 'A');

@@ -64,11 +64,6 @@ namespace Kernel::LibK
 			}
 
 			rebalance(current);
-
-#ifdef _DEBUG_AVL_TREE
-			printf_debug_msg("INSERTION\n");
-			print_tree();
-#endif
 		}
 
 		bool remove(T value)
@@ -165,11 +160,6 @@ namespace Kernel::LibK
 			if (!node && !parent)
 			{
 				m_tree = nullptr;
-
-#ifdef _DEBUG_AVL_TREE
-				printf_debug_msg("DELETION %p\n", deleted);
-				print_tree();
-#endif
 				return true;
 			}
 
@@ -178,10 +168,6 @@ namespace Kernel::LibK
 			else
 				rebalance(parent);
 
-#ifdef _DEBUG_AVL_TREE
-			printf_debug_msg("DELETION %p\n", deleted);
-			print_tree();
-#endif
 			return true;
 		}
 
@@ -331,78 +317,6 @@ namespace Kernel::LibK
 
 			return right - left;
 		}
-
-#ifdef _DEBUG_AVL_TREE
-		void print_tree()
-		{
-			if (!m_tree)
-			{
-				kprintf("EMPTY\n");
-				return;
-			}
-
-			LibK::vector<node_t *> seen;
-			LibK::vector<LibK::vector<node_t *>> slices;
-			print_tree_helper(m_tree, slices, seen, 0, 0);
-
-			int depth = slices.size() - 1;
-			int width = 1 << depth;
-			int max_line_width = width * 10;
-
-			for (size_t d = 0; d < slices.size(); d++)
-			{
-				size_t tree_width = 1 << d;
-				size_t line_width = tree_width * 10;
-				size_t padding = (max_line_width - line_width) / 2;
-
-				if (padding > 0)
-					kprintf("%*c", padding, ' ');
-
-				for (size_t i = 0; i < tree_width; i++)
-				{
-					node_t *node = slices[d].size() > i ? slices[d][i] : (node_t *)UINTPTR_MAX;
-
-					if ((uintptr_t)node == UINTPTR_MAX)
-						kprintf("          ");
-					else if (node)
-						kprintf(" %8X ", (uintptr_t)node);
-					else
-						kprintf("   NULL   ");
-				}
-
-				kputc('\n');
-				kputc('\n');
-			}
-		}
-
-		void print_tree_helper(node_t *root, LibK::vector<LibK::vector<node_t *>> &slices, LibK::vector<node_t *> &seen, int depth, size_t index)
-		{
-			if (slices.size() == (size_t)depth)
-				slices.push_back(LibK::vector<node_t *>());
-
-			if (slices[depth].size() < index)
-			{
-				while (slices[depth].size() < index)
-					slices[depth].push_back((node_t *)UINTPTR_MAX);
-			}
-
-			slices[depth].push_back(root);
-
-			if (!root)
-				return;
-
-			for (auto other : seen)
-			{
-				if (other == root)
-					return;
-			}
-
-			seen.push_back(root);
-
-			print_tree_helper(root->left, slices, seen, depth + 1, index * 2);
-			print_tree_helper(root->right, slices, seen, depth + 1, index * 2 + 1);
-		}
-#endif
 
 		node_t *m_tree{nullptr};
 	};

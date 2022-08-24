@@ -14,7 +14,7 @@ namespace Kernel
 		}
 
 		// TODO: actually implement
-		FileContext open() override { return FileContext(this); }
+		FileContext open(int options __unused) override { return FileContext(this, true, true); }
 		bool close(FileContext &context __unused) override { return false; }
 		bool remove() override { return false; }
 		bool rename(const LibK::string &new_file_name __unused) override { return false; }

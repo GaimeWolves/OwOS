@@ -7,6 +7,7 @@
 #include <time/EventManager.hpp>
 #include <arch/smp.hpp>
 
+#include "logging/logger.hpp"
 #include <libk/katomic.hpp>
 #include <libk/kcstdio.hpp>
 
@@ -90,7 +91,7 @@ namespace Kernel::Interrupts
 
 		virtual void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
-			LibK::printf_debug_msg("[APIC] Got error interrupt");
+			log("APIC", "Got error interrupt");
 		}
 
 		virtual void eoi()
@@ -116,7 +117,7 @@ namespace Kernel::Interrupts
 
 		virtual void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
-			LibK::printf_debug_msg("[APIC] Got spurious interrupt");
+			log("APIC", "Got spurious interrupt");
 		}
 
 		virtual void eoi()

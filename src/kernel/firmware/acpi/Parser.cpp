@@ -2,12 +2,13 @@
 
 #include <stdint.h>
 
+#include "logging/logger.hpp"
+#include <arch/memory.hpp>
 #include <common_attributes.h>
 #include <firmware/BIOS.hpp>
 #include <libk/kcstdio.hpp>
 #include <libk/kcstring.hpp>
 #include <memory/VirtualMemoryManager.hpp>
-#include <arch/memory.hpp>
 
 namespace Kernel::ACPI
 {
@@ -69,9 +70,7 @@ namespace Kernel::ACPI
 
 			if (rsdp)
 			{
-#ifdef _DEBUG
-				LibK::printf_debug_msg("[ACPI] RSDP found at %p", rsdp);
-#endif
+				log("ACPI", "RSDP found at %p", rsdp);
 
 				rsdp = Memory::VirtualMemoryManager::instance().map_typed<rsdp_descriptor_t>((uintptr_t)rsdp);
 			}

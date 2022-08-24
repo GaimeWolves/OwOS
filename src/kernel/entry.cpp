@@ -17,8 +17,7 @@
 #include <syscall/SyscallDispatcher.hpp>
 #include <storage/ata/AHCIManager.hpp>
 #include <filesystem/VirtualFileSystem.hpp>
-
-#include <libk/kcstdio.hpp>
+#include <logging/logger.hpp>
 
 namespace Kernel
 {
@@ -27,7 +26,7 @@ namespace Kernel
 	public:
 		void handle() override
 		{
-			LibK::printf_debug_msg("[SMP] Handling test message", CPU::Processor::current().id());
+			log("DEBUG", "Handling test message", CPU::Processor::current().id());
 		}
 	};
 
@@ -35,40 +34,40 @@ namespace Kernel
 
 	static void dummy_thread_A()
 	{
-		LibK::printf_debug_msg("Thread A starting");
-		LibK::printf_debug_msg("Thread A acquiring lock");
+		log("DEBUG", "Thread A starting");
+		log("DEBUG", "Thread A acquiring lock");
 		s_dummy_mutex.lock();
-		LibK::printf_debug_msg("Thread A acquired lock");
+		log("DEBUG", "Thread A acquired lock");
 		Time::EventManager::instance().sleep(1000);
-		LibK::printf_debug_msg("Thread A releasing lock");
+		log("DEBUG", "Thread A releasing lock");
 		s_dummy_mutex.unlock();
-		LibK::printf_debug_msg("Thread A released lock");
+		log("DEBUG", "Thread A released lock");
 		Time::EventManager::instance().sleep(500);
-		LibK::printf_debug_msg("Thread A acquiring lock");
+		log("DEBUG", "Thread A acquiring lock");
 		s_dummy_mutex.lock();
-		LibK::printf_debug_msg("Thread A acquired lock");
+		log("DEBUG", "Thread A acquired lock");
 
 		CoreScheduler::terminate_current();
 	}
 
 	__noreturn static void dummy_thread_B()
 	{
-		LibK::printf_debug_msg("Thread B starting");
+		log("DEBUG", "Thread B starting");
 		Time::EventManager::instance().sleep(500);
-		LibK::printf_debug_msg("Thread B acquiring lock");
+		log("DEBUG", "Thread B acquiring lock");
 		s_dummy_mutex.lock();
-		LibK::printf_debug_msg("Thread B acquired lock");
+		log("DEBUG", "Thread B acquired lock");
 		Time::EventManager::instance().sleep(1000);
-		LibK::printf_debug_msg("Thread B releasing lock");
+		log("DEBUG", "Thread B releasing lock");
 		s_dummy_mutex.unlock();
-		LibK::printf_debug_msg("Thread B released lock");
+		log("DEBUG", "Thread B released lock");
 
 		for (;;)
 		{
 			uintptr_t esp = 0;
 			asm("mov %%esp, %0" : "=m"(esp) ::);
 
-			LibK::printf_debug_msg("Heap: %d bytes used --- esp: %p", Heap::getStatistics().used, esp);
+			log("DEBUG", "Heap: %d bytes used --- esp: %p", Heap::getStatistics().used, esp);
 			Time::EventManager::instance().sleep(1000);
 		}
 	}
@@ -112,9 +111,7 @@ namespace Kernel
 		// TODO: Get root partition through cmdline arguments
 		VirtualFileSystem::instance().initialize(AHCIManager::instance().devices()[0].partitions()[0]);
 
-#ifdef _DEBUG
-		LibK::printf_debug_msg("[BSP] Starting scheduler and sleeping until first tick...");
-#endif
+		log("SMP", "Starting scheduler and sleeping until first tick...");
 
 		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_A));
 		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_B));
@@ -135,6 +132,8 @@ namespace Kernel
 
 		CoreScheduler::initialize();
 
+		start_logger_thread();
+
 		for (;;)
 			CPU::Processor::sleep();
 	}
@@ -154,7 +153,7 @@ namespace Kernel
 		Interrupts::APICTimer::instance().initialize();
 		mutex.unlock();
 
-		LibK::printf_debug_msg("[SMP] Starting scheduler and sleeping until first tick...");
+		log("SMP", "Starting scheduler and sleeping until first tick...");
 
 		CoreScheduler::initialize();
 

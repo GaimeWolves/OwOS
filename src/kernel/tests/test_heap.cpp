@@ -1,7 +1,9 @@
 #include <tests.hpp>
 
+#include "definitions.hpp"
+
 #include <libk/kcmalloc.hpp>
-#include <libk/kcstdio.hpp>
+#include <logging/logger.hpp>
 
 namespace Kernel::Tests
 {
@@ -22,7 +24,7 @@ namespace Kernel::Tests
 
 		if (ptr == nullptr)
 		{
-			LibK::printf_check_msg(false, "Simple allocation: nullptr returned");
+			log(get_tag(false), "Simple allocation: nullptr returned");
 			return false;
 		}
 
@@ -32,11 +34,11 @@ namespace Kernel::Tests
 
 		if (stats.used != orig_stats.used || stats.free != orig_stats.free)
 		{
-			LibK::printf_check_msg(false, "Simple allocation: statistics wrong (heap corrupted?)");
+			log(get_tag(false), "Simple allocation: statistics wrong (heap corrupted?)");
 			return false;
 		}
 
-		LibK::printf_check_msg(true, "Simple allocation");
+		log(get_tag(true), "Simple allocation");
 		return true;
 	}
 
@@ -48,7 +50,7 @@ namespace Kernel::Tests
 
 		if (ptr == nullptr)
 		{
-			LibK::printf_check_msg(false, "Large allocation: nullptr returned");
+			log(get_tag(false), "Large allocation: nullptr returned");
 			return false;
 		}
 
@@ -58,11 +60,11 @@ namespace Kernel::Tests
 
 		if (stats.used != orig_stats.used || stats.free != orig_stats.free)
 		{
-			LibK::printf_check_msg(false, "Large allocation: statistics wrong (heap corrupted?)");
+			log(get_tag(false), "Large allocation: statistics wrong (heap corrupted?)");
 			return false;
 		}
 
-		LibK::printf_check_msg(true, "Large allocation");
+		log(get_tag(true), "Large allocation");
 		return true;
 	}
 
@@ -79,7 +81,7 @@ namespace Kernel::Tests
 		{
 			if (ptr == nullptr)
 			{
-				LibK::printf_check_msg(false, "Many allocations: nullptr returned");
+				log(get_tag(false), "Many allocations: nullptr returned");
 				return false;
 			}
 
@@ -90,17 +92,17 @@ namespace Kernel::Tests
 
 		if (stats.used != orig_stats.used || stats.free != orig_stats.free)
 		{
-			LibK::printf_check_msg(false, "Many allocations: statistics wrong (heap corrupted?)");
+			log(get_tag(false), "Many allocations: statistics wrong (heap corrupted?)");
 			return false;
 		}
 
-		LibK::printf_check_msg(true, "Many allocations");
+		log(get_tag(true), "Many allocations");
 		return true;
 	}
 
 	bool test_heap()
 	{
-		LibK::printf_test_msg("Heap allocations");
+		log("TEST", "Heap allocations");
 		bool ok = true;
 
 		if (!test_simple_kmalloc())

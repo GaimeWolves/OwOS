@@ -4,9 +4,7 @@
 #include <libk/kcstdarg.hpp>
 #include <vga/textmode.hpp>
 #include <locking/Mutex.hpp>
-#include <arch/Processor.hpp>
-
-#include "printf.hpp"
+#include <logging/logger.hpp>
 
 using namespace Kernel::VGA;
 using namespace Kernel::LibK;
@@ -79,83 +77,3 @@ extern "C"
 		va_end(ap);
 	}
 }
-
-namespace Kernel::LibK
-{
-	void printf_check_msg(bool ok, const char *msg, ...)
-	{
-		kernel_print_lock.lock();
-		kputc('[');
-
-		if (ok)
-		{
-			Textmode::set_color(Textmode::Color::GREEN, Textmode::Color::BLACK);
-			kputs("  OK  ");
-		}
-		else
-		{
-			Textmode::set_color(Textmode::Color::RED, Textmode::Color::BLACK);
-			kputs("FAILED");
-		}
-
-		Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
-		kputc(']');
-		kputc(' ');
-
-		va_list ap;
-		va_start(ap, msg);
-
-		kvprintf(msg, ap);
-
-		va_end(ap);
-
-		kputc('\n');
-		kernel_print_lock.unlock();
-	}
-
-	void printf_debug_msg(const char *msg, ...)
-	{
-		kernel_print_lock.lock();
-		kprintf("(#%d) [", CPU::Processor::current().id());
-
-		Textmode::set_color(Textmode::Color::MAGENTA, Textmode::Color::BLACK);
-		kputs("DEBUG");
-		Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
-
-		kputc(']');
-		kputc(' ');
-
-		va_list ap;
-		va_start(ap, msg);
-
-		kvprintf(msg, ap);
-
-		va_end(ap);
-
-		kputc('\n');
-		kernel_print_lock.unlock();
-	}
-
-	void printf_test_msg(const char *msg, ...)
-	{
-		kernel_print_lock.lock();
-		kputc('[');
-
-		Textmode::set_color(Textmode::Color::LIGHT_GREEN, Textmode::Color::BLACK);
-		kputs(" TEST ");
-		Textmode::set_color(Textmode::Color::WHITE, Textmode::Color::BLACK);
-
-		kputc(']');
-		kputc(' ');
-
-		va_list ap;
-		va_start(ap, msg);
-
-		kvprintf(msg, ap);
-
-		va_end(ap);
-
-		kputc('\n');
-		kernel_print_lock.unlock();
-	}
-} // namespace Kernel::LibK

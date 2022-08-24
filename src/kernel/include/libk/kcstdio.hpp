@@ -13,10 +13,3 @@ extern "C"
 	void kvprintf(const char *fmt, va_list ap);
 	void kvsprintf(char *buffer, const char *fmt, va_list ap);
 }
-
-namespace Kernel::LibK
-{
-	void printf_check_msg(bool ok, const char *msg, ...);
-	void printf_debug_msg(const char *msg, ...);
-	void printf_test_msg(const char *msg, ...);
-} // namespace Kernel::LibK

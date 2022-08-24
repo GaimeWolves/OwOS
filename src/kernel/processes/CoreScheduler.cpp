@@ -124,12 +124,12 @@ namespace Kernel
 	{
 		// TODO: Think about dangling locked resources, heap allocations and allocated/mapped pages
 		thread->state = ThreadState::Terminated;
-		CPU::Processor::sleep();
 	}
 
 	void CoreScheduler::terminate_current()
 	{
 		terminate(CPU::Processor::current().get_current_thread());
+		CPU::Processor::sleep();
 	}
 
 	__noreturn void CoreScheduler::idle()

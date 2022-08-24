@@ -27,14 +27,16 @@ set(LIBK_INCLUDES
     include/libk/Concurrent.hpp
     include/libk/GUID.hpp
     include/libk/ArrayView.hpp
-    include/libk/StringView.hpp)
+    include/libk/printf.hpp
+    include/libk/StringView.hpp
+    include/libk/klist.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
     libk/kcstdio.cpp
     libk/kcctype.cpp
     libk/kcstring.cpp
-    libk/printf.hpp)
+    libk/printf.cpp)
 
 set(KERNEL_INCLUDES
     include/common_attributes.h
@@ -97,7 +99,10 @@ set(KERNEL_INCLUDES
     include/storage/ata/definitions.hpp
     include/storage/GPT.hpp
     include/storage/definitions.hpp
-    include/filesystem/Ext2FileSystem.hpp)
+    include/filesystem/Ext2FileSystem.hpp
+    include/elf/definitions.hpp
+    include/elf/elf.hpp
+    include/logging/logger.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -117,6 +122,7 @@ set(KERNEL_SOURCES
     tests/test_heap.cpp
     tests/test_printf.cpp
     tests/test_vmm.cpp
+    tests/definitions.hpp
     interrupts/LAPIC.cpp
     interrupts/InterruptHandler.cpp
     interrupts/PIC.cpp
@@ -140,7 +146,9 @@ set(KERNEL_SOURCES
     storage/GPT.cpp
     filesystem/Ext2FileSystem.cpp
     filesystem/VirtualFileSystem.cpp
-    filesystem/File.cpp)
+    filesystem/File.cpp elf/elf.cpp
+    logging/message_queue.hpp
+    logging/logger.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

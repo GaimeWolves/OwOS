@@ -1,12 +1,13 @@
 #include <arch/interrupts.hpp>
 
 #include "interrupt_stubs.hpp"
+#include "logging/logger.hpp"
 
-#include <arch/i686/interrupts.hpp>
 #include <arch/Processor.hpp>
+#include <arch/i686/interrupts.hpp>
 #include <common_attributes.h>
-#include <interrupts/UnhandledInterruptHandler.hpp>
 #include <interrupts/SharedIRQHandler.hpp>
+#include <interrupts/UnhandledInterruptHandler.hpp>
 #include <syscall/SyscallDispatcher.hpp>
 
 #include <libk/kcstdio.hpp>
@@ -41,8 +42,8 @@ namespace Kernel::CPU
 			uintptr_t address = Processor::cr2();
 
 			// TODO: Actually handle page faults
-			LibK::printf_debug_msg("[MEM] Got page fault at address %p executing %p", address, reg.eip);
-			LibK::printf_debug_msg("[MEM] With error code %i", reg.error_code);
+			log("MEM", "Got page fault at address %p executing %p", address, reg.eip);
+			log("MEM", "With error code %i", reg.error_code);
 			panic();
 		}
 

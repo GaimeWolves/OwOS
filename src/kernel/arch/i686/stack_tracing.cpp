@@ -1,10 +1,10 @@
 #include <arch/stack_tracing.hpp>
 
-#include <libk/kcstdio.hpp>
 #include <libk/kcstring.hpp>
 
 #include <arch/i686/interrupts.hpp>
 #include <common_attributes.h>
+#include <logging/logger.hpp>
 
 namespace Kernel::CPU
 {
@@ -34,13 +34,13 @@ namespace Kernel::CPU
 
 			if (symbol.address == 0)
 			{
-				kprintf("#%d %p (unknown)\n", current_index, stackframe->eip - 5);
+				critical_printf("#%d %p (unknown)\n", current_index, stackframe->eip - 5);
 				return;
 			}
 			else if (symbol.file == nullptr)
-				kprintf("#%d %p in %s\n", current_index, stackframe->eip - 5, symbol.name);
+				critical_printf("#%d %p in %s\n", current_index, stackframe->eip - 5, symbol.name);
 			else
-				kprintf("#%d %p in %s at %s\n", current_index, stackframe->eip - 5, symbol.name, symbol.file);
+				critical_printf("#%d %p in %s at %s\n", current_index, stackframe->eip - 5, symbol.name, symbol.file);
 
 			current_index++;
 
@@ -49,10 +49,10 @@ namespace Kernel::CPU
 				// TODO: Investigate, why faults have a different stack layout (I thought I already mitigated this)
 				interrupt_frame_t *regs = (uintptr_t) stackframe->regs_fault > 0xc0000000 ? stackframe->regs_fault : stackframe->regs;
 
-				kprintf("    <---- Interrupt 0x%.2x ---->\n", regs->isr_number);
+				critical_printf("    <---- Interrupt 0x%.2x ---->\n", regs->isr_number);
 
 				symbol_t interrupted_symbol = get_symbol_by_address(regs->eip);
-				kprintf("#%d %p in %s at %s\n", current_index++, regs->eip, interrupted_symbol.name, interrupted_symbol.file);
+				critical_printf("#%d %p in %s at %s\n", current_index++, regs->eip, interrupted_symbol.name, interrupted_symbol.file);
 
 				stackframe = (stackframe_t *)regs->ebp;
 				continue;

@@ -39,6 +39,10 @@ namespace Kernel
 
 		LibK::vector<PartitionDevice> &partitions() { return m_partitions; }
 
+	protected:
+		[[nodiscard]] bool can_open_for_read() const override { return true; };
+		[[nodiscard]] bool can_open_for_write() const override { return true; };
+
 	private:
 		Type m_type{Type::Unknown};
 		AHCIPort *m_ahci_port{nullptr};

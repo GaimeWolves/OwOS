@@ -2,6 +2,7 @@
 
 #include <arch/io.hpp>
 
+#include "logging/logger.hpp"
 #include <libk/kcstdio.hpp>
 
 namespace Kernel::PCI
@@ -238,13 +239,12 @@ namespace Kernel::PCI
 			}
 		}
 
-#ifdef _DEBUG
-		LibK::printf_debug_msg("Listing PCI devices:");
-		kprintf("ADDRESS CLAS SUBC PROG VENDOR DEVICE HDRT\n");
+		log("PCI", "Listing PCI devices:");
+		log("ADDRESS CLAS SUBC PROG VENDOR DEVICE HDRT");
 		for (auto &device : m_all_pci_devices)
 		{
-			kprintf(
-			    "%.2hhX:%.2hhX.%hhu 0x%.2hhx 0x%.2hhx 0x%.2hhx 0x%.4hx 0x%.4hx 0x%.2hhx\n",
+			log(
+			    "%.2hhX:%.2hhX.%hhu 0x%.2hhx 0x%.2hhx 0x%.2hhx 0x%.4hx 0x%.4hx 0x%.2hhx",
 			    device.get_address().bus(),
 			    device.get_address().device(),
 			    device.get_address().function(),
@@ -255,7 +255,6 @@ namespace Kernel::PCI
 			    device.get_device_id(),
 			    device.get_header_type());
 		}
-#endif
 	}
 
 	void HostBridge::enumerate_bus(uint8_t bus)

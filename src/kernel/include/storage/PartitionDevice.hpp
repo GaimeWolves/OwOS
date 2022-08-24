@@ -23,9 +23,14 @@ namespace Kernel
 		size_t read_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
 		size_t write_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
 
+
 		size_t block_size() const override;
 
 		LibK::StringView name() override { return LibK::StringView(m_name); }
+
+	protected:
+		[[nodiscard]] bool can_open_for_read() const override { return true; };
+		[[nodiscard]] bool can_open_for_write() const override { return true; };
 
 	private:
 		size_t m_offset{};

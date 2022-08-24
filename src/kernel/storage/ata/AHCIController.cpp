@@ -1,6 +1,6 @@
 #include <storage/ata/AHCIController.hpp>
 
-#include <libk/kcstdio.hpp>
+#include <logging/logger.hpp>
 
 namespace Kernel
 {
@@ -12,7 +12,7 @@ namespace Kernel
 
 	void AHCIController::initialize()
 	{
-		LibK::printf_debug_msg("[AHCI] Controller - ABAR: %p Pin: %c Line: 0x%x", m_controller.get_bar5(), 'A' + m_controller.get_interrupt_pin(), m_controller.get_interrupt_line());
+		log("AHCI", "Controller - ABAR: %p Pin: %c Line: 0x%x", m_controller.get_bar5(), 'A' + m_controller.get_interrupt_pin(), m_controller.get_interrupt_line());
 
 		m_controller.set_command(PCI_CMD_MSE | PCI_CMD_BME | PCI_CMD_MWIE | PCI_CMD_PEE | PCI_CMD_SEE | PCI_CMD_FBE);
 
@@ -32,7 +32,7 @@ namespace Kernel
 		}
 
 		m_hba_memory = Memory::MMIO<hba_memory_registers_t>(m_controller.get_bar5(), sizeof(hba_memory_registers_t));
-		LibK::printf_debug_msg("[AHCI] Ports: %lu Implemented: 0x%lx", (uint32_t)m_hba_memory->cap.np + 1, (uint32_t)m_hba_memory->pi);
+		log("AHCI", "Ports: %lu Implemented: 0x%lx", (uint32_t)m_hba_memory->cap.np + 1, (uint32_t)m_hba_memory->pi);
 
 		m_hba_memory->ghc.dword = 1;
 		while (m_hba_memory->ghc.hr)
@@ -48,7 +48,7 @@ namespace Kernel
 			{
 				m_ports[i].initialize(&m_hba_memory->ports[i], m_hba_memory->cap.ncs);
 				if (m_ports[i].attached())
-					LibK::printf_debug_msg("[AHCI] Port %d attached - Type: %d", i, m_ports[i].type());
+					log("AHCI", "Port %d attached - Type: %d", i, m_ports[i].type());
 			}
 		}
 

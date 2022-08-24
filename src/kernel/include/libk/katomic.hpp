@@ -271,6 +271,11 @@ namespace Kernel::LibK
 			return load();
 		}
 
+		always_inline T* operator->() const noexcept
+		{
+			return load();
+		}
+
 		always_inline T *operator++() volatile noexcept
 		{
 			return fetch_add(1) + 1;

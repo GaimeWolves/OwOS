@@ -3,10 +3,10 @@
 #include <common_attributes.h>
 
 #include <libk/kcstdarg.hpp>
-#include <libk/kcstdio.hpp>
 
 #include <arch/Processor.hpp>
 #include <arch/stack_tracing.hpp>
+#include <logging/logger.hpp>
 
 namespace Kernel
 {
@@ -17,17 +17,17 @@ namespace Kernel
 
 	__noreturn void panic(const char *fmt, ...)
 	{
-		kputs("KERNEL PANIC: ");
+		critical_puts("KERNEL PANIC: ");
 
 		if (fmt)
 		{
 			va_list ap;
 			va_start(ap, fmt);
-			kvprintf(fmt, ap);
+			critical_vprintf(fmt, ap);
 			va_end(ap);
 		}
 
-		kputc('\n');
+		critical_putc('\n');
 
 		CPU::print_stacktrace();
 

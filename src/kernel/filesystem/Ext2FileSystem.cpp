@@ -253,7 +253,7 @@ namespace Kernel
 
 	bool Ext2FileSystem::mount()
 	{
-		m_file = m_device->open();
+		m_file = m_device->open(0);
 
 		m_superblock_region = Memory::VirtualMemoryManager::instance().allocate_region(sizeof (superblock_t));
 		m_device->read_blocks(2, LibK::round_up_to_multiple<size_t>(sizeof (superblock_t), m_device->block_size()) / m_device->block_size(), m_superblock_region);

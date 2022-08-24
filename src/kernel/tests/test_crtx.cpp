@@ -1,7 +1,9 @@
 #include <tests.hpp>
 
+#include "definitions.hpp"
+
+#include <logging/logger.hpp>
 #include <common_attributes.h>
-#include <libk/kcstdio.hpp>
 
 namespace Kernel::Tests
 {
@@ -14,12 +16,8 @@ namespace Kernel::Tests
 
 	bool test_crtx()
 	{
-		LibK::printf_test_msg("Global constructors");
-
-		if (constructor_was_run)
-			LibK::printf_check_msg(true, "test_constructor was called");
-		else
-			LibK::printf_check_msg(false, "test_constructor was not called");
+		log("TEST", "Global constructors");
+		log(get_tag(constructor_was_run), "test_constructor was called");
 
 		return constructor_was_run;
 	}

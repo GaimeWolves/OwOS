@@ -67,6 +67,7 @@ namespace Kernel::Memory
 		void load_kernel_space();
 		void load_memory_space(memory_space_t *memory_space);
 		[[nodiscard]] memory_space_t create_memory_space();
+		[[nodiscard]] memory_space_t &get_current_memory_space();
 
 	private:
 		VirtualMemoryManager() = default;

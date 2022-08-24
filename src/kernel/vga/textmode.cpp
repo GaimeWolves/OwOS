@@ -3,11 +3,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "logging/logger.hpp"
 #include <arch/io.hpp>
+#include <arch/spinlock.hpp>
 #include <common_attributes.h>
 #include <libk/kcstdio.hpp>
 #include <vga/TextmodeBuffer.hpp>
-#include <arch/spinlock.hpp>
 
 #define ROWS 25
 #define COLS 80
@@ -128,7 +129,7 @@ namespace Kernel::VGA::Textmode
 
 		initialized = true;
 
-		LibK::printf_check_msg(true, "VGA textmode");
+		log("VGA", "Text mode initialized");
 	}
 
 	bool is_initialized()

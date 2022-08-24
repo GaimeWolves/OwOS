@@ -4,6 +4,7 @@
 #include <libk/kutility.hpp>
 #include <libk/kcstdio.hpp>
 
+#include <logging/logger.hpp>
 #include <interrupts/LAPIC.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 
@@ -23,7 +24,7 @@ namespace Kernel::CPU
 
 		void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
-			LibK::printf_debug_msg("[APIC] Got IPI interrupt");
+			log("APIC", "Got IPI interrupt");
 			Processor::current().smp_process_messages();
 		}
 
@@ -126,7 +127,8 @@ namespace Kernel::CPU
 
 	void Processor::smp_process_messages()
 	{
-		LibK::printf_debug_msg("[SMP] Processing SMP messages");
+		log("SMP", "Processing SMP messages");
+
 
 		while (!m_queued_messages.empty()) {
 			m_queued_messages.back()->handle();

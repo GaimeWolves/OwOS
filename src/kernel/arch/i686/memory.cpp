@@ -125,7 +125,7 @@ namespace Kernel::Memory::Arch
 		uintptr_t table_addr = (uintptr_t)PhysicalMemoryManager::instance().alloc(PAGE_SIZE);
 
 		auto &mapping_table = *memory_space.mapping_table;
-		mapping_table[pd_index] = raw_create_pte(table_addr, is_user, is_writeable, disable_cache);
+		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, true);
 
 		// Clear it immediately to prevent bugs when we use this page table
 		CPU::Processor::invalidate_address((uintptr_t)&get_page_table(pd_index));

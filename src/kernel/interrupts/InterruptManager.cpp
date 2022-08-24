@@ -2,11 +2,12 @@
 
 #include <libk/kcstdio.hpp>
 
-#include <interrupts/LAPIC.hpp>
+#include "logging/logger.hpp"
+#include <firmware/acpi/Parser.hpp>
 #include <interrupts/IOAPIC.hpp>
+#include <interrupts/LAPIC.hpp>
 #include <interrupts/PIC.hpp>
 #include <interrupts/definitions.hpp>
-#include <firmware/acpi/Parser.hpp>
 
 namespace Kernel::Interrupts
 {
@@ -29,8 +30,8 @@ namespace Kernel::Interrupts
 			return;
 		}
 
-		LibK::printf_debug_msg("[APIC] LAPIC Addr: %p", madt.get_table()->lapic_addr);
-		LibK::printf_debug_msg("[APIC] Dual Legacy PIC: %d", madt.get_table()->dual_pics);
+		log("APIC", "LAPIC Addr: %p", madt.get_table()->lapic_addr);
+		log("APIC", "Dual Legacy PIC: %d", madt.get_table()->dual_pics);
 
 		LAPIC::instance().initialize(madt.get_table()->lapic_addr);
 
@@ -48,8 +49,9 @@ namespace Kernel::Interrupts
 			case 0:
 			{
 				madt_lapic_entry_t *entry = (madt_lapic_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] LAPIC: ProcID: %d ApicID: %d Enable: %d Capable: %d",
+				log(
+				    "APIC",
+				    "LAPIC: ProcID: %d ApicID: %d Enable: %d Capable: %d",
 				    entry->processor_id,
 				    entry->apic_id,
 				    entry->enabled,
@@ -62,8 +64,9 @@ namespace Kernel::Interrupts
 			case 1:
 			{
 				madt_ioapic_entry_t *entry = (madt_ioapic_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] IOAPIC: IOApicID: %d IOApicAddr: %p GSIBase: 0x%.2X",
+				log(
+				    "APIC",
+				    "IOAPIC: IOApicID: %d IOApicAddr: %p GSIBase: 0x%.2X",
 				    entry->apic_id,
 				    entry->apic_addr,
 				    entry->gsi_base);
@@ -77,8 +80,9 @@ namespace Kernel::Interrupts
 			case 2:
 			{
 				madt_ioapic_override_entry_t *entry = (madt_ioapic_override_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] IOAPIC Override: Bus: %d IRQ: 0x%.2X GSI: 0x%.2X LT: %d AL: %d",
+				log(
+				    "APIC",
+				    "IOAPIC Override: Bus: %d IRQ: 0x%.2X GSI: 0x%.2X LT: %d AL: %d",
 				    entry->bus_src,
 				    entry->irq_src,
 				    entry->gsi,
@@ -91,8 +95,9 @@ namespace Kernel::Interrupts
 			case 3:
 			{
 				madt_ioapic_nmi_entry_t *entry = (madt_ioapic_nmi_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] IOAPIC NMI: Src: 0x%.2X GSI: 0x%.2X LTrig: %d ActLow: %d",
+				log(
+				    "APIC",
+				    "IOAPIC NMI: Src: 0x%.2X GSI: 0x%.2X LTrig: %d ActLow: %d",
 				    entry->nmi_src,
 				    entry->gsi,
 				    entry->level_triggered,
@@ -104,8 +109,9 @@ namespace Kernel::Interrupts
 			case 4:
 			{
 				madt_lapic_nmi_entry_t *entry = (madt_lapic_nmi_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] LAPIC NMI: ProcId: 0x%.2X LINT%d LTrig: %d ActLow: %d",
+				log(
+				    "APIC",
+				    "LAPIC NMI: ProcId: 0x%.2X LINT%d LTrig: %d ActLow: %d",
 				    entry->processor_id,
 				    entry->lint_number,
 				    entry->level_triggered,
@@ -115,16 +121,18 @@ namespace Kernel::Interrupts
 			case 5:
 			{
 				madt_lapic_override_entry_t *entry = (madt_lapic_override_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] LAPIC Address Override: 0x%.64llX",
+				log(
+				    "APIC",
+				    "LAPIC Address Override: 0x%.64llX",
 				    entry->address_override);
 				break;
 			}
 			case 9:
 			{
 				madt_x2apic_entry_t *entry = (madt_x2apic_entry_t *)current_entry;
-				LibK::printf_debug_msg(
-				    "[APIC] x2APIC: ProcID: %d ApicID: %d Enable: %d Capable: %d",
+				log(
+				    "APIC",
+				    "x2APIC: ProcID: %d ApicID: %d Enable: %d Capable: %d",
 				    entry->processor_id,
 				    entry->apic_id,
 				    entry->enabled,
@@ -132,7 +140,7 @@ namespace Kernel::Interrupts
 				break;
 			}
 			default:
-				LibK::printf_debug_msg("[APIC] Unknown entry");
+				log("APIC","Unknown entry");
 				break;
 			}
 
@@ -143,7 +151,7 @@ namespace Kernel::Interrupts
 
 		if (m_active_controllers.empty())
 		{
-			kprintf("[ INT ]: No IOAPICs found, falling back to legacy 8259 PIC");
+			log("APIC","No IOAPICs found, falling back to legacy 8259 PIC");
 			m_active_controllers.push_back(m_controllers[0]);
 			return;
 		}

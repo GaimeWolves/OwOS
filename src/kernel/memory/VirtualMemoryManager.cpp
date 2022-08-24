@@ -40,7 +40,7 @@ namespace Kernel::Memory
 
 	memory_region_t VirtualMemoryManager::allocate_region_at(uintptr_t virt_addr, size_t size, mapping_config_t config)
 	{
-		uintptr_t address = LibK::round_up_to_multiple<uintptr_t>(virt_addr, PAGE_SIZE);
+		uintptr_t address = LibK::round_down_to_multiple<uintptr_t>(virt_addr, PAGE_SIZE);
 		size = LibK::round_up_to_multiple<size_t>(size + (virt_addr - address), PAGE_SIZE);
 		virt_addr = address;
 
@@ -169,9 +169,21 @@ namespace Kernel::Memory
 		};
 	}
 
+	memory_space_t &VirtualMemoryManager::get_current_memory_space()
+	{
+		return *m_current_memory_space;
+	}
+
 	void VirtualMemoryManager::load_memory_space(memory_space_t *memory_space)
 	{
-		assert(memory_space);
+		// TODO: Fix memory space design
+		//assert(memory_space);
+
+		if (!memory_space)
+		{
+			load_kernel_space();
+			return;
+		}
 
 		m_current_memory_space = memory_space;
 		Arch::load(memory_space->paging_space);
