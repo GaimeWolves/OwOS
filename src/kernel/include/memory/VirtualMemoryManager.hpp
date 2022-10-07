@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include <arch/memory.hpp>
+#include <arch/spinlock.hpp>
 #include <memory/definitions.hpp>
 #include <multiboot.h>
 
@@ -60,14 +61,13 @@ namespace Kernel::Memory
 		void free(void *ptr);
 		void free(const memory_region_t &region);
 
-		[[nodiscard]] const memory_region_t *find_region(uintptr_t virtual_addr) const;
+		[[nodiscard]] const memory_region_t *find_region(uintptr_t virtual_addr);
 
-		void enumerate(const LibK::function<bool(memory_region_t)> &callback) const;
+		void enumerate(const LibK::function<bool(memory_region_t)> &callback);
 
-		void load_kernel_space();
-		void load_memory_space(memory_space_t *memory_space);
-		[[nodiscard]] memory_space_t create_memory_space();
-		[[nodiscard]] memory_space_t &get_current_memory_space();
+		static void load_memory_space(memory_space_t *memory_space);
+		[[nodiscard]] static memory_space_t create_memory_space();
+		[[nodiscard]] memory_space_t *get_kernel_memory_space() { return &m_kernel_memory_space; }
 
 	private:
 		VirtualMemoryManager() = default;
@@ -86,9 +86,11 @@ namespace Kernel::Memory
 
 		bool in_kernel_space(uintptr_t virt_address) const;
 
-		memory_space_t *m_current_memory_space{nullptr};
-
+		memory_space_t m_kernel_memory_space{};
 		Arch::paging_space_t m_kernel_paging_space{};
 		LibK::AVLTree<memory_region_t> m_kernel_memory_map{};
+
+		// TODO: Implement a lockless design
+		Locking::Spinlock m_lock{};
 	};
 } // namespace Kernel::Memory

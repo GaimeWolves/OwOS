@@ -15,16 +15,18 @@ namespace Kernel::Time
 	class Timer
 	{
 	public:
-		void set_callback(const LibK::function<void(Timer &timer)> &callback) { m_callback = callback; }
+		void set_handle_callback(const LibK::function<void(Timer &)> &callback) { m_handle_callback = callback; }
+		void set_reduce_callback(const LibK::function<uint64_t(Timer &, uint64_t)> &callback) { m_reduce_callback = callback; }
 
 		virtual void start(uint64_t interval) = 0;
-		virtual void stop() = 0;
+		virtual uint64_t stop() = 0;
 
 		[[nodiscard]] virtual uint64_t get_time_quantum_in_ns() const = 0;
 		[[nodiscard]] virtual uint64_t get_maximum_interval() const = 0;
 		[[nodiscard]] virtual TimerType timer_type() const = 0;
 
 	protected:
-		LibK::function<void(Timer &timer)> m_callback;
+		LibK::function<void(Timer &timer)> m_handle_callback;
+		LibK::function<uint64_t(Timer &, uint64_t)> m_reduce_callback;
 	};
 }

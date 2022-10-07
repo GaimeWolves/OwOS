@@ -8,6 +8,7 @@ namespace Kernel
 {
 	void start_logger_thread();
 
+	void critical_empty_logger();
 	void critical_putc(const char ch);
 	void critical_puts(const char *str);
 	void critical_printf(const char *fmt, ...);

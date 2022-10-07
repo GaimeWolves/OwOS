@@ -217,6 +217,7 @@ namespace Kernel::Interrupts
 		m_spurious_interrupt_handler->register_handler();
 
 		initialize_ap();
+		m_initialized = true;
 	}
 
 	void LAPIC::initialize_ap()
@@ -285,7 +286,7 @@ namespace Kernel::Interrupts
 
 		CPU::set_bsp_initialization_finished();
 
-		do_continue = 1;
+		do_continue.store(1);
 
 		CPU::finalize_smp_boot_environment();
 		set_ap_id(0);
@@ -329,22 +330,74 @@ namespace Kernel::Interrupts
 			uint32_t ticks = UINT32_MAX - LAPIC::instance().read_register(APIC_REG_TIMER_CURRENT_COUNT);
 			LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, 0);
 			m_time_quantum = (10 * 1000 * 1000) / ticks;
+			m_time_to_tick = CoreScheduler::SMALLEST_INTERVAL / m_time_quantum;
+			CPU::Processor::current().set_remaining_time_to_tick(m_time_to_tick);
 		}
 	}
 
 	void APICTimer::handle_interrupt(const CPU::interrupt_frame_t &regs __unused)
 	{
-		m_callback(*this);
+		auto &core = CPU::Processor::current();
+		uint64_t elapsed_time = core.get_next_timer_tick();
+		uint64_t next_interval = 0;
+
+		if (core.is_handling_events())
+		{
+			next_interval = m_reduce_callback(*this, elapsed_time * m_time_quantum);
+			next_interval /= m_time_quantum;
+
+			if (next_interval == 0)
+			{
+				m_handle_callback(*this);
+			}
+		}
+
+		if (core.is_scheduler_running())
+		{
+			uint64_t remaining_time = core.get_remaining_time_to_tick();
+			if (remaining_time < elapsed_time)
+				remaining_time = elapsed_time;
+			remaining_time -= elapsed_time;
+			core.set_remaining_time_to_tick(remaining_time);
+
+			if (remaining_time == 0)
+			{
+				CoreScheduler::tick();
+				core.set_remaining_time_to_tick(m_time_to_tick);
+			}
+
+			if (remaining_time > 0 && (remaining_time < next_interval || next_interval == 0))
+			{
+				next_interval = remaining_time;
+			}
+
+ 			if (next_interval > m_time_to_tick || next_interval == 0)
+			{
+				next_interval = m_time_to_tick;
+			}
+		}
+
+		start(next_interval);
 	}
 
 	void APICTimer::start(uint64_t interval)
 	{
-		LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, interval);
+		// log("DBG", "%lld", interval);
+		uint64_t ticks_remaining = LAPIC::instance().read_register(APIC_REG_TIMER_CURRENT_COUNT);
+		if (interval < ticks_remaining || ticks_remaining == 0)
+		{
+			CPU::Processor::current().set_next_timer_tick(interval);
+			LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, interval);
+		}
 	}
 
-	void APICTimer::stop()
+	uint64_t APICTimer::stop()
 	{
-		LAPIC::instance().write_register(APIC_REG_TIMER_INITIAL_COUNT, 0);
+		CPU::Processor::current().set_handling_events(false);
+		uint64_t ticks_remaining = LAPIC::instance().read_register(APIC_REG_TIMER_CURRENT_COUNT);
+		uint64_t elapsed_ticks = CPU::Processor::current().get_next_timer_tick() - ticks_remaining;
+		uint64_t elapsed_time = elapsed_ticks * m_time_quantum;
+		return elapsed_time;
 	}
 
 	void APICTimer::eoi()

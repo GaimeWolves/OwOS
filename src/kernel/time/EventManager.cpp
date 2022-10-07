@@ -9,7 +9,8 @@ namespace Kernel::Time
 	void EventManager::register_timer(Timer *timer)
 	{
 		m_available_timers.push_back(timer);
-		timer->set_callback([this](Timer &timer){ handle_event(timer); });
+		timer->set_handle_callback([this](Timer &timer){ handle_event(timer); });
+		timer->set_reduce_callback([this](Timer &timer, uint64_t nanoseconds){ return reduce_by(timer, nanoseconds); });
 	}
 
 	void EventManager::usleep(uint64_t usecs)
@@ -52,13 +53,17 @@ namespace Kernel::Time
 			.used_timer = nullptr,
 		};
 
+		CPU::Processor::current().enter_critical();
 		EventQueue &event_queue = core_sensitive ? CPU::Processor::current().get_event_queue() : m_scheduled_events;
 		auto queue = event_queue.get();
 		schedule_on(event, *queue);
+		CPU::Processor::current().leave_critical();
 	}
 
 	void EventManager::schedule_on(event_t &event, LibK::vector<event_t> &event_queue)
 	{
+		bool updated_schedule = false;
+
 		for (auto it = event_queue.begin(); it != event_queue.end(); ++it)
 		{
 			if (event.nanoseconds == it->nanoseconds)
@@ -77,8 +82,14 @@ namespace Kernel::Time
 			{
 				bool reschedule = it == event_queue.begin();
 
-				if (reschedule)
-					it->used_timer->stop();
+				if (reschedule && !updated_schedule)
+				{
+					uint64_t elapsed = it->used_timer->stop();
+					update_queue(event_queue, elapsed);
+					updated_schedule = true;
+					it--;
+					continue;
+				}
 
 				it->nanoseconds -= event.nanoseconds;
 				event_queue.insert(it, event);
@@ -97,6 +108,14 @@ namespace Kernel::Time
 			schedule_next_event(event_queue);
 	}
 
+	void EventManager::update_queue(LibK::vector<event_t> &event_queue, uint64_t nanoseconds)
+	{
+		for (auto &it : event_queue)
+		{
+			it.nanoseconds -= nanoseconds;
+		}
+	}
+
 	void EventManager::handle_event(Timer &timer)
 	{
 		event_t event;
@@ -106,12 +125,27 @@ namespace Kernel::Time
 			EventQueue &event_queue = timer.timer_type() == TimerType::CPU ? core.get_event_queue() : m_scheduled_events;
 			auto queue = event_queue.get();
 
+			if (queue->empty())
+				return;
+
 			event = queue->front();
 			queue->erase(queue->begin());
 			schedule_next_event(*queue);
 		}
 
 		event.callback();
+	}
+
+	uint64_t EventManager::reduce_by(Timer &timer, uint64_t nanoseconds)
+	{
+		CPU::Processor &core = CPU::Processor::current();
+		EventQueue &event_queue = timer.timer_type() == TimerType::CPU ? core.get_event_queue() : m_scheduled_events;
+		auto queue = event_queue.get();
+		update_queue(*queue, nanoseconds);
+		uint64_t remaining = 0;
+		if (!queue->empty())
+			remaining = queue->front().nanoseconds;
+		return remaining;
 	}
 
 	void EventManager::schedule_next_event(LibK::vector<event_t> &event_queue)

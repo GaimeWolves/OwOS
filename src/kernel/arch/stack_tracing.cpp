@@ -13,7 +13,7 @@ extern "C"
 namespace Kernel::CPU
 {
 	// TODO: Somehow check if the actual symbol file exceeds this limit
-	__section(".kernel_symbols") static char kernel_symbols[0x30000];
+	__section(".kernel_symbols") static char kernel_symbols[0x40000];
 
 	LibK::vector<symbol_t> symbol_table;
 
@@ -21,6 +21,7 @@ namespace Kernel::CPU
 	{
 		char *current = kernel_symbols;
 		size_t count = strtoul(current, &current, 16);
+		symbol_table.ensure_capacity(count);
 		current++;
 
 		while(count-- > 0)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory/MultibootMap.hpp>
+#include <arch/spinlock.hpp>
 
 #include <limits.h>
 #include <multiboot.h>
@@ -63,6 +64,9 @@ namespace Kernel::Memory
 
 		size_t m_available_memory{0};     // Available memory in the system
 		size_t m_used_memory{0};          // Memory that is marked as used
-		size_t m_explicit_used_memory{0}; // Memory that is explicitely used according to allocations
+		size_t m_explicit_used_memory{0}; // Memory that is explicitly used according to allocations
+
+		// TODO: look into lockless designs
+		Locking::Spinlock m_lock{};
 	};
 } // namespace Kernel::Memory

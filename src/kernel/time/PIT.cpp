@@ -40,13 +40,14 @@ namespace Kernel::Time
 		enable_irq();
 	}
 
-	void PIT::stop()
+	uint64_t PIT::stop()
 	{
 		disable_irq();
+		return 0;
 	}
 
 	void PIT::handle_interrupt(const CPU::interrupt_frame_t &regs __unused)
 	{
-		m_callback(*this);
+		m_handle_callback(*this);
 	}
 } // namespace Kernel::Time

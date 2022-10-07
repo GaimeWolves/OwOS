@@ -138,7 +138,7 @@ namespace Kernel::LibK
 
 		always_inline T operator--() volatile noexcept
 		{
-			return fetch_sub(1) + 1;
+			return fetch_sub(1) - 1;
 		}
 
 		always_inline T operator--(int) volatile noexcept

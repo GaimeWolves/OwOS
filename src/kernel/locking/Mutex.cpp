@@ -18,14 +18,12 @@ namespace Kernel::Locking
 
 	void Mutex::lock()
 	{
-		if (!CPU::is_bsp_initialization_finished())
-			return;
-
 		CPU::Processor &core = CPU::Processor::current();
 		if (!core.is_scheduler_running() || !core.is_thread_running())
 		{
 			m_lock.lock();
 			m_locked = true;
+			m_lock.unlock();
 			return;
 		}
 
@@ -37,12 +35,10 @@ namespace Kernel::Locking
 
 	void Mutex::unlock()
 	{
-		if (!CPU::is_bsp_initialization_finished())
-			return;
-
 		CPU::Processor &core = CPU::Processor::current();
 		if (!core.is_scheduler_running() || !core.is_thread_running())
 		{
+			m_lock.lock();
 			m_locked = false;
 			m_lock.unlock();
 			return;

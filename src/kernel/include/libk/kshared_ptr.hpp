@@ -1,12 +1,15 @@
 #pragma once
 
 #include <libk/katomic.hpp>
+#include <libk/kcassert.hpp>
 
 namespace Kernel::LibK
 {
 	template <typename T>
 	class shared_ptr
 	{
+		template <typename U>
+		friend class shared_ptr;
 	private:
 		struct auxiliary
 		{
@@ -30,7 +33,7 @@ namespace Kernel::LibK
 				: pointer(ptr), deleter(d)
 			{}
 
-			virtual void destroy() { deleter(pointer); }
+			void destroy() override { deleter(pointer); }
 		};
 
 		template<class U>
@@ -55,18 +58,23 @@ namespace Kernel::LibK
 		    , m_data(ptr)
 		{}
 
-		shared_ptr(const shared_ptr& rhs)
+		shared_ptr(const shared_ptr &rhs)
 		    : m_aux(rhs.m_aux)
 		    , m_data(rhs.m_data)
 		{ increment(); }
 
 		template<class U>
 		shared_ptr(const shared_ptr<U> &rhs)
-		    : m_aux(rhs.m_aux)
-		    , m_data(rhs.m_data)
+		    : m_aux(reinterpret_cast<shared_ptr<T>::auxiliary *>(rhs.m_aux))
+		    , m_data(reinterpret_cast<T *>(rhs.m_data))
 		{ increment(); }
 
-		~shared_ptr() { decrement(); }
+		~shared_ptr()
+		{
+			decrement();
+			m_aux = nullptr;
+			m_data = nullptr;
+		}
 
 		shared_ptr &operator=(const shared_ptr &rhs)
 		{
@@ -109,16 +117,16 @@ namespace Kernel::LibK
 		void increment()
 		{
 			if (m_aux)
-				m_aux->count++;
+				m_aux->count.fetch_add(1);
 		}
 
 		void decrement()
 		{
 			if (m_aux)
 			{
-				m_aux->count--;
-
-				if (m_aux->count == 0)
+				size_t old_value = m_aux->count.fetch_sub(1);
+				assert(old_value != 0);
+				if (old_value == 1)
 				{
 					m_aux->destroy();
 					delete m_aux;

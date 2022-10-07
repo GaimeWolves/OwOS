@@ -65,7 +65,7 @@ namespace Kernel::CPU
 		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
 			uint32_t ret_code = SyscallDispatcher::handle_syscall(reg.eax, reg.ebx, reg.ecx, reg.edx, reg.esi, reg.edi);
-			Processor::current().get_interrupt_frame()->eax	= ret_code;
+			Processor::current().get_interrupt_frame_stack().top()->eax	= ret_code;
 		}
 
 		void eoi() override {}
@@ -113,6 +113,8 @@ namespace Kernel::CPU
 		    "mov $0x10, %ax\n"
 		    "mov %ax, %ds\n"
 		    "mov %ax, %es\n"
+		    "mov %ax, %fs\n"
+		    "mov %ax, %gs\n"
 		    "pushl %esp\n"
 		    "cld\n"
 		    "call common_interrupt_handler\n"
@@ -130,18 +132,53 @@ namespace Kernel::CPU
 	extern "C" void common_interrupt_handler(interrupt_frame_t *regs)
 	{
 		Processor &core = Processor::current();
-		core.set_exit_function({});
-		core.set_interrupt_frame(regs);
+
+		/*
+		if (regs->isr_number == 0xfc)
+		{
+		log("DBG", "ORIGINAL FRAME at %p for THREAD %p at TIME %lld:\nss: 0x%.2x\ngs: 0x%.2x\nfs: 0x%.2x\nes: 0x%.2x\nds: 0x%.2x\nedi: %p\nesi: %p\nebp: %p\nesp: %p\nebx: %p\nedx: %p\necx: %p\neax: %p\nisr: 0x%.2x\nerr: %p\neip: %p\ncs: 0x%.2x\neflags: %p\nold_esp: %p\nold_ss: %p",
+		    regs,
+		    core.get_current_thread(),
+		    Processor::read_tsc(),
+		    regs->ss,
+		    regs->gs,
+		    regs->fs,
+		    regs->es,
+		    regs->ds,
+		    regs->edi,
+		    regs->esi,
+		    regs->ebp,
+		    regs->esp,
+		    regs->ebx,
+		    regs->edx,
+		    regs->ecx,
+		    regs->eax,
+		    regs->isr_number,
+		    regs->error_code,
+		    regs->eip,
+		    regs->cs,
+		    regs->eflags,
+		    regs->old_esp,
+		    regs->old_ss
+		);
+		}
+		 */
+
+		core.get_exit_function_stack().push([](){});
+		core.get_interrupt_frame_stack().push(regs);
 		auto handler = core.get_interrupt_handler(regs->isr_number);
 
 		if (!handler)
 			unhandled_interrupt_handler(regs);
 
+		Memory::Arch::check_page_directory();
+
 		handler->handle_interrupt(*regs);
-		core.set_interrupt_frame(nullptr);
+		core.get_interrupt_frame_stack().pop();
 		handler->eoi();
-		if (core.get_exit_function())
-			core.get_exit_function()();
+		auto exit = core.get_exit_function_stack().top();
+		core.get_exit_function_stack().pop();
+		exit();
 	}
 
 	static __noreturn void unhandled_interrupt_handler(interrupt_frame_t *regs)

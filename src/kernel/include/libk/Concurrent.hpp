@@ -14,6 +14,11 @@ namespace Kernel::LibK
 			m_lock->lock();
 		}
 
+		ConcurrentRef &operator=(const ConcurrentRef &) volatile = delete;
+		ConcurrentRef &operator=(ConcurrentRef &&) volatile = delete;
+		ConcurrentRef(const ConcurrentRef &) = delete;
+		ConcurrentRef(ConcurrentRef &&) = delete;
+
 		~ConcurrentRef()
 		{
 			m_lock->unlock();

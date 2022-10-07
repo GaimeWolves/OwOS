@@ -1,6 +1,7 @@
 #include <memory/PhysicalMemoryManager.hpp>
 
 #include <arch/memory.hpp>
+#include <arch/Processor.hpp>
 #include <panic.hpp>
 
 #include <libk/kcassert.hpp>
@@ -212,12 +213,15 @@ namespace Kernel::Memory
 			if (boundary && phys_addr / boundary != (phys_addr + size) / boundary)
 				continue;
 
+			m_lock.lock();
+
 			size_t count = 0;
 			for (; i + count < buddy.page_count && count < needed_page_count && !get_bit(i, buddy.bitmap); count++)
 				;
 
 			if (count < needed_page_count)
 			{
+				m_lock.unlock();
 				i += count;
 				continue;
 			}
@@ -236,6 +240,8 @@ namespace Kernel::Memory
 				needed_small_page_count /= 2;
 			}
 
+			m_lock.unlock();
+
 			return (void *)phys_addr;
 		}
 
@@ -249,7 +255,11 @@ namespace Kernel::Memory
 		auto &buddy = m_buddies[get_buddy(size)];
 		size_t page_count = (size + buddy.page_size - 1) / PAGE_SIZE;
 
+		m_lock.lock();
+
 		mark_free(page_idx, page_idx + page_count - 1);
+
+		m_lock.unlock();
 
 		m_used_memory -= page_count * PAGE_SIZE;
 		m_explicit_used_memory -= size;
@@ -260,7 +270,11 @@ namespace Kernel::Memory
 		uintptr_t start_page = address / PAGE_SIZE;
 		uintptr_t page_count = LibK::round_up_to_power_of_two<uintptr_t>(size, PAGE_SIZE) / PAGE_SIZE;
 
+		m_lock.lock();
+
 		mark_used(start_page, start_page + page_count);
+
+		m_lock.unlock();
 
 		m_used_memory += page_count * PAGE_SIZE;
 		m_explicit_used_memory += size;

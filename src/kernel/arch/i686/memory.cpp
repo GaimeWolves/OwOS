@@ -1,8 +1,10 @@
 #include <arch/memory.hpp>
 
 #include <arch/Processor.hpp>
+#include <arch/spinlock.hpp>
 #include <common_attributes.h>
 #include <memory/PhysicalMemoryManager.hpp>
+#include <logging/logger.hpp>
 
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>
@@ -10,6 +12,7 @@
 #include <libk/kfunctional.hpp>
 #include <libk/kmath.hpp>
 #include <libk/kvector.hpp>
+#include <libk/kmemory.hpp>
 
 #define PAGE_COUNT     1024
 #define PAGE_SIZE_HUGE (PAGE_SIZE * PAGE_COUNT)
@@ -34,8 +37,38 @@ extern "C"
 	extern uintptr_t _kernel_end;
 }
 
+// TODO: Refactor this to use the same page tables for kernel addresses
+
 namespace Kernel::Memory::Arch
 {
+	class PageInvalidatedMessage final : public CPU::ProcessorMessage
+	{
+	public:
+		explicit PageInvalidatedMessage(uintptr_t address)
+		    : m_address(address)
+		{
+		}
+
+		void handle() override
+		{
+			CPU::Processor::invalidate_address(m_address);
+			// log("SMP", "Invalidated page %p", m_address);
+		}
+
+	private:
+		uintptr_t m_address{};
+	};
+
+	class DirectoryInvalidatedMessage final : public CPU::ProcessorMessage
+	{
+	public:
+		void handle() override
+		{
+			check_page_directory();
+			log("SMP", "Synchronized page directory");
+		}
+	};
+
 	inline static constexpr size_t to_page_address(uintptr_t phys_addr);
 	inline static constexpr size_t to_directory_address(uintptr_t phys_addr);
 
@@ -55,6 +88,16 @@ namespace Kernel::Memory::Arch
 	static void for_page_in_range(uintptr_t virt_addr, size_t size, LibK::function<void(uintptr_t)> callback);
 
 	static paging_space_t s_kernel_paging_space{};
+
+	static Locking::Spinlock s_page_directory_lock{};
+	static page_directory_t *s_master_page_directory;
+	static page_table_t *s_master_mapping_table;
+	static uint64_t s_page_directory_version;
+
+	inline static bool is_kernel_space(uintptr_t virt_addr)
+	{
+		return virt_addr > reinterpret_cast<uintptr_t>(&_virtual_addr);
+	}
 
 	inline static constexpr size_t to_page_address(uintptr_t phys_addr)
 	{
@@ -128,8 +171,9 @@ namespace Kernel::Memory::Arch
 		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, true);
 
 		// Clear it immediately to prevent bugs when we use this page table
-		CPU::Processor::invalidate_address((uintptr_t)&get_page_table(pd_index));
-		memset(&get_page_table(pd_index), 0, PAGE_SIZE);
+		auto page_table = &get_page_table(pd_index);
+		invalidate((uintptr_t)page_table);
+		memset(page_table, 0, PAGE_SIZE);
 
 		return raw_create_pde(table_addr, is_user, is_writeable, disable_cache);
 	}
@@ -220,13 +264,18 @@ namespace Kernel::Memory::Arch
 			.physical_pd_address = pd_address,
 			.page_directory = &page_directory,
 			.mapping_table = &mapping_table,
+		    .page_directory_version = 0,
 		};
+
+		s_master_page_directory = page_directory_ptr;
+		s_master_mapping_table = mapping_table_ptr;
+		s_page_directory_version = 0;
 
 		return s_kernel_paging_space;
 	}
 
 	// Create a new empty memory space where only kernel space is mapped and userspace is empty
-	paging_space_t create_memory_space(paging_space_t &kernel_space)
+	paging_space_t create_memory_space()
 	{
 		auto *page_directory_ptr = (page_directory_t *)kcalloc(PAGE_SIZE, PAGE_SIZE);
 		auto *mapping_table_ptr = (page_table_t *)kcalloc(PAGE_SIZE, PAGE_SIZE);
@@ -240,13 +289,17 @@ namespace Kernel::Memory::Arch
 		size_t kernel_start_pd_index = get_pd_index((uintptr_t)&_virtual_addr);
 		size_t byte_size = (PAGE_COUNT - kernel_start_pd_index) * sizeof(page_directory_entry_t);
 
-		void *pd_src = &kernel_space.page_directory->tables[kernel_start_pd_index];
+		s_page_directory_lock.lock();
+		void *pd_src = &s_master_page_directory->tables[kernel_start_pd_index];
 		void *pd_dest = &page_directory[kernel_start_pd_index];
 		memcpy(pd_dest, pd_src, byte_size);
 
-		void *mp_src = &kernel_space.mapping_table->pages[kernel_start_pd_index];
+		void *mp_src = &s_master_mapping_table->pages[kernel_start_pd_index];
 		void *mp_dest = &mapping_table[kernel_start_pd_index];
 		memcpy(mp_dest, mp_src, byte_size);
+
+		uint64_t version = s_page_directory_version;
+		s_page_directory_lock.unlock();
 
 		page_directory[PAGE_COUNT - 1].page_table_address = as_physical((uintptr_t)mapping_table_ptr) >> 12;
 		mapping_table[PAGE_COUNT - 1].page_address = as_physical((uintptr_t)page_directory_ptr) >> 12;
@@ -255,6 +308,7 @@ namespace Kernel::Memory::Arch
 		    .physical_pd_address = as_physical((uintptr_t)page_directory_ptr),
 		    .page_directory = &page_directory,
 		    .mapping_table = &mapping_table,
+		    .page_directory_version = version,
 		};
 	}
 
@@ -269,7 +323,31 @@ namespace Kernel::Memory::Arch
 			auto &page_directory = get_page_directory();
 
 			if (page_directory[pd_index].value() == 0)
-				page_directory[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, !config.cacheable);
+			{
+				if (is_kernel_space(virt_addr))
+				{
+					s_page_directory_lock.lock();
+					if (s_master_page_directory->tables[pd_index].value() == 0)
+					{
+						s_master_page_directory->tables[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, !config.cacheable);
+						s_master_mapping_table->pages[pd_index] = raw_create_pte(s_master_page_directory->tables[pd_index].page_table_address, false, true, true);
+						s_page_directory_version++;
+						auto &processor = CPU::Processor::current();
+						processor.get_memory_space()->paging_space.page_directory_version = s_page_directory_version;
+						processor.smp_broadcast(LibK::make_shared<DirectoryInvalidatedMessage>(), true);
+						s_page_directory_lock.unlock();
+					}
+					else
+					{
+						page_directory[pd_index] = s_master_page_directory->tables[pd_index];
+					}
+					s_page_directory_lock.unlock();
+				}
+				else
+				{
+					page_directory[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, !config.cacheable);
+				}
+			}
 
 			assert(page_directory[pd_index].present);
 
@@ -307,9 +385,10 @@ namespace Kernel::Memory::Arch
 
 			page_table[pt_index] = null_pt_entry;
 
-			if (current != pd_index)
+			// TODO: Implement deletion of kernel space page directories
+			if (current != pd_index && !is_kernel_space(virt_addr))
 			{
-				page_tables_to_check[idx] = pd_index;
+				page_tables_to_check[idx++] = pd_index;
 				current = pd_index;
 			}
 
@@ -389,10 +468,34 @@ namespace Kernel::Memory::Arch
 	void invalidate(uintptr_t virtual_address)
 	{
 		CPU::Processor::invalidate_address(virtual_address);
+		if (is_kernel_space(virtual_address))
+			CPU::Processor::current().smp_broadcast(LibK::make_shared<PageInvalidatedMessage>(virtual_address), true);
 	}
 
 	Arch::paging_space_t get_kernel_paging_space()
 	{
 		return s_kernel_paging_space;
+	}
+
+	// TODO: Upgrade to using journaling
+	void check_page_directory()
+	{
+		// NOTE: This is a critical section as getting preempted inside this operation can cause the data of the page directory loaded
+		//       to not correspond to the version code loaded later.
+		s_page_directory_lock.lock();
+		paging_space_t &paging_space = CPU::Processor::current().get_memory_space()->paging_space;
+
+		if (paging_space.page_directory_version != s_page_directory_version)
+		{
+			size_t pd_index = get_pd_index(reinterpret_cast<uintptr_t>(&_virtual_addr));
+			size_t count = (PAGE_COUNT - pd_index - 1) * sizeof(page_directory_entry_t);
+			memcpy(&get_page_directory().tables[pd_index], &s_master_page_directory->tables[pd_index], count);
+			memcpy(&paging_space.mapping_table->pages[pd_index], &s_master_mapping_table->pages[pd_index], count);
+			CPU::Processor::load_page_directory(paging_space.physical_pd_address);
+			log("MEMORY", "Updated kernel page directory");
+		}
+
+		paging_space.page_directory_version = s_page_directory_version;
+		s_page_directory_lock.unlock();
 	}
 } // namespace Kernel::Memory::Arch

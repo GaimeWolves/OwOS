@@ -3,6 +3,7 @@ build
 toolchain/
 log.txt
 mount.pid
+debuglog.txt
 
 ### C/C++ ###
 *.o

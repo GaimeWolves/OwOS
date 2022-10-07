@@ -9,8 +9,5 @@ __noreturn void __assertion_failed(const char *condition, const char *file, unsi
 {
 	Kernel::CPU::Processor::current().disable_interrupts();
 	kprintf("(#%d) %s:%d %s: Assertion '%s' failed.\n", Kernel::CPU::Processor::current().id(), file, line, function, condition);
-
-	Kernel::CPU::print_stacktrace();
-
-	Kernel::CPU::Processor::halt();
+	Kernel::panic();
 }

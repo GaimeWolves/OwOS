@@ -24,7 +24,7 @@ namespace Kernel::CPU
 
 		void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
-			log("APIC", "Got IPI interrupt");
+			// log("APIC", "Got IPI interrupt");
 			Processor::current().smp_process_messages();
 		}
 
@@ -48,7 +48,7 @@ namespace Kernel::CPU
 			return s_bsp;
 
 		size_t id = Interrupts::LAPIC::instance().get_ap_id();
-		return by_id(id);
+	return by_id(id);
 	}
 
 	void Processor::set_core_count(uint32_t core_count)
@@ -98,7 +98,7 @@ namespace Kernel::CPU
 		if (!callback(s_bsp))
 			return;
 
-		for (uint32_t i = 0; i < s_core_count; i++)
+		for (uint32_t i = 0; i < s_core_count - 1; i++)
 		{
 			if (!callback(s_aps[i]))
 				return;
@@ -112,27 +112,41 @@ namespace Kernel::CPU
 
 	void Processor::smp_poke()
 	{
-		Interrupts::LAPIC::instance().send_ipi(APIC_IPI_INTERRUPT, m_id);
+		if (Interrupts::LAPIC::instance().is_initialized())
+			Interrupts::LAPIC::instance().send_ipi(APIC_IPI_INTERRUPT, m_id);
 	}
 
 	void Processor::smp_poke_all(bool excluding_self)
 	{
-		Interrupts::LAPIC::instance().broadcast_ipi(APIC_IPI_INTERRUPT, excluding_self);
+		if (Interrupts::LAPIC::instance().is_initialized())
+			Interrupts::LAPIC::instance().broadcast_ipi(APIC_IPI_INTERRUPT, excluding_self);
 	}
 
-	void Processor::smp_enqueue_message(ProcessorMessage *message)
+	void Processor::smp_broadcast(LibK::shared_ptr<ProcessorMessage> message, bool excluding_self)
 	{
-		m_queued_messages.push_back(message);
+		enumerate([&](Processor &processor) {
+			if (!excluding_self || &processor != this)
+				processor.smp_enqueue_message(message);
+
+			return true;
+		});
+
+		smp_poke_all(excluding_self);
+	}
+
+	void Processor::smp_enqueue_message(LibK::shared_ptr<ProcessorMessage> message)
+	{
+		// log("SMP", "Enqueueing message on (#%d)", this->id());
+		m_queued_messages.put(LibK::move(message));
 	}
 
 	void Processor::smp_process_messages()
 	{
-		log("SMP", "Processing SMP messages");
+		// log("SMP", "Processing SMP messages");
 
-
-		while (!m_queued_messages.empty()) {
-			m_queued_messages.back()->handle();
-			m_queued_messages.pop_back();
+		while (!m_queued_messages.empty())
+		{
+			m_queued_messages.get()->handle();
 		}
 	}
 
@@ -165,12 +179,14 @@ namespace Kernel::CPU
 
 	thread_t Processor::create_kernel_thread(uintptr_t main_function)
 	{
-		uintptr_t stack = (uintptr_t)kmalloc(KERNEL_STACK_SIZE) + KERNEL_STACK_SIZE - sizeof(uintptr_t);
+		auto stack_region = Memory::VirtualMemoryManager::instance().allocate_region(KERNEL_STACK_SIZE);
+		uintptr_t stack = stack_region.virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
 
 		return thread_t{
 		    .registers = create_initial_state(stack, main_function, false, Memory::Arch::get_kernel_paging_space()),
 		    .has_started = false,
 		    .kernel_stack = stack,
+		    .kernel_stack_region = stack_region,
 		    .state = ThreadState::Ready,
 		    .lock = nullptr,
 		    .parent_process = nullptr,
@@ -179,7 +195,8 @@ namespace Kernel::CPU
 
 	thread_t Processor::create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memory_space)
 	{
-		uintptr_t kernel_stack = (uintptr_t)kmalloc(KERNEL_STACK_SIZE) + KERNEL_STACK_SIZE - sizeof(uintptr_t);
+		auto stack_region = Memory::VirtualMemoryManager::instance().allocate_region(KERNEL_STACK_SIZE);
+		uintptr_t kernel_stack = stack_region.virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
 
 		// TODO: Do this in the process/thread spawning code
 		Memory::mapping_config_t config;
@@ -190,13 +207,14 @@ namespace Kernel::CPU
 		    .registers = create_initial_state(userspace_stack, main_function, true, memory_space.paging_space),
 		    .has_started = false,
 		    .kernel_stack = kernel_stack,
+		    .kernel_stack_region = stack_region,
 		    .state = ThreadState::Ready,
 		    .lock = nullptr,
 		    .parent_process = nullptr,
 		};
 	}
 
-	void Processor::enter_thread_context(thread_t thread)
+	void Processor::enter_thread_context(thread_t &thread)
 	{
 		uint32_t esp0 = (uint32_t)thread.registers.frame + sizeof(interrupt_frame_t);
 
@@ -207,6 +225,40 @@ namespace Kernel::CPU
 		update_tss(esp0);
 
 		uintptr_t old_cr3 = get_page_directory();
+
+		/*
+		log("DBG", "RETURNING FRAME at %p for THREAD %p at TIME %lld:\nss: 0x%.2x\ngs: 0x%.2x\nfs: 0x%.2x\nes: 0x%.2x\nds: 0x%.2x\nedi: %p\nesi: %p\nebp: %p\nesp: %p\nebx: %p\nedx: %p\necx: %p\neax: %p\nisr: 0x%.2x\nerr: %p\neip: %p\ncs: 0x%.2x\neflags: %p\nold_esp: %p\nold_ss: %p\nold_cr3: %p\nnew_cr3: %p\nstack: %p - %p",
+		    thread.registers.frame,
+		    &thread,
+		    read_tsc(),
+		    thread.registers.frame->ss,
+		    thread.registers.frame->gs,
+		    thread.registers.frame->fs,
+		    thread.registers.frame->es,
+		    thread.registers.frame->ds,
+		    thread.registers.frame->edi,
+		    thread.registers.frame->esi,
+		    thread.registers.frame->ebp,
+		    thread.registers.frame->esp,
+		    thread.registers.frame->ebx,
+		    thread.registers.frame->edx,
+		    thread.registers.frame->ecx,
+		    thread.registers.frame->eax,
+		    thread.registers.frame->isr_number,
+		    thread.registers.frame->error_code,
+		    thread.registers.frame->eip,
+		    thread.registers.frame->cs,
+		    thread.registers.frame->eflags,
+		    thread.registers.frame->old_esp,
+		    thread.registers.frame->old_ss,
+		    old_cr3,
+		    thread.registers.cr3,
+		    thread.kernel_stack_region.virt_address,
+		    thread.kernel_stack_region.virt_address + KERNEL_STACK_SIZE
+		);
+		 */
+
+		assert(thread.kernel_stack_region.virt_region().contains((uintptr_t)thread.registers.frame));
 
 		asm volatile(
 		    "cmpl %[old_cr3], %[new_cr3]\n"
@@ -223,7 +275,7 @@ namespace Kernel::CPU
 		    "addl $0x8, %%esp\n"
 		    "iret\n"
 		    :
-		    : [esp] "m" (thread.registers.frame),
+		    : [esp] "d" ((uintptr_t)thread.registers.frame),
 		      [new_cr3] "a" (thread.registers.cr3),
 		      [old_cr3] "b" (old_cr3)
 		    : "memory");
@@ -296,24 +348,25 @@ namespace Kernel::CPU
 
 	void Processor::update_thread_context(thread_t &thread)
 	{
-		assert(m_current_frame);
-		thread.registers.cs = m_current_frame->cs;
-		thread.registers.ss = m_current_frame->ss;
-		thread.registers.gs = m_current_frame->gs;
-		thread.registers.fs = m_current_frame->fs;
-		thread.registers.es = m_current_frame->es;
-		thread.registers.ds = m_current_frame->ds;
-		thread.registers.edi = m_current_frame->edi;
-		thread.registers.esi = m_current_frame->esi;
-		thread.registers.ebp = m_current_frame->ebp;
-		thread.registers.esp = m_current_frame->esp;
-		thread.registers.ebx = m_current_frame->ebx;
-		thread.registers.edx = m_current_frame->edx;
-		thread.registers.ecx = m_current_frame->ecx;
-		thread.registers.eax = m_current_frame->eax;
-		thread.registers.eflags = m_current_frame->eflags;
+		assert(!m_frame_stack.empty());
+		auto frame = m_frame_stack.top();
+		thread.registers.cs = frame->cs;
+		thread.registers.ss = frame->ss;
+		thread.registers.gs = frame->gs;
+		thread.registers.fs = frame->fs;
+		thread.registers.es = frame->es;
+		thread.registers.ds = frame->ds;
+		thread.registers.edi = frame->edi;
+		thread.registers.esi = frame->esi;
+		thread.registers.ebp = frame->ebp;
+		thread.registers.esp = frame->esp;
+		thread.registers.ebx = frame->ebx;
+		thread.registers.edx = frame->edx;
+		thread.registers.ecx = frame->ecx;
+		thread.registers.eax = frame->eax;
+		thread.registers.eflags = frame->eflags;
 		thread.registers.cr3 = get_page_directory();
-		thread.registers.eip = m_current_frame->eip;
-		thread.registers.frame = m_current_frame;
+		thread.registers.eip = frame->eip;
+		thread.registers.frame = frame;
 	}
 }

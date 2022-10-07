@@ -20,7 +20,7 @@ namespace Kernel::Time
 		}
 
 		void start(uint64_t interval) override;
-		void stop() override;
+		uint64_t stop() override;
 
 		// INFO: Nominal frequency of the PIT = 1193182 Hz
 		//       Time quantum in nanoseconds = (1 / frequency) * 1e-9 = 1e9 / frequency

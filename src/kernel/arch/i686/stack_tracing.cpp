@@ -27,6 +27,8 @@ namespace Kernel::CPU
 		asm volatile("mov %%ebp, %%eax"
 		             : "=a"(stackframe));
 
+		bool got_timer_interrupt = false;
+
 		int current_index = 0;
 		while (stackframe)
 		{
@@ -49,7 +51,13 @@ namespace Kernel::CPU
 				// TODO: Investigate, why faults have a different stack layout (I thought I already mitigated this)
 				interrupt_frame_t *regs = (uintptr_t) stackframe->regs_fault > 0xc0000000 ? stackframe->regs_fault : stackframe->regs;
 
+				if (got_timer_interrupt && regs->isr_number == 0xfc)
+					break ;
+
 				critical_printf("    <---- Interrupt 0x%.2x ---->\n", regs->isr_number);
+
+				if (regs->isr_number == 0xfc)
+					got_timer_interrupt = true;
 
 				symbol_t interrupted_symbol = get_symbol_by_address(regs->eip);
 				critical_printf("#%d %p in %s at %s\n", current_index++, regs->eip, interrupted_symbol.name, interrupted_symbol.file);

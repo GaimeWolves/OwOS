@@ -51,9 +51,12 @@ namespace Kernel::Time
 		~EventManager() = default;
 
 		void handle_event(Timer &timer);
+		uint64_t reduce_by(Timer &timer, uint64_t nanoseconds);
 		void schedule_next_event(LibK::vector<event_t> &event_queue);
 
 		void schedule_on(event_t &event, LibK::vector<event_t> &event_queue);
+
+		void update_queue(LibK::vector<event_t> &event_queue, uint64_t nanoseconds);
 
 		LibK::vector<Timer *> m_available_timers{};
 		LibK::atomic_uint32_t m_sleeping{0}; // Bitmap of sleeping cores

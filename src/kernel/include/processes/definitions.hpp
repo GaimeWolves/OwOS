@@ -4,6 +4,7 @@
 
 #include <arch/process.hpp>
 #include <locking/Mutex.hpp>
+#include <memory/definitions.hpp>
 
 namespace Kernel
 {
@@ -26,6 +27,7 @@ namespace Kernel
 		thread_registers_t registers;
 		bool has_started;
 		uintptr_t kernel_stack;
+		Memory::memory_region_t kernel_stack_region;
 		ThreadState state;
 		Locking::Mutex *lock;
 		Process *parent_process;

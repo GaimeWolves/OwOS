@@ -20,6 +20,8 @@ namespace Kernel
 			});
 		}
 
+		Memory::memory_space_t &get_memory_space() { return m_memory_space; }
+
 	private:
 		LibK::vector<thread_t> m_threads;
 		Memory::memory_space_t m_memory_space;

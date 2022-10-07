@@ -63,7 +63,7 @@ namespace Kernel
 
 			if (current_file->file->is_directory() && current_file->children.empty())
 			{
-				auto directory = LibK::move(current_file->file->read_directory());
+				auto directory = current_file->file->read_directory();
 				current_file->children = LibK::vector<vfs_node_t *>();
 				current_file->children.ensure_capacity(directory.size());
 				for (auto *file : directory)

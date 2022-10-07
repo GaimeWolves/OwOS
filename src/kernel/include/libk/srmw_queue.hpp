@@ -5,25 +5,26 @@
 #include "libk/katomic.hpp"
 #include "libk/kstring.hpp"
 
-namespace Kernel
+namespace Kernel::LibK
 {
-	class MessageQueue
+	template <typename T>
+	class SRMWQueue
 	{
 		typedef struct __list_node_t
 		{
-			LibK::string message; // TODO: A string may not be the best data type due to heap allocations
+			T data;
 			__list_node_t *next;
 			__list_node_t *prev;
 		} list_node_t;
 
 	public:
-		explicit MessageQueue()
+		explicit SRMWQueue()
 		{
 			head.next = &head;
 			head.prev = &head;
 		}
 
-		LibK::string get()
+		T get()
 		{
 			assert(!empty());
 
@@ -34,17 +35,17 @@ namespace Kernel
 			head.next->prev = &head;
 			queue_lock.unlock();
 
-			LibK::string message = LibK::move(node->message);
-			kfree(node);
+			T data = LibK::move(node->data);
+			delete node;
 
-			return LibK::move(message);
+			return LibK::move(data);
 		}
 
-		void put(LibK::string &&message)
+		void put(T data)
 		{
-			auto *node = static_cast<list_node_t *>(kmalloc(sizeof(list_node_t)));
+			auto *node = new list_node_t;
 
-			node->message = LibK::move(message);
+			node->data = LibK::move(data);
 
 			queue_lock.lock();
 			node->prev = head.prev;

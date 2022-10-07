@@ -1,19 +1,25 @@
 #pragma once
 
-#define INTERRUPT_HANDLER(isr_number)           \
-	extern "C" void isr_##isr_number##_entry(); \
-	asm(".globl isr_" #isr_number "_entry\n"    \
-	    "isr_" #isr_number "_entry:\n"          \
-	    "    pushl $0\n"                        \
-	    "    pushl $" #isr_number "\n"          \
-	    "    jmp common_interrupt_handler_entry\n")
+#define INTERRUPT_HANDLER(isr_number)                    \
+	extern "C" void isr_##isr_number##_entry();          \
+	__naked void isr_##isr_number##_entry()              \
+	{                                                    \
+		asm(".globl isr_" #isr_number "_entry\n"         \
+		    "isr_" #isr_number "_entry:\n"               \
+		    "    pushl $0\n"                             \
+		    "    pushl $" #isr_number "\n"               \
+		    "    jmp common_interrupt_handler_entry\n"); \
+	}
 
-#define ERROR_HANDLER(isr_number)               \
-	extern "C" void isr_##isr_number##_entry(); \
-	asm(".globl isr_" #isr_number "_entry\n"    \
-	    "isr_" #isr_number "_entry:\n"          \
-	    "    pushl $" #isr_number "\n"          \
-	    "    jmp common_interrupt_handler_entry\n")
+#define ERROR_HANDLER(isr_number)                        \
+	extern "C" void isr_##isr_number##_entry();          \
+	__naked void isr_##isr_number##_entry()              \
+	{                                                    \
+		asm(".globl isr_" #isr_number "_entry\n"         \
+		    "isr_" #isr_number "_entry:\n"               \
+		    "    pushl $" #isr_number "\n"               \
+		    "    jmp common_interrupt_handler_entry\n"); \
+	}
 
 INTERRUPT_HANDLER(0x00);
 INTERRUPT_HANDLER(0x01);

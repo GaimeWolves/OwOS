@@ -30,7 +30,7 @@ namespace Kernel::Interrupts
 		void initialize();
 
 		void start(uint64_t interval) override;
-		void stop() override;
+		uint64_t stop() override;
 
 		[[nodiscard]] uint64_t get_time_quantum_in_ns() const override { return m_time_quantum; };
 		[[nodiscard]] uint64_t get_maximum_interval() const override { return UINT32_MAX; };
@@ -50,6 +50,8 @@ namespace Kernel::Interrupts
 		void handle_interrupt(const CPU::interrupt_frame_t &regs __unused) override;
 
 		uint64_t m_time_quantum{};
+		uint64_t m_time_to_tick{};
+		bool m_handling_events{true};
 	};
 
 	class LAPIC final
@@ -69,6 +71,8 @@ namespace Kernel::Interrupts
 		void initialize(uintptr_t physical_addr);
 		void initialize_ap();
 		void enable();
+
+		[[nodiscard]] always_inline bool is_initialized() const { return m_initialized; };
 
 		void eoi();
 
@@ -96,5 +100,6 @@ namespace Kernel::Interrupts
 		APICSpuriousInterruptHandler *m_spurious_interrupt_handler{nullptr};
 
 		uint32_t m_available_aps{0};
+		bool m_initialized{false};
 	};
 } // namespace Kernel::Interrupts

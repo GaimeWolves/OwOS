@@ -64,7 +64,10 @@ namespace Kernel::Memory::Arch
 		uintptr_t physical_pd_address;
 		page_directory_t *page_directory;
 		page_table_t *mapping_table;
+		uint64_t page_directory_version;
 	};
 
 	Arch::paging_space_t get_kernel_paging_space();
+	void check_page_directory();
+
 } // namespace Kernel::Memory::Arch

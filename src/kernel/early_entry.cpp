@@ -86,6 +86,7 @@ namespace Kernel
 			for (func_t *ctor = &_start_ctors; ctor < &_end_ctors; ctor++)
 				(*ctor)();
 
+			CPU::Processor::by_id(0).set_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
 			CPU::Processor::early_initialize(0);
 
 			CPU::prepare_smp_boot_environment();

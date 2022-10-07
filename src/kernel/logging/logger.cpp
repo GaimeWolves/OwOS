@@ -1,6 +1,7 @@
 #include "logging/logger.hpp"
 
-#include "message_queue.hpp"
+#include <libk/srmw_queue.hpp>
+#include <libk/kstring.hpp>
 
 #include <processes/GlobalScheduler.hpp>
 #include <processes/CoreScheduler.hpp>
@@ -10,9 +11,8 @@
 
 namespace Kernel
 {
-	static MessageQueue message_queue;
+	static LibK::SRMWQueue<LibK::string> message_queue;
 	static thread_t logging_thread;
-	static Locking::Spinlock logger_lock;
 
 	static void putc(const char ch)
 	{
@@ -63,6 +63,15 @@ namespace Kernel
 		{
 			CoreScheduler::terminate(&logging_thread);
 			putc('\n');
+		}
+	}
+
+	void critical_empty_logger()
+	{
+		while (!message_queue.empty())
+		{
+			auto message = message_queue.get();
+			puts(message.c_str());
 		}
 	}
 

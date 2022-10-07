@@ -2,8 +2,9 @@
 
 #include <libk/kcstdio.hpp>
 
-#include <time/EventManager.hpp>
+#include <logging/logger.hpp>
 #include <arch/Processor.hpp>
+#include <time/EventManager.hpp>
 
 namespace Kernel
 {
@@ -11,9 +12,10 @@ namespace Kernel
 	{
 		CPU::Processor &core = CPU::Processor::current();
 		core.m_idle_thread = core.create_kernel_thread((uintptr_t)idle);
-		Time::EventManager::instance().schedule_event(tick, 10 * 1000 * 1000, true);
-
 		core.m_scheduler_initialized = true;
+
+		// Kickstart local APIC timer if not already running
+		Time::EventManager::instance().schedule_event([](){}, SMALLEST_INTERVAL, true);
 	}
 
 	void CoreScheduler::tick()
@@ -34,26 +36,21 @@ namespace Kernel
 			current_thread->state = ThreadState::Ready;
 		next_thread->state = ThreadState::Running;
 		core.m_current_thread = next_thread;
+		core.m_memory_space = next_thread->parent_process ? &next_thread->parent_process->get_memory_space() : Memory::VirtualMemoryManager::instance().get_kernel_memory_space();
 
 		if (current_thread != next_thread || !next_thread->has_started)
 		{
 			bool has_started = next_thread->has_started;
 			next_thread->has_started = true;
-			//if (core.m_current_thread_index < core.m_running_threads.size())
-			//	LibK::printf_debug_msg("Entering thread #%d context", core.m_current_thread_index);
-			core.set_exit_function([next_thread, &core, has_started](){
-				Time::EventManager::instance().schedule_event(tick, SMALLEST_INTERVAL, true);
-
+			core.enter_critical();
+			core.get_exit_function_stack().top() = [next_thread, &core, has_started](){
 				if (has_started)
 					core.enter_thread_context(*next_thread);
 				else
 					core.initial_enter_thread_context(*next_thread);
-			});
-
-			return;
+			};
+			core.leave_critical();
 		}
-
-		Time::EventManager::instance().schedule_event(tick, SMALLEST_INTERVAL, true);
 	}
 
 	thread_t *CoreScheduler::pick_next()
@@ -74,7 +71,7 @@ namespace Kernel
 			case ThreadState::Ready:
 				return next;
 			case ThreadState::Blocked:
-				if (!next->lock->is_locked() && next->lock->try_lock())
+				if (next->lock->try_lock())
 				{
 					next->lock = nullptr;
 					return next;
@@ -91,6 +88,9 @@ namespace Kernel
 					start = (start + 1) % core.m_running_threads.size();
 
 				break;
+			case ThreadState::Running:
+				if (core.m_running_threads.size() == 1)
+					return next;
 			default:
 				break;
 			}

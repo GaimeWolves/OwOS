@@ -118,3 +118,13 @@ void operator delete[](void *p, __unused size_t size)
 {
 	kfree(p);
 }
+
+void operator delete(void* ptr, __unused size_t, __unused std::align_val_t) noexcept
+{
+	kfree(ptr);
+}
+
+void operator delete[](void* ptr, __unused size_t, __unused std::align_val_t) noexcept
+{
+	kfree(ptr);
+}

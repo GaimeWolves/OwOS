@@ -30,8 +30,8 @@ namespace Kernel::Memory
 
 		MMIO(MMIO &&other) noexcept
 			: m_ref(other.m_ref)
-		    , m_size(other.m_size)
 		    , m_region(other.m_region)
+		    , m_size(other.m_size)
 		{
 			other.m_ref = nullptr;
 			other.m_size = 0;

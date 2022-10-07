@@ -29,7 +29,7 @@ set(LIBK_INCLUDES
     include/libk/ArrayView.hpp
     include/libk/printf.hpp
     include/libk/StringView.hpp
-    include/libk/klist.hpp)
+    include/libk/klist.hpp include/libk/kmemory.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
@@ -147,7 +147,7 @@ set(KERNEL_SOURCES
     filesystem/Ext2FileSystem.cpp
     filesystem/VirtualFileSystem.cpp
     filesystem/File.cpp elf/elf.cpp
-    logging/message_queue.hpp
+    include/libk/srmw_queue.hpp
     logging/logger.cpp)
 
 set(SOURCES

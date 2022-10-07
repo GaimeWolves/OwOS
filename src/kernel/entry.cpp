@@ -18,6 +18,7 @@
 #include <storage/ata/AHCIManager.hpp>
 #include <filesystem/VirtualFileSystem.hpp>
 #include <logging/logger.hpp>
+#include <elf/elf.hpp>
 
 namespace Kernel
 {
@@ -116,8 +117,8 @@ namespace Kernel
 		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_A));
 		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_B));
 
-		auto dtc_mem_space = Memory::VirtualMemoryManager::instance().create_memory_space();
-		Memory::VirtualMemoryManager::instance().load_memory_space(&dtc_mem_space);
+		auto dtc_mem_space = Memory::VirtualMemoryManager::create_memory_space();
+		Memory::VirtualMemoryManager::load_memory_space(&dtc_mem_space);
 		Memory::mapping_config_t config;
 		config.userspace = true;
 		Memory::VirtualMemoryManager::instance().allocate_region_at(0x55555000, 4096, config);
@@ -128,7 +129,10 @@ namespace Kernel
 
 		GlobalScheduler::start_userspace_thread(0x55555000, dtc_mem_space);
 
-		Memory::VirtualMemoryManager::instance().load_kernel_space();
+		Memory::VirtualMemoryManager::load_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
+
+		auto file = VirtualFileSystem::instance().find_by_path("/lib/libtest.so.1.0");
+		ELF::load(file);
 
 		CoreScheduler::initialize();
 
@@ -148,10 +152,12 @@ namespace Kernel
 		Interrupts::LAPIC::instance().initialize_ap();
 		Interrupts::LAPIC::instance().enable();
 		CPU::Processor::initialize(cpu_id);
+		CPU::Processor::current().set_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
 		CPU::Processor::current().smp_initialize_messaging();
-		CPU::Processor::current().enable_interrupts();
 		Interrupts::APICTimer::instance().initialize();
 		mutex.unlock();
+
+		CPU::Processor::current().enable_interrupts();
 
 		log("SMP", "Starting scheduler and sleeping until first tick...");
 

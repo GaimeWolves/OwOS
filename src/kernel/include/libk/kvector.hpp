@@ -102,7 +102,7 @@ namespace Kernel::LibK
 			ensure_capacity(n);
 
 			for (size_t i = m_size; i < n; i++)
-				m_array[i] = val;
+				new (&m_array[i]) T(move(val));
 
 			m_size = n;
 		}
@@ -117,29 +117,31 @@ namespace Kernel::LibK
 				while (m_capacity < n)
 					m_capacity *= 2;
 
-				m_array = (T *)krealloc(m_array, sizeof(T) * m_capacity, sizeof(T));
-
-				assert(m_array);
+				auto new_array = (T *)kmalloc(sizeof(T) * m_capacity, sizeof(T));
+				assert(new_array);
+				for (size_t i = 0; i < m_size; i++)
+					new (&new_array[i]) T(move(m_array[i]));
+				m_array = new_array;
 			}
 		}
 
 		void push_back(const T &val) { resize(m_size + 1, val); }
 		void push_back(T &&val)
 		{
+			ensure_capacity(m_size + 1);
+			new (&m_array[m_size]) T(move(val));
 			m_size++;
-			ensure_capacity(m_size);
-			m_array[m_size - 1] = move(val);
 		}
 
 		template <class ...Args>
 		void emplace_back(Args &&...args)
 		{
+			ensure_capacity(m_size + 1);
+			new (&m_array[m_size]) T(forward<Args>(args)...);
 			m_size++;
-			ensure_capacity(m_size);
-			new (&m_array[m_size - 1]) T(forward<Args>(args)...);
 		}
 
-		void pop_back() { m_array[m_size-- - 1].~T(); }
+		void pop_back() { resize(m_size - 1); }
 
 		const T *data() const { return m_array; }
 
