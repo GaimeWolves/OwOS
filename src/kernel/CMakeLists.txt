@@ -175,8 +175,14 @@ target_link_options(kernel_heap PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/ar
 target_link_libraries(kernel kernel_heap gcc)
 target_include_directories(kernel PRIVATE include)
 
+# Enable this when our libc headers are more mature or find a better solution to get at sys/arch/i386/syscall.h
+# target_include_directories(kernel PRIVATE ${CMAKE_SOURCE_DIR}/src/userland/libc)
+
 target_compile_definitions(kernel_heap PRIVATE ARCH_${ARCH})
 target_compile_definitions(kernel PRIVATE ARCH_${ARCH})
+
+target_compile_definitions(kernel_heap PRIVATE __OWOS_KERNEL)
+target_compile_definitions(kernel PRIVATE __OWOS_KERNEL)
 
 if (DEBUG_KERNEL)
     target_compile_definitions(kernel PRIVATE _DEBUG=1)

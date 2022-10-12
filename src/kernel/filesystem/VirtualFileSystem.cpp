@@ -99,6 +99,8 @@ namespace Kernel
 					if (strcmp(node->file->name().c_str(), current_offset) == 0)
 						return node->file;
 				}
+
+				return nullptr;
 			}
 		}
 

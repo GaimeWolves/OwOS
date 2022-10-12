@@ -2,10 +2,19 @@
 
 #include <stdint.h>
 
+#define __ENUM_SYSCALL(S) \
+	S(test)
+
 enum Syscall
 {
-	SC_TEST,
+#define __ENUM_FN(syscall) SC_##syscall,
+	__ENUM_SYSCALL(__ENUM_FN)
+#undef __ENUM_FN
 };
+
+#ifndef __OWOS_KERNEL
+#	undef __ENUM_SYSCALL
+#endif
 
 inline uintptr_t syscall(Syscall syscall)
 {

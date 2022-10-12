@@ -4,7 +4,8 @@
 
 #include <syscall/syscalls.hpp>
 
-#define SYSCALL(name) s_syscall_table.push_back(reinterpret_cast<void (*)()>(syscall$##name))
+// TODO: Replace when out libc is mature enough
+#include "../../userland/libc/sys/arch/i386/syscall.h"
 
 namespace Kernel
 {
@@ -18,6 +19,8 @@ namespace Kernel
 
 	void SyscallDispatcher::initialize()
 	{
-		SYSCALL(test);
+#define SYSCALL(name) s_syscall_table.push_back(reinterpret_cast<void (*)()>(syscall$##name));
+		__ENUM_SYSCALL(SYSCALL)
+#undef SYSCALL
 	}
 }

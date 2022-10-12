@@ -52,6 +52,12 @@ add_custom_command(
 
 add_library(c SHARED ${SOURCES} ${HEADERS})
 
+add_custom_command(
+    TARGET c
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_SONAME_FILE:c> ${CMAKE_INSTALL_PREFIX}/lib/libc.so
+)
+
 target_compile_options(c PRIVATE -ffreestanding -fpic -pie -O0 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fno-omit-frame-pointer)
 target_link_options(c PRIVATE -ffreestanding -O0 -nostdlib -pie -Wl,-E,-shared)
 target_include_directories(c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

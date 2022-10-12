@@ -4,5 +4,5 @@
 
 void test(const char *str)
 {
-	syscall(SC_TEST, str);
+	syscall(SC_test, str);
 }
