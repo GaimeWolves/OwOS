@@ -131,7 +131,7 @@ namespace Kernel
 
 		Memory::VirtualMemoryManager::load_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
 
-		auto file = VirtualFileSystem::instance().find_by_path("/lib/libtest.so.1.0");
+		auto file = VirtualFileSystem::instance().find_by_path("/bin/test");
 		ELF::load(file);
 
 		CoreScheduler::initialize();

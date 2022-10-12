@@ -22,7 +22,6 @@ namespace Kernel::ELF
 		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
 
 		assert(hasSignature(header)); // TODO: Error handling
-		assert(header->e_type == ET_DYN);
 
 		size_t physical_header_size = header->e_phentsize * header->e_phnum;
 		auto header_region = Memory::VirtualMemoryManager::instance().allocate_region(physical_header_size);
@@ -50,6 +49,7 @@ namespace Kernel::ELF
 		Memory::VirtualMemoryManager::load_memory_space(&memory_space);
 
 		// TODO: Fix paging/memory management code to not map already present pages in the kernel when on a different memory space
+		int idx = 0;
 		for (int i = 0; i < header->e_phnum; i++)
 		{
 			auto *pheader = (elf32_phdr_t *)(header_region.virt_address + header->e_phoff + header->e_phentsize * i);
@@ -61,7 +61,7 @@ namespace Kernel::ELF
 				//mapping_conf.writeable = pheader->p_flags & PF_W;
 				//mapping_conf.readable = pheader->p_flags & PF_R;
 				auto phys_region = Memory::VirtualMemoryManager::instance().allocate_region_at(offset + pheader->p_vaddr, pheader->p_memsz, mapping_conf);
-				memcpy((void *)phys_region.virt_address, (void *)(regions[i].virt_address + pheader->p_offset), pheader->p_memsz);
+				memcpy((void *)phys_region.virt_address, (void *)(regions[idx++].virt_address + pheader->p_offset), pheader->p_memsz);
 			}
 		}
 

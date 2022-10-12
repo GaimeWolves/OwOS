@@ -1,6 +1,7 @@
 bin
 build
-toolchain/
+toolchain
+toolchain-hosted
 log.txt
 mount.pid
 debuglog.txt

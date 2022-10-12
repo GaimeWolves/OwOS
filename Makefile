@@ -9,6 +9,12 @@ all:
 	${MAKE} -C build install
 	${MAKE} -C build image
 
+libc:
+	mkdir -p build
+	mkdir -p bin
+	cmake -H. -Bbuild
+	${MAKE} -C build libc
+
 .PHONY: run
 run: all
 	${MAKE} -C build run

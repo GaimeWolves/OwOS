@@ -21,6 +21,9 @@ set(CMAKE_NM ${TOOLCHAIN_PATH}nm)
 set(CMAKE_OBJCOPY ${TOOLCHAIN_PATH}objcopy)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_INSTALL_BINDIR sysroot/bin)
+set(CMAKE_INSTALL_LIBDIR sysroot/lib)
+set(CMAKE_INSTALL_INCLUDEDIR sysroot/usr/include)
 set(BUILD_PATH ${CMAKE_SOURCE_DIR}/build)
 
 add_subdirectory(src)
@@ -37,6 +40,12 @@ add_custom_command(
 add_custom_target(image
 	COMMAND echo "Making image"
 	DEPENDS ${CMAKE_INSTALL_PREFIX}/img
+	VERBATIM
+)
+
+add_custom_target(libc
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_SONAME_FILE:c> ${CMAKE_INSTALL_PREFIX}/sysroot/lib/libc.so
+	DEPENDS c
 	VERBATIM
 )
 

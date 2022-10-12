@@ -162,15 +162,15 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CFLAGS -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
-
-add_compile_options(${CFLAGS})
-add_link_options(LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
-
 add_library(kernel_heap STATIC ${HEAP_SOURCES})
 target_include_directories(kernel_heap PRIVATE include)
 
 add_executable(kernel ${SOURCES})
+
+target_compile_options(kernel PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
+target_compile_options(kernel_heap PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
+target_link_options(kernel PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
+target_link_options(kernel_heap PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
 
 target_link_libraries(kernel kernel_heap gcc)
 target_include_directories(kernel PRIVATE include)
