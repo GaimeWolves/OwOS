@@ -64,18 +64,13 @@ namespace Kernel::Memory
 		size = LibK::round_up_to_multiple<size_t>(size + (virt_addr - address), PAGE_SIZE);
 		virt_addr = address;
 
-		region_t virt_region{
-			.address = virt_addr,
-			.size = size,
-		};
-
 		uintptr_t phys_addr = reinterpret_cast<uintptr_t>(PhysicalMemoryManager::instance().alloc(size, config.bounds.address, config.bounds.end(), config.alignment));
 
 		bool is_kernel_space = in_kernel_space(virt_addr);
 		if (is_kernel_space)
 			m_lock.lock();
 
-		if (!check_free(virt_region))
+		if (find_region(virt_addr))
 			return {};
 
 		auto mapping = map(phys_addr, virt_addr, size, config);
@@ -112,16 +107,11 @@ namespace Kernel::Memory
 		size = LibK::round_up_to_multiple<size_t>(size + (virt_addr - address), PAGE_SIZE);
 		virt_addr = address;
 
-		region_t virt_region{
-		    .address = virt_addr,
-		    .size = size,
-		};
-
 		bool is_kernel_space = in_kernel_space(virt_addr);
 		if (is_kernel_space)
 			m_lock.lock();
 
-		if (!check_free(virt_region))
+		if (find_region(virt_addr))
 			return {};
 
 		auto mapping = map(phys_addr, virt_addr, size, config);

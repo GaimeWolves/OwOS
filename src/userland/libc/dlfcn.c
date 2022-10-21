@@ -7,15 +7,15 @@ int dlclose(void *)
 
 char *dlerror(void)
 {
-	return nullptr;
+	return 0;
 }
 
 void *dlopen(const char *, int)
 {
-	return nullptr;
+	return 0;
 }
 
 void *dlsym(void *__restrict, const char *__restrict)
 {
-	return nullptr;
+	return 0;
 }

@@ -11,10 +11,10 @@ namespace Kernel
 {
 	LibK::vector<void (*)()> SyscallDispatcher::s_syscall_table;
 
-	uint32_t SyscallDispatcher::handle_syscall(uint32_t id, uint32_t args...)
+	uint32_t SyscallDispatcher::handle_syscall(uint32_t id, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4, uint32_t arg5)
 	{
 		assert(id < s_syscall_table.size());
-		return reinterpret_cast<syscall_t>(s_syscall_table[id])(args);
+		return reinterpret_cast<syscall_t>(s_syscall_table[id])(arg1, arg2, arg3, arg4, arg5);
 	}
 
 	void SyscallDispatcher::initialize()

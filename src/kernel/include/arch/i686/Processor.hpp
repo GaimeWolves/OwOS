@@ -82,8 +82,18 @@ namespace Kernel::CPU
 
 		Time::EventManager::EventQueue &get_event_queue() { return m_scheduled_events; }
 
-		static thread_t create_kernel_thread(uintptr_t main_function);
-		static thread_t create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memorySpace);
+		static thread_t *create_kernel_thread(uintptr_t main_function);
+		static thread_t *create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memorySpace);
+		static uintptr_t thread_push_userspace_data(thread_t *thread, const char *data, size_t count);
+
+		template <typename T>
+		static uintptr_t thread_push_userspace_data(thread_t *thread, T data)
+		{
+			thread->registers.esp -= sizeof(T);
+			new (reinterpret_cast<void *>(thread->registers.esp)) T(data);
+			return thread->registers.esp;
+		}
+
 		void enter_thread_context(thread_t &thread);
 		void initial_enter_thread_context(thread_t thread);
 		void update_thread_context(thread_t &thread);
@@ -222,9 +232,9 @@ namespace Kernel::CPU
 		uint64_t m_remaining_time_to_tick{};
 		uint64_t m_next_timer_tick{};
 		bool m_handling_events{true};
-		LibK::vector<thread_t> m_running_threads{};
+		LibK::vector<thread_t *> m_running_threads{};
 		thread_t *m_current_thread{nullptr};
 		size_t m_current_thread_index{0};
-		thread_t m_idle_thread{};
+		thread_t *m_idle_thread{nullptr};
 	};
 }

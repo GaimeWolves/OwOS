@@ -11,7 +11,7 @@ namespace Kernel
 	void CoreScheduler::initialize()
 	{
 		CPU::Processor &core = CPU::Processor::current();
-		core.m_idle_thread = core.create_kernel_thread((uintptr_t)idle);
+		core.m_idle_thread = Kernel::CPU::Processor::create_kernel_thread((uintptr_t)idle);
 		core.m_scheduler_initialized = true;
 
 		// Kickstart local APIC timer if not already running
@@ -58,13 +58,13 @@ namespace Kernel
 		CPU::Processor &core = CPU::Processor::current();
 
 		if (core.m_running_threads.empty())
-			return &core.m_idle_thread;
+			return core.m_idle_thread;
 
 		size_t start = core.m_current_thread_index;
 		do
 		{
 			core.m_current_thread_index = (core.m_current_thread_index + 1) % core.m_running_threads.size();
-			thread_t *next = &core.m_running_threads[core.m_current_thread_index];
+			thread_t *next = core.m_running_threads[core.m_current_thread_index];
 
 			switch (next->state)
 			{
@@ -82,7 +82,7 @@ namespace Kernel
 				core.m_running_threads.erase(core.m_running_threads.begin() + core.m_current_thread_index);
 
 				if (core.m_running_threads.empty())
-					return &core.m_idle_thread;
+					return core.m_idle_thread;
 
 				if (core.m_current_thread_index-- == start)
 					start = (start + 1) % core.m_running_threads.size();
@@ -96,7 +96,7 @@ namespace Kernel
 			}
 		} while (core.m_current_thread_index != start);
 
-		return &core.m_idle_thread;
+		return core.m_idle_thread;
 	}
 
 	void CoreScheduler::suspend(thread_t *thread)

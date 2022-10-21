@@ -19,5 +19,5 @@ void free(void *)
 
 void *malloc(size_t)
 {
-	return nullptr;
+	return 0;
 }

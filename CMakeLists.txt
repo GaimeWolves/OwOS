@@ -33,7 +33,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E env OBJCOPY=${CMAKE_OBJCOPY} NM=${CMAKE_NM} BIN_DIR=${CMAKE_INSTALL_PREFIX} sh ${CMAKE_SOURCE_DIR}/scripts/make_and_embed_symbol_map.sh
 	COMMAND ${CMAKE_COMMAND} -E env BIN_DIR=${CMAKE_INSTALL_PREFIX} sh ${CMAKE_SOURCE_DIR}/scripts/copy_test_dir.sh
 	COMMAND ${CMAKE_COMMAND} -E env "BIN_DIR=${CMAKE_INSTALL_PREFIX}" ${CMAKE_SOURCE_DIR}/scripts/create_img.sh
-	DEPENDS kernel
+	DEPENDS kernel c c_static ld-owos.so test # find a way to make this work better
 	USES_TERMINAL
 )
 

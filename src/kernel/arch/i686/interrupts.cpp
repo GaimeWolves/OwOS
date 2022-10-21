@@ -64,7 +64,7 @@ namespace Kernel::CPU
 
 		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
-			uint32_t ret_code = SyscallDispatcher::handle_syscall(reg.eax, reg.ebx, reg.ecx, reg.edx, reg.esi, reg.edi);
+			uint32_t ret_code = SyscallDispatcher::handle_syscall(reg.eax, reg.ebx, reg.ecx, reg.edx, reg.edi, reg.esi);
 			Processor::current().get_interrupt_frame_stack().top()->eax	= ret_code;
 		}
 

@@ -1,94 +1,58 @@
 #pragma once
 
+#include <sys/types.h>
+#include <errno.h>
 #include <stdint.h>
 
 #define __ENUM_SYSCALL(S) \
-	S(test)
+	S(test)               \
+	S(mmap)                  \
+	S(read)                  \
+	S(write)
 
-enum Syscall
+typedef enum Syscall
 {
-#define __ENUM_FN(syscall) SC_##syscall,
+#define __ENUM_FN(syscall) __SC_##syscall,
 	__ENUM_SYSCALL(__ENUM_FN)
 #undef __ENUM_FN
-};
+} Syscall;
 
 #ifndef __OWOS_KERNEL
 #	undef __ENUM_SYSCALL
 #endif
 
-inline uintptr_t syscall(Syscall syscall)
+// https://github.com/managarm/mlibc/blob/master/sysdeps/linux/include/bits/syscall.h
+typedef uintptr_t __sc_word_t;
+
+#define __scc(x) ((__sc_word_t)(x))
+#define __syscall0(n) __do_syscall0(n)
+#define __syscall1(n,a) __do_syscall1(n,__scc(a))
+#define __syscall2(n,a,b) __do_syscall2(n,__scc(a),__scc(b))
+#define __syscall3(n,a,b,c) __do_syscall3(n,__scc(a),__scc(b),__scc(c))
+#define __syscall4(n,a,b,c,d) __do_syscall4(n,__scc(a),__scc(b),__scc(c),__scc(d))
+#define __syscall5(n,a,b,c,d,e) __do_syscall5(n,__scc(a),__scc(b),__scc(c),__scc(d),__scc(e))
+#define __SYSCALL_NARGS_X(a,b,c,d,e,f,n,...) n
+#define __SYSCALL_NARGS(...) __SYSCALL_NARGS_X(__VA_ARGS__,5,4,3,2,1,0,)
+#define __SYSCALL_CONCAT_X(a,b) a##b
+#define __SYSCALL_CONCAT(a,b) __SYSCALL_CONCAT_X(a,b)
+#define __SYSCALL_DISP(b,...) __SYSCALL_CONCAT(b,__SYSCALL_NARGS(__VA_ARGS__))(__VA_ARGS__)
+#define __syscall(...) __SYSCALL_DISP(__syscall,__VA_ARGS__)
+#define syscall(...) __do_syscall_ret(__syscall(__VA_ARGS__))
+
+uintptr_t __do_syscall_ret(uintptr_t ret);
+uintptr_t __do_syscall0(Syscall syscall);
+uintptr_t __do_syscall1(Syscall syscall, __sc_word_t arg1);
+uintptr_t __do_syscall2(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2);
+uintptr_t __do_syscall3(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3);
+uintptr_t __do_syscall4(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4);
+uintptr_t __do_syscall5(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4, __sc_word_t arg5);
+
+typedef struct SC_mmap_params_t
 {
-	uintptr_t ret;
-
-	asm volatile("int $0x80"
-	    : "=a" (ret)
-	    : "a" (syscall)
-	    : "memory");
-
-	return ret;
-}
-
-template <typename T1>
-inline uintptr_t syscall(Syscall syscall, T1 arg1)
-{
-	uintptr_t ret;
-
-	asm volatile("int $0x80"
-	             : "=a" (ret)
-	             : "a" (syscall), "b" ((uintptr_t)arg1)
-	             : "memory");
-
-	return ret;
-}
-
-template <typename T1, typename T2>
-inline uintptr_t syscall(Syscall syscall, T1 arg1, T2 arg2)
-{
-	uintptr_t ret;
-
-	asm volatile("int $0x80"
-	             : "=a" (ret)
-	             : "a" (syscall), "b" ((uintptr_t)arg1), "c" ((uintptr_t)arg2)
-	             : "memory");
-
-	return ret;
-}
-
-template <typename T1, typename T2, typename T3>
-inline uintptr_t syscall(Syscall syscall, T1 arg1, T2 arg2, T3 arg3)
-{
-	uintptr_t ret;
-
-	asm volatile("int $0x80"
-	             : "=a" (ret)
-	             : "a" (syscall), "b" ((uintptr_t)arg1), "c" ((uintptr_t)arg2), "d" ((uintptr_t)arg3)
-	             : "memory");
-
-	return ret;
-}
-
-template <typename T1, typename T2, typename T3, typename T4>
-inline uintptr_t syscall(Syscall syscall, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-{
-	uintptr_t ret;
-
-	asm volatile("int $0x80"
-	             : "=a" (ret)
-	             : "a" (syscall), "b" ((uintptr_t)arg1), "c" ((uintptr_t)arg2), "d" ((uintptr_t)arg3), "D" ((uintptr_t)arg4)
-	             : "memory");
-
-	return ret;
-}
-
-template <typename T1, typename T2, typename T3, typename T4, typename T5>
-inline uintptr_t syscall(Syscall syscall, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-{
-	uintptr_t ret;
-
-	asm volatile("int $0x80"
-	             : "=a" (ret)
-	             : "a" (syscall), "b" ((uintptr_t)arg1), "c" ((uintptr_t)arg2), "d" ((uintptr_t)arg3), "D" ((uintptr_t)arg4), "S" ((uintptr_t)arg5)
-	             : "memory");
-
-	return ret;
-}
+	void *addr;
+	size_t len;
+	int prot;
+	int flags;
+	int fildes;
+	off_t off;
+} SC_mmap_params_t;

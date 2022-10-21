@@ -1,5 +1,6 @@
 bin
 build
+build-toolchain
 toolchain
 toolchain-hosted
 log.txt

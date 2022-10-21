@@ -102,7 +102,7 @@ set(KERNEL_INCLUDES
     include/filesystem/Ext2FileSystem.hpp
     include/elf/definitions.hpp
     include/elf/elf.hpp
-    include/logging/logger.hpp)
+    include/logging/logger.hpp include/devices/StdioDevice.hpp)
 
 set(KERNEL_SOURCES
     early_entry.cpp
@@ -148,7 +148,7 @@ set(KERNEL_SOURCES
     filesystem/VirtualFileSystem.cpp
     filesystem/File.cpp elf/elf.cpp
     include/libk/srmw_queue.hpp
-    logging/logger.cpp)
+    logging/logger.cpp syscall/test.cpp devices/StdioDevice.cpp syscall/read.cpp syscall/write.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
@@ -156,7 +156,7 @@ set(SOURCES
     ${LIBK_INCLUDES}
     ${KERNEL_SOURCES}
     ${ARCH_SOURCES}
-    ${LIBK_SOURCES})
+    ${LIBK_SOURCES} syscall/mmap.cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -176,13 +176,16 @@ target_link_libraries(kernel kernel_heap gcc)
 target_include_directories(kernel PRIVATE include)
 
 # Enable this when our libc headers are more mature or find a better solution to get at sys/arch/i386/syscall.h
-# target_include_directories(kernel PRIVATE ${CMAKE_SOURCE_DIR}/src/userland/libc)
+target_include_directories(kernel PRIVATE ${CMAKE_SOURCE_DIR}/src/userland/libc)
 
 target_compile_definitions(kernel_heap PRIVATE ARCH_${ARCH})
 target_compile_definitions(kernel PRIVATE ARCH_${ARCH})
 
 target_compile_definitions(kernel_heap PRIVATE __OWOS_KERNEL)
 target_compile_definitions(kernel PRIVATE __OWOS_KERNEL)
+
+target_compile_definitions(kernel_heap PRIVATE __LIBC_KEEP_DEFS)
+target_compile_definitions(kernel PRIVATE __LIBC_KEEP_DEFS)
 
 if (DEBUG_KERNEL)
     target_compile_definitions(kernel PRIVATE _DEBUG=1)

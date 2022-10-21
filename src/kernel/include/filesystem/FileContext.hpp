@@ -13,6 +13,8 @@ namespace Kernel
 		FileContext() = default;
 		explicit FileContext(File *file, bool readable, bool writeable);
 
+		void close();
+
 		// Todo: replace with off_t type
 		size_t seek(size_t offset);
 
@@ -24,6 +26,8 @@ namespace Kernel
 
 		[[nodiscard]] bool is_readable() const { return m_readable; }
 		[[nodiscard]] bool is_writeable() const { return m_writeable; }
+
+		[[nodiscard]] bool is_null() const { return !m_file; }
 
 	private:
 		File *m_file{nullptr};

@@ -11,8 +11,9 @@
 
 namespace Kernel
 {
-	static LibK::SRMWQueue<LibK::string> message_queue;
-	static thread_t logging_thread;
+	static LibK::SRMWQueue<LibK::string> s_message_queue;
+	static thread_t *s_logging_thread;
+	static bool s_logging_thread_started{false};
 
 	static void putc(const char ch)
 	{
@@ -46,31 +47,31 @@ namespace Kernel
 	{
 		while (true)
 		{
-			if (message_queue.empty())
+			if (s_message_queue.empty())
 			{
-				CoreScheduler::suspend(&logging_thread);
+				CoreScheduler::suspend(s_logging_thread);
 				continue;
 			}
 
-			auto message = message_queue.get();
+			auto message = s_message_queue.get();
 			puts(message.c_str());
 		}
 	}
 
 	static void kill_logger()
 	{
-		if (logging_thread.state != ThreadState::Terminated)
+		if (s_logging_thread->state != ThreadState::Terminated)
 		{
-			CoreScheduler::terminate(&logging_thread);
+			CoreScheduler::terminate(s_logging_thread);
 			putc('\n');
 		}
 	}
 
 	void critical_empty_logger()
 	{
-		while (!message_queue.empty())
+		while (!s_message_queue.empty())
 		{
-			auto message = message_queue.get();
+			auto message = s_message_queue.get();
 			puts(message.c_str());
 		}
 	}
@@ -94,7 +95,9 @@ namespace Kernel
 
 	void start_logger_thread()
 	{
-		logging_thread = GlobalScheduler::start_kernel_only_thread((uintptr_t)print_log_messages);
+		s_logging_thread = GlobalScheduler::create_kernel_only_thread(nullptr, (uintptr_t)print_log_messages);
+		GlobalScheduler::start_thread(s_logging_thread);
+		s_logging_thread_started = true;
 	}
 
 	void critical_putc(const char ch)
@@ -129,7 +132,9 @@ namespace Kernel
 
 	void log(LibK::string &&message)
 	{
-		message_queue.put(LibK::move(message));
+		s_message_queue.put(LibK::move(message));
+		if (s_logging_thread_started)
+			CoreScheduler::resume(s_logging_thread);
 	}
 
 	void log(const char *fmt, ...)
@@ -150,10 +155,17 @@ namespace Kernel
 
 		printf_into_string(message, "(#%d) [%s] ", CPU::Processor::current().id(), tag);
 
-		va_list ap;
-		va_start(ap, fmt);
-		printf_into_string(message, fmt, ap);
-		va_end(ap);
+		if (fmt)
+		{
+			va_list ap;
+			va_start(ap, fmt);
+			printf_into_string(message, fmt, ap);
+			va_end(ap);
+		}
+		else
+		{
+			printf_into_string(message, "<empty string>");
+		}
 
 		log(LibK::move(message));
 	}

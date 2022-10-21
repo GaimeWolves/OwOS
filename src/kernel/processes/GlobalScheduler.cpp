@@ -8,18 +8,24 @@
 
 namespace Kernel
 {
-	thread_t GlobalScheduler::start_kernel_only_thread(uintptr_t main)
+	thread_t *GlobalScheduler::create_kernel_only_thread(Process *parent, uintptr_t main)
 	{
-		thread_t thread = CPU::Processor::create_kernel_thread(main);
-		pick_best_core(&thread).m_running_threads.push_back(LibK::move(thread));
+		thread_t *thread = CPU::Processor::create_kernel_thread(main);
+		thread->parent_process = parent;
 		return thread;
 	}
 
-	thread_t GlobalScheduler::start_userspace_thread(uintptr_t main, Memory::memory_space_t &memorySpace)
+	thread_t *GlobalScheduler::create_userspace_thread(Process *parent, uintptr_t main, Memory::memory_space_t &memorySpace)
 	{
-		thread_t thread = CPU::Processor::create_userspace_thread(main, memorySpace);
-		pick_best_core(&thread).m_running_threads.push_back(LibK::move(thread));
+		thread_t *thread = CPU::Processor::create_userspace_thread(main, memorySpace);
+		thread->parent_process = parent;
 		return thread;
+	}
+
+
+	void GlobalScheduler::start_thread(thread_t *thread)
+	{
+		pick_best_core(thread).m_running_threads.push_back(thread);
 	}
 
 	CPU::Processor &GlobalScheduler::pick_best_core(thread_t *thread __unused)

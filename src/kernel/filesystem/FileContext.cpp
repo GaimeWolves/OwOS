@@ -11,6 +11,11 @@ namespace Kernel
 	{
 	}
 
+	void FileContext::close()
+	{
+		m_file->close(*this);
+	}
+
 	size_t FileContext::seek(size_t offset)
 	{
 		m_offset = offset;
@@ -30,4 +35,5 @@ namespace Kernel
 		m_offset += actual_count;
 		return actual_count;
 	}
+
 }

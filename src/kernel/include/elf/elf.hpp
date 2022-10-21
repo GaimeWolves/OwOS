@@ -7,5 +7,5 @@
 namespace Kernel::ELF
 {
 	// Basic loader to load the dynamic loader which loads the actual program
-	Process load(File *file);
+	Process *load(File *file);
 }

@@ -114,8 +114,10 @@ namespace Kernel
 
 		log("SMP", "Starting scheduler and sleeping until first tick...");
 
-		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_A));
-		GlobalScheduler::start_kernel_only_thread(reinterpret_cast<uintptr_t>(dummy_thread_B));
+		auto threadA = GlobalScheduler::create_kernel_only_thread(nullptr, reinterpret_cast<uintptr_t>(dummy_thread_A));
+		auto threadB = GlobalScheduler::create_kernel_only_thread(nullptr, reinterpret_cast<uintptr_t>(dummy_thread_B));
+		GlobalScheduler::start_thread(threadA);
+		GlobalScheduler::start_thread(threadB);
 
 		auto dtc_mem_space = Memory::VirtualMemoryManager::create_memory_space();
 		Memory::VirtualMemoryManager::load_memory_space(&dtc_mem_space);
@@ -127,12 +129,14 @@ namespace Kernel
 		static char str[] = "Hello from Ring 3 using a syscall :D";
 		memmove((void *)0x55555500, (void *)str, 100);
 
-		GlobalScheduler::start_userspace_thread(0x55555000, dtc_mem_space);
+		auto threadC = GlobalScheduler::create_userspace_thread(nullptr, 0x55555000, dtc_mem_space);
+		GlobalScheduler::start_thread(threadC);
 
 		Memory::VirtualMemoryManager::load_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
 
-		auto file = VirtualFileSystem::instance().find_by_path("/bin/test");
-		ELF::load(file);
+		auto file = VirtualFileSystem::instance().find_by_path("/lib/ld-owos.so");
+		auto process = ELF::load(file);
+		process->start();
 
 		CoreScheduler::initialize();
 

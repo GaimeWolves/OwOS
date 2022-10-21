@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+#include <unistd.h>
+#include <string.h>
+
 #undef stdin
 #undef stdout
 #undef stderr
@@ -10,9 +13,9 @@ struct FILE
 };
 
 static FILE s_standard_streams[3] = {
-    FILE { .fd = 0, },
-    FILE { .fd = 1, },
-    FILE { .fd = 2, },
+    { .fd = 0 },
+    { .fd = 1, },
+    { .fd = 2, },
 };
 
 FILE *stdin = &s_standard_streams[0];
@@ -31,7 +34,7 @@ int fflush(FILE *)
 
 FILE *fopen(const char *__restrict, const char *__restrict)
 {
-	return nullptr;
+	return 0;
 }
 
 int fprintf(FILE *__restrict, const char *__restrict, ...)
@@ -56,6 +59,33 @@ long ftell(FILE *)
 
 size_t fwrite(const void *__restrict, size_t, size_t, FILE *__restrict)
 {
+	return 0;
+}
+
+int putchar(int c)
+{
+	unsigned char ch = c;
+	ssize_t ret = write(STDOUT_FILENO, &ch, 1);
+
+	if (ret < 0)
+		return EOF;
+
+	return ch;
+}
+
+int puts(const char *s)
+{
+	ssize_t ret = write(STDOUT_FILENO, s, strlen(s));
+
+	if (ret < 0)
+		return EOF;
+
+	unsigned char ch = '\n';
+	ret = write(STDOUT_FILENO, &ch, 1);
+
+	if (ret < 0)
+		return EOF;
+
 	return 0;
 }
 

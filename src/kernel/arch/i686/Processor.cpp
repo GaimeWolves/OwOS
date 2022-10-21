@@ -177,12 +177,12 @@ namespace Kernel::CPU
 		};
 	}
 
-	thread_t Processor::create_kernel_thread(uintptr_t main_function)
+	thread_t *Processor::create_kernel_thread(uintptr_t main_function)
 	{
 		auto stack_region = Memory::VirtualMemoryManager::instance().allocate_region(KERNEL_STACK_SIZE);
 		uintptr_t stack = stack_region.virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
 
-		return thread_t{
+		return new thread_t{
 		    .registers = create_initial_state(stack, main_function, false, Memory::Arch::get_kernel_paging_space()),
 		    .has_started = false,
 		    .kernel_stack = stack,
@@ -193,17 +193,22 @@ namespace Kernel::CPU
 		};
 	}
 
-	thread_t Processor::create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memory_space)
+	thread_t *Processor::create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memory_space)
 	{
 		auto stack_region = Memory::VirtualMemoryManager::instance().allocate_region(KERNEL_STACK_SIZE);
 		uintptr_t kernel_stack = stack_region.virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
+
+		auto old_memory_space = CPU::Processor::current().get_memory_space();
+		Memory::VirtualMemoryManager::load_memory_space(&memory_space);
 
 		// TODO: Do this in the process/thread spawning code
 		Memory::mapping_config_t config;
 		config.userspace = true;
 		uintptr_t userspace_stack = (uintptr_t)Memory::VirtualMemoryManager::instance().allocate_region_at(0xb0000000, KERNEL_STACK_SIZE, config).virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
 
-		return thread_t{
+		Memory::VirtualMemoryManager::load_memory_space(old_memory_space);
+
+		return new thread_t{
 		    .registers = create_initial_state(userspace_stack, main_function, true, memory_space.paging_space),
 		    .has_started = false,
 		    .kernel_stack = kernel_stack,
@@ -212,6 +217,13 @@ namespace Kernel::CPU
 		    .lock = nullptr,
 		    .parent_process = nullptr,
 		};
+	}
+
+	uintptr_t Processor::thread_push_userspace_data(thread_t *thread, const char *data, size_t count)
+	{
+		thread->registers.esp -= count;
+		memcpy(reinterpret_cast<char *>(thread->registers.esp), data, count);
+		return thread->registers.esp;
 	}
 
 	void Processor::enter_thread_context(thread_t &thread)

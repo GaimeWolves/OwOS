@@ -1,11 +1,11 @@
 set(SOURCES
-    test.cpp
-    stdio.cpp
-    stdlib.cpp
-    unistd.cpp
-    string.cpp
-    dlfcn.cpp
-    math.cpp)
+    test.c
+    stdio.c
+    stdlib.c
+    unistd.c
+    string.c
+    dlfcn.c
+    math.c sys/mman.c errno.c sys/arch/i386/syscall.c)
 
 set(HEADERS
     sys/arch/i386/syscall.h
@@ -26,7 +26,9 @@ set(HEADERS
     ctype.h
     locale.h
     setjmp.h
-    signal.h)
+    signal.h
+    sys/mman.h
+    bits/guards.h sys/arch/i386/auxv.h)
 
 add_library(crt0 STATIC sys/arch/i386/crt0.S)
 add_library(crti STATIC sys/arch/i386/crti.S)
@@ -58,8 +60,8 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_SONAME_FILE:c> ${CMAKE_INSTALL_PREFIX}/lib/libc.so
 )
 
-target_compile_options(c PRIVATE -ffreestanding -fpic -pie -O0 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fno-omit-frame-pointer)
-target_link_options(c PRIVATE -ffreestanding -O0 -nostdlib -pie -Wl,-E,-shared)
+target_compile_options(c PRIVATE -ffreestanding -fpic -pie -Og -g -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
+target_link_options(c PRIVATE -ffreestanding -Og -g -nostdlib -pie -Wl,-E,-shared)
 target_include_directories(c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(c PUBLIC FILE_SET HEADERS
@@ -76,10 +78,16 @@ install(TARGETS c FILE_SET HEADERS)
 
 add_library(c_static STATIC ${SOURCES} ${HEADERS})
 
+add_custom_command(
+    TARGET c_static
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:c_static> ${CMAKE_INSTALL_PREFIX}/lib/libc.a
+)
+
 set_target_properties(c_static PROPERTIES OUTPUT_NAME c)
 
-target_compile_options(c_static PRIVATE -ffreestanding -fpic -pie -O0 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fno-omit-frame-pointer)
-target_link_options(c_static PRIVATE -ffreestanding -O0 -nostdlib -pie)
+target_compile_options(c_static PRIVATE -ffreestanding -fpic -pie -O0 -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
+target_link_options(c_static PRIVATE -ffreestanding -nostdlib -O0 -pie)
 target_include_directories(c_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(c_static PUBLIC FILE_SET HEADERS
