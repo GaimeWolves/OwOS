@@ -12,7 +12,7 @@
 namespace Kernel::ELF
 {
 	static bool hasSignature(elf32_ehdr_t *header);
-	static void set_up_stack(const char *filename, void *exec_base, void *entry, Process *process);
+	static void set_up_stack(const char *filename, void *exec_base, void *entry, void *loader_base, Process *process);
 
 	static bool hasSignature(elf32_ehdr_t *header)
 	{
@@ -20,7 +20,7 @@ namespace Kernel::ELF
 	}
 
 	// TODO: This is an early implementation of stack setup
-	static void set_up_stack(const char *filename, void *exec_base, void *entry, Process *process)
+	static void set_up_stack(const char *filename, void *exec_base, void *entry, void *loader_base, Process *process)
 	{
 		// Arguments for testing purposes
 		static const char *arg2_data = "test";
@@ -61,6 +61,10 @@ namespace Kernel::ELF
 		auxv.a_un.a_val = PAGE_SIZE;
 		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
 
+		auxv.a_type = AT_BASE;
+		auxv.a_un.a_ptr = loader_base;
+		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+
 		CPU::Processor::thread_push_userspace_data(main_thread, nullptr);
 		CPU::Processor::thread_push_userspace_data(main_thread, env2);
 		CPU::Processor::thread_push_userspace_data(main_thread, env1);
@@ -73,8 +77,8 @@ namespace Kernel::ELF
 
 	Process *load(File *file)
 	{
-		auto region = Memory::VirtualMemoryManager::instance().allocate_region(0x3000);
-		file->read(0, 0x3000, region); // TODO: in VFS correctly implement reading from an offset;
+		auto region = Memory::VirtualMemoryManager::instance().allocate_region(0x6000);
+		file->read(0, 0x6000, region); // TODO: in VFS correctly implement reading from an offset;
 		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
 
 		assert(hasSignature(header)); // TODO: Error handling
@@ -108,13 +112,13 @@ namespace Kernel::ELF
 				mapping_conf.userspace = true;
 				//mapping_conf.writeable = pheader->p_flags & PF_W;
 				//mapping_conf.readable = pheader->p_flags & PF_R;
-				auto phys_region = Memory::VirtualMemoryManager::instance().allocate_region_at(offset + pheader->p_vaddr - pheader->p_offset, pheader->p_memsz + pheader->p_offset, mapping_conf);
-				memcpy((void *)(phys_region.virt_address + pheader->p_offset), (void *)(region.virt_address + pheader->p_offset), pheader->p_filesz);
-				memset((void *)(phys_region.virt_address + pheader->p_offset + pheader->p_filesz), 0, pheader->p_memsz - pheader->p_filesz);
+				auto phys_region = Memory::VirtualMemoryManager::instance().allocate_region_at(offset + pheader->p_vaddr - pheader->p_offset % pheader->p_align, pheader->p_memsz + pheader->p_offset % pheader->p_align, mapping_conf);
+				memcpy((void *)(phys_region.virt_address + pheader->p_offset % pheader->p_align), (void *)(region.virt_address + pheader->p_offset), pheader->p_filesz);
+				memset((void *)(phys_region.virt_address + pheader->p_offset % pheader->p_align + pheader->p_filesz), 0, pheader->p_memsz - pheader->p_filesz);
 			}
 		}
 
-		set_up_stack(file->name().c_str(), reinterpret_cast<void *>(offset), reinterpret_cast<void *>(offset + header->e_entry), process);
+		set_up_stack(file->name().c_str(), reinterpret_cast<void *>(offset), reinterpret_cast<void *>(offset + header->e_entry), reinterpret_cast<void *>(offset), process);
 
 		Memory::VirtualMemoryManager::load_memory_space(old_memory_space);
 

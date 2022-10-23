@@ -25,11 +25,13 @@ __LIBC_HEADER_BEGIN
 	int fflush(FILE *);
 	FILE *fopen(const char *__restrict, const char *__restrict);
 	int fprintf(FILE *__restrict, const char *__restrict, ...) __attribute__ ((format (printf, 2, 3)));
+    int fputc(int, FILE *);
 	size_t fread(void *__restrict, size_t, size_t, FILE *__restrict);
 	int fseek(FILE *, long, int);
 	long ftell(FILE *);
 	size_t fwrite(const void *__restrict, size_t, size_t, FILE *__restrict);
 
+    int printf(const char *__restrict, ...);
     int putchar(int);
 
     int puts(const char *);

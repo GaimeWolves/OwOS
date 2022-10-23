@@ -14,6 +14,25 @@ void *memcpy(void *__restrict, const void *__restrict, size_t)
 	return 0;
 }
 
+void *memmove(void *dest, const void *src, size_t count)
+{
+	const char* sp = src;
+	char* dp = dest;
+
+	if (src < dest) {
+		for (size_t i = count; i > 0; i--) {
+			dp[i - 1] = sp[i - 1];
+		}
+	}
+	else if (src > dest) {
+		for (size_t i = 0; i < count; i++) {
+			dp[i] = sp[i];
+		}
+	}
+
+	return dest;
+}
+
 void *memset(void *, int, size_t)
 {
 	return 0;
@@ -47,6 +66,20 @@ size_t strlen(const char *s)
 		len++;
 
 	return len;
+}
+
+char *strncpy(char *__restrict dest, const char *__restrict src, size_t count)
+{
+	char* buf = dest;
+	size_t i;
+
+	for (i = 0; i < count && src[i]; i++)
+		dest[i] = src[i];
+
+	for (; i < count; i++)
+		dest[i] = '\0';
+
+	return buf;
 }
 
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/strerror.html

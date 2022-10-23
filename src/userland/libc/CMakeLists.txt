@@ -5,7 +5,7 @@ set(SOURCES
     unistd.c
     string.c
     dlfcn.c
-    math.c sys/mman.c errno.c sys/arch/i386/syscall.c)
+    math.c sys/mman.c errno.c sys/arch/i386/syscall.c __printf.h __printf.c ctype.c assert.c sys/internals.c)
 
 set(HEADERS
     sys/arch/i386/syscall.h
@@ -28,7 +28,7 @@ set(HEADERS
     setjmp.h
     signal.h
     sys/mman.h
-    bits/guards.h sys/arch/i386/auxv.h)
+    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h)
 
 add_library(crt0 STATIC sys/arch/i386/crt0.S)
 add_library(crti STATIC sys/arch/i386/crti.S)
@@ -52,7 +52,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:crtn> ${CMAKE_INSTALL_PREFIX}/lib/crtn.o
 )
 
-add_library(c SHARED ${SOURCES} ${HEADERS})
+add_library(c SHARED ${SOURCES} ${HEADERS} sys/internals.c)
 
 add_custom_command(
     TARGET c
@@ -62,6 +62,7 @@ add_custom_command(
 
 target_compile_options(c PRIVATE -ffreestanding -fpic -pie -Og -g -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
 target_link_options(c PRIVATE -ffreestanding -Og -g -nostdlib -pie -Wl,-E,-shared)
+target_link_libraries(c PRIVATE gcc)
 target_include_directories(c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(c PUBLIC FILE_SET HEADERS
@@ -88,6 +89,7 @@ set_target_properties(c_static PROPERTIES OUTPUT_NAME c)
 
 target_compile_options(c_static PRIVATE -ffreestanding -fpic -pie -O0 -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
 target_link_options(c_static PRIVATE -ffreestanding -nostdlib -O0 -pie)
+target_link_libraries(c_static PRIVATE gcc)
 target_include_directories(c_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(c_static PUBLIC FILE_SET HEADERS
