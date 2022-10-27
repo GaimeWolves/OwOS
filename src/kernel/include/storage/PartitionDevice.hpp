@@ -23,8 +23,9 @@ namespace Kernel
 		size_t read_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
 		size_t write_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
 
+		[[nodiscard]] size_t size() override { return m_length; }
 
-		size_t block_size() const override;
+		    size_t block_size() const override;
 
 		LibK::StringView name() override { return LibK::StringView(m_name); }
 

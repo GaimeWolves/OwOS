@@ -14,6 +14,8 @@ _start:
 
     call _init
 
+    call __libc_init
+
     addl $8, %esp
 
     call main

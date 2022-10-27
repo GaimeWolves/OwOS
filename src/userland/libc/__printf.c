@@ -137,7 +137,6 @@ static void file_puts(const char *str, size_t size, printf_conv_t *conv)
 {
 	FILE *file = conv->file;
 
-	size++;
 	while (size-- > 0)
 		fputc(*str++, file);
 }
@@ -156,7 +155,7 @@ static void write_padding(printf_conv_t *conversion, bool ladjust, char fill)
 static void write_string(printf_conv_t *conversion, const char *s, size_t size)
 {
 	conversion->written += size;
-	size = size > conversion->bufsz - 1 ? conversion->bufsz - 1 : size;
+	size = size > conversion->bufsz ? conversion->bufsz : size;
 
 	conversion->puts(s, size, conversion);
 	conversion->bufsz -= size;
@@ -468,7 +467,7 @@ void __printf_impl(printf_conv_t *conversion)
 			char fill = printf_parse_precision(conversion);
 			parse_length(format, &conversion->length);
 
-			conversion->specifier = *(*format)++;
+			conversion->specifier = **format;
 			switch (conversion->specifier)
 			{
 			case '%':
@@ -708,21 +707,21 @@ void __printf_impl(printf_conv_t *conversion)
 			{
 				// Implementation defined as 0xDEADBEEF or (nil)
 				unsigned long ptr = ARG(unsigned long);
-				char repr[11] = {'0', 'x', 0};
+				char repr[11] = {'0', 'x', 0, 0, 0, 0, 0, 0, 0, 0, 0};
 				uitoa((size_t)ptr, repr + 2, 16, true);
 
 				conversion->minimal_width -= ptr == 0 ? 5 : 10;
 
 				write_padding(conversion, false, ' ');
 
-				write_string(conversion, ptr == 0 ? "(nil)" : repr, 10);
+				write_string(conversion, ptr == 0 ? "(nil)" : repr, ptr == 0 ? 5 : 10);
 
 				write_padding(conversion, true, ' ');
 
 				break;
 			}
 			default:
-				format--; // So we don't skip anything
+				(*format)--; // So we don't skip anything
 				break;
 			}
 		}

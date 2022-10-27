@@ -9,9 +9,15 @@ const char * const error_string[] = {
 #undef __ENUM_FN
 };
 
-void *memcpy(void *__restrict, const void *__restrict, size_t)
+void *memcpy(void *__restrict s1, const void *__restrict s2, size_t n)
 {
-	return 0;
+	char* dp = s1;
+	const char* sp = s2;
+
+	while(n--)
+		*dp++ = *sp++;
+
+	return s1;
 }
 
 void *memmove(void *dest, const void *src, size_t count)
@@ -33,20 +39,36 @@ void *memmove(void *dest, const void *src, size_t count)
 	return dest;
 }
 
-void *memset(void *, int, size_t)
+void *memset(void *dest, int ch, size_t count)
 {
-	return 0;
+	char *p = (char *)dest;
+	while (count--)
+		*p++ = (char)ch;
+
+	return dest;
 }
 
-
-char *strcat(char *__restrict, const char *__restrict)
+char *strcat(char *__restrict s1, const char *__restrict s2)
 {
-	return 0;
+	size_t offset = strlen(s1);
+	memcpy(&s1[offset], s2, strlen(s2) + 1);
+	return s1;
 }
 
-char *strchr(const char *, int)
+int strcmp(const char *s1, const char *s2)
 {
-	return 0;
+	unsigned char c1, c2;
+
+	do
+	{
+		c1 = (unsigned char) *s1++;
+		c2 = (unsigned char) *s2++;
+
+		if (!c1)
+			return c1 - c2;
+	} while (c1 == c2);
+
+	return c1 - c2;
 }
 
 char *strcpy(char *__restrict, const char *__restrict)
@@ -62,7 +84,7 @@ size_t strlen(const char *s)
 
 	size_t len = 0;
 
-	while(*(s++))
+	while(*s++)
 		len++;
 
 	return len;

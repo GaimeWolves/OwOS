@@ -222,6 +222,14 @@ namespace Kernel
 		assert(false);
 	}
 
+	size_t Ext2File::size()
+	{
+		if (!m_inode_metadata_cached)
+			read_and_parse_metadata();
+
+		return m_size;
+	}
+
 	FileType Ext2File::from_inode_type(Ext2::InodeType type)
 	{
 		switch (type)

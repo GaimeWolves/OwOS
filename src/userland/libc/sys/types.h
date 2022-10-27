@@ -7,5 +7,14 @@ typedef __SIZE_TYPE__ ssize_t;
 
 typedef __SIZE_TYPE__ size_t;
 
-typedef unsigned int pid_t;
-typedef int off_t;
+typedef int blkcnt_t;
+typedef int blksize_t;
+typedef int dev_t;
+typedef int gid_t;
+typedef int ino_t;
+typedef unsigned mode_t;
+typedef int nlink_t;
+typedef size_t off_t;
+typedef int pid_t;
+typedef int uid_t;
+typedef int time_t;

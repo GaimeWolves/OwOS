@@ -1,16 +1,14 @@
 set(SOURCES
-    test.c
     stdio.c
     stdlib.c
     unistd.c
     string.c
     dlfcn.c
-    math.c sys/mman.c errno.c sys/arch/i386/syscall.c __printf.h __printf.c ctype.c assert.c sys/internals.c)
+    math.c sys/mman.c errno.c sys/arch/i386/syscall.c __printf.h __printf.c ctype.c assert.c sys/internals.c __malloc.c __heap.h __heap.c sys/stat.c fcntl.c)
 
 set(HEADERS
     sys/arch/i386/syscall.h
     bits/FILE.h
-    test.h
     sys/types.h
     errno.h
     stdlib.h
@@ -28,7 +26,7 @@ set(HEADERS
     setjmp.h
     signal.h
     sys/mman.h
-    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h)
+    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h sys/stat.h fcntl.h)
 
 add_library(crt0 STATIC sys/arch/i386/crt0.S)
 add_library(crti STATIC sys/arch/i386/crti.S)
@@ -70,7 +68,7 @@ target_sources(c PUBLIC FILE_SET HEADERS
     FILES ${HEADERS})
 
 set_target_properties(c PROPERTIES POSITION_INDEPENDENT_CODE 1)
-set_target_properties(c PROPERTIES VERSION 1.0)
+set_target_properties(c PROPERTIES VERSION 1)
 set_target_properties(c PROPERTIES SOVERSION 1)
 
 add_dependencies(c crt0 crti crtn)

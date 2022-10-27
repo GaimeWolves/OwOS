@@ -63,6 +63,8 @@ namespace Kernel
 
 		virtual LibK::StringView name() = 0;
 
+		[[nodiscard]] virtual size_t size() = 0;
+
 	protected:
 		[[nodiscard]] virtual bool can_open_for_read() const = 0;
 		[[nodiscard]] virtual bool can_open_for_write() const = 0;

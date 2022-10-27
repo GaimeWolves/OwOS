@@ -148,7 +148,7 @@ set(KERNEL_SOURCES
     filesystem/VirtualFileSystem.cpp
     filesystem/File.cpp elf/elf.cpp
     include/libk/srmw_queue.hpp
-    logging/logger.cpp syscall/test.cpp devices/StdioDevice.cpp syscall/read.cpp syscall/write.cpp)
+    logging/logger.cpp syscall/test.cpp devices/StdioDevice.cpp syscall/read.cpp syscall/write.cpp syscall/stat.cpp syscall/open.cpp syscall/close.cpp syscall/munmap.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

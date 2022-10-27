@@ -69,6 +69,8 @@ namespace Kernel
 
 		LibK::StringView name() override { return LibK::StringView(m_name); };
 
+		[[nodiscard]] size_t size() override { return 0; }
+
 		size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) override;
 		size_t write(size_t offset, size_t bytes, Memory::memory_region_t region) override;
 

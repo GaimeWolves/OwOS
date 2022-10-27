@@ -1,6 +1,7 @@
 #include <syscall/syscalls.hpp>
 
 #include <arch/Processor.hpp>
+#include <arch/memory.hpp>
 #include <processes/Process.hpp>
 
 namespace Kernel
@@ -12,6 +13,7 @@ namespace Kernel
 		auto &file = process->get_file_by_index(fd);
 		Memory::memory_region_t region;
 		region.virt_address = reinterpret_cast<uintptr_t>(buf);
+		region.phys_address = Memory::Arch::as_physical(region.virt_address);
 		region.size = count;
 		return file.read(count, region);
 	}

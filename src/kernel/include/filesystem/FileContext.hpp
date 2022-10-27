@@ -24,6 +24,8 @@ namespace Kernel
 
 		File &file() { return *m_file; }
 
+		[[nodiscard]] size_t size();
+
 		[[nodiscard]] bool is_readable() const { return m_readable; }
 		[[nodiscard]] bool is_writeable() const { return m_writeable; }
 

@@ -3,10 +3,14 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <assert.h>
+#include <stdlib.h>
 
+#include <debug.h>
 #include <elf/elf.h>
+#include <elf/loader.h>
+#include <elf/linker.h>
 
-// TODO: Just a rudimentary implementation for early relocations of types
+// TODO: Just a rudimentary implementation for early relocations of types R_386_RELATIVE
 static void do_early_relocations(int auxvc, auxv_t *auxvp)
 {
 	void *base = NULL;
@@ -87,19 +91,19 @@ static void do_early_relocations(int auxvc, auxv_t *auxvp)
 
 static void debug_print_arguments(int argc, char *argv[], int envc, char *envp[], int auxvc, auxv_t *auxvp)
 {
-	puts("Arguments");
+	debug_puts(1, "Arguments:");
 	for (int i = 0; i < argc; i++)
 	{
-		printf("  %s\n", argv[i]);
+		debug_puts(2, argv[i]);
 	}
 
-	puts("Environment:");
+	debug_puts(1, "Environment:");
 	for (int i = 0; i < envc; i++)
 	{
-		printf("  %s\n", envp[i]);
+		debug_puts(2, envp[i]);
 	}
 
-	puts("Auxiliary vectors");
+	debug_puts(1, "Auxiliary vectors:");
 	for (int i = 0; i < auxvc; i++)
 	{
 		auxv_t auxv = auxvp[i];
@@ -108,25 +112,25 @@ static void debug_print_arguments(int argc, char *argv[], int envc, char *envp[]
 		case AT_NULL:
 			break;
 		case AT_BASE:
-			printf("  AT_BASE:     %p\n", auxv.a_un.a_ptr);
+			debug_printf(2, "AT_BASE:     %p\n", auxv.a_un.a_ptr);
 			break;
 		case AT_EXECFD:
-			printf("  AT_EXECFD:   %ld\n", auxv.a_un.a_val);
+			debug_printf(2, "AT_EXECFD:   %ld\n", auxv.a_un.a_val);
 			break;
 		case AT_PAGESZ:
-			printf("  AT_PAGESZ:   %ld\n", auxv.a_un.a_val);
+			debug_printf(2, "AT_PAGESZ:   %ld\n", auxv.a_un.a_val);
 			break;
 		case AT_ENTRY:
-			printf("  AT_ENTRY:    %p\n", auxv.a_un.a_ptr);
+			debug_printf(2, "AT_ENTRY:    %p\n", auxv.a_un.a_ptr);
 			break;
 		case AT_EXECFN:
-			printf("  AT_EXECFN:   %s\n", (char *)auxv.a_un.a_ptr);
+			debug_printf(2, "AT_EXECFN:   %s\n", (char *)auxv.a_un.a_ptr);
 			break;
 		case AT_EXECBASE:
-			printf("  AT_EXECBASE: %p\n", auxv.a_un.a_ptr);
+			debug_printf(2, "AT_EXECBASE: %p\n", auxv.a_un.a_ptr);
 			break;
 		default:
-			printf("  UNKNOWN:     %d - %ld\n", auxv.a_type, auxv.a_un.a_val);
+			debug_printf(2, "UNKNOWN:     %d - %ld\n", auxv.a_type, auxv.a_un.a_val);
 			break;
 		}
 	}
@@ -145,6 +149,10 @@ __attribute__((naked)) void _start()
 // Stack layout is in accordance with http://www.sco.com/developers/devspecs/abi386-4.pdf
 __attribute__((noreturn)) void _entry(int argc, char *arg0)
 {
+	puts("Hello from the dynamic linker");
+	puts("Stage 0: Initialization");
+	puts(" Parsing stack");
+
 	char **argv = &arg0;
 	char **envp = &argv[argc + 1];
 
@@ -162,13 +170,59 @@ __attribute__((noreturn)) void _entry(int argc, char *arg0)
 	while ((auxv++)->a_type != AT_NULL)
 		auxvc++;
 
+	puts(" Relocating ourselves");
 	do_early_relocations(auxvc, auxvp);
-	__libc_init();
 
-	puts("Hello from the dynamic linker");
+	puts(" Initializing static libc");
+	__libc_init();
 
 	debug_print_arguments(argc, argv, envc, envp, auxvc, auxvp);
 
-	for (;;)
-		;
+	initialize_shared_object_list();
+
+	debug_puts(0, "Stage 1: Loading dependencies");
+
+	void *execbase = NULL;
+	const char *soname = NULL;
+	for (int i = 0; i < auxvc; i++)
+	{
+		auxv_t aux = auxvp[i];
+
+		if (aux.a_type == AT_EXECBASE)
+		{
+			execbase = aux.a_un.a_ptr;
+		}
+		else if (aux.a_type == AT_EXECFN)
+		{
+			soname = (const char *)aux.a_un.a_ptr;
+		}
+	}
+
+	shared_object_t *executable = parse_elf_headers(execbase, soname);
+
+	debug_puts(0, "Stage 2: Perform relocations");
+	for (shared_object_t **so = get_shared_object_list(); *so; so++)
+		do_relocations(*so);
+
+	debug_puts(0, "Stage 3: Init functions");
+	call_init_functions(executable);
+
+	debug_puts(0, "Stage 4: Calling main");
+
+	typedef void(*main_func_t)(int, char**, char**);
+
+	main_func_t main = NULL;
+	for (int i = 0; i < auxvc; i++)
+	{
+		if (auxvp[i].a_type == AT_ENTRY)
+		{
+			main = (main_func_t)(auxvp[i].a_un.a_ptr);
+			break;
+		}
+	}
+
+	debug_printf(1, "main found at %p\n", main);
+	main(argc, argv, envp);
+
+	abort();
 }

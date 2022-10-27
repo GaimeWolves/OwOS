@@ -36,4 +36,8 @@ namespace Kernel
 		return actual_count;
 	}
 
+	size_t FileContext::size()
+	{
+		return m_file->size();
+	}
 }

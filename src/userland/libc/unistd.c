@@ -2,24 +2,9 @@
 
 #include <sys/arch/i386/syscall.h>
 
-int execv(const char *, char *const [])
+int close(int filedes)
 {
-	return 0;
-}
-
-int execve(const char *, char *const [], char *const [])
-{
-	return 0;
-}
-
-int execvp(const char *, char *const [])
-{
-	return 0;
-}
-
-pid_t fork(void)
-{
-	return 0;
+	return syscall(__SC_close, filedes);
 }
 
 ssize_t read(int fd, void *buf, size_t count)

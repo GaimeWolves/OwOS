@@ -163,7 +163,7 @@ namespace Kernel
 
 		auto running_thread = CPU::Processor::current().get_current_thread();
 
-		if (running_thread)
+		if (false)
 		{
 			m_command_slots[slot].attach_thread(running_thread);
 

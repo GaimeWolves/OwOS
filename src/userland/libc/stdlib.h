@@ -17,6 +17,8 @@ extern "C"
 	char *getenv(const char *);
 	__attribute__((malloc)) __attribute__((alloc_size(1))) void *malloc(size_t);
 
+	void *realloc(void *, size_t);
+
 	long strtol(const char *__restrict, char **__restrict, int);
 	long long strtoll(const char *__restrict, char **__restrict, int);
 	unsigned long strtoul(const char *__restrict, char **__restrict, int);

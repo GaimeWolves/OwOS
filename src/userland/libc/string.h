@@ -11,6 +11,7 @@ __LIBC_HEADER_BEGIN
 
 	char *strcat(char *__restrict, const char *__restrict);
 	char *strchr(const char *, int);
+    int strcmp(const char *, const char *);
 	char *strcpy(char *__restrict, const char *__restrict);
 
 	size_t strlen(const char *);

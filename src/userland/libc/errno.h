@@ -1,17 +1,16 @@
-
 #pragma once
 
-#define __ENUM_ERRNO_CODES(E) \
-    E(ESUCCESS, "No error")                          \
-    E(EACCES, "") \
-	E(EAGAIN, "") \
-	E(EBADF, "") \
+#define __ENUM_ERRNO_CODES(E)     \
+	E(ESUCCESS, "No error")       \
+	E(EACCES, "")                 \
+	E(EAGAIN, "")                 \
+	E(EBADF, "")                  \
 	E(EINVAL, "Invalid argument") \
-	E(EMFILE, "") \
-	E(ENODEV, "") \
-	E(ENOMEM, "") \
-	E(ENOTSUP, "") \
-	E(ENXIO, "") \
+	E(EMFILE, "")                 \
+	E(ENODEV, "")                 \
+	E(ENOMEM, "")                 \
+	E(ENOTSUP, "")                \
+	E(ENXIO, "")                  \
 	E(EOVERFLOW, "")
 
 enum ErrnoCodes

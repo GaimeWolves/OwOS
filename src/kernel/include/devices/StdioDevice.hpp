@@ -46,6 +46,8 @@ namespace Kernel
 			return bytes;
 		}
 
+		[[nodiscard]] size_t size() override { return 0; }
+
 	protected:
 		[[nodiscard]] bool can_open_for_read() const override { return true; };
 		[[nodiscard]] bool can_open_for_write() const override { return true; };

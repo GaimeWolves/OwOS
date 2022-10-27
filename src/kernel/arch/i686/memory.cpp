@@ -368,9 +368,8 @@ namespace Kernel::Memory::Arch
 	{
 		assert(virt_addr + size < PAGE_TABLE_ARRAY_ADDR);
 
-		LibK::vector<size_t> page_tables_to_check = LibK::vector<size_t>((size + TABLE_SIZE - 1) / TABLE_SIZE);
+		LibK::vector<size_t> page_tables_to_check = LibK::vector<size_t>();
 		size_t current = PAGE_COUNT;
-		size_t idx = 0;
 
 		for_page_in_range(virt_addr, size, [&](uintptr_t virt_addr) {
 			static const page_table_entry_t null_pt_entry{};
@@ -388,7 +387,7 @@ namespace Kernel::Memory::Arch
 			// TODO: Implement deletion of kernel space page directories
 			if (current != pd_index && !is_kernel_space(virt_addr))
 			{
-				page_tables_to_check[idx++] = pd_index;
+				page_tables_to_check.push_back(pd_index);
 				current = pd_index;
 			}
 

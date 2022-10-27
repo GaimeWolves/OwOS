@@ -2,17 +2,23 @@
 
 #include <sys/arch/i386/auxv.h>
 
-#include "libk/kcstdio.hpp"
-
 #include "elf/definitions.hpp"
 #include "filesystem/File.hpp"
+#include <filesystem/VirtualFileSystem.hpp>
 #include <devices/StdioDevice.hpp>
 #include <arch/Processor.hpp>
 
 namespace Kernel::ELF
 {
+	static void *s_loader_image_address = nullptr;
+	static File *s_loader_file = nullptr;
+	static size_t s_loader_image_size = 0;
+	static size_t s_loader_entry_offset = 0;
+
 	static bool hasSignature(elf32_ehdr_t *header);
-	static void set_up_stack(const char *filename, void *exec_base, void *entry, void *loader_base, Process *process);
+	static void set_up_stack(const char *filepath, const char *filename, void *exec_base, void *entry, void *loader_base, Process *process);
+	static void load_dynamic_loader_image();
+	static uintptr_t map_dynamic_loader();
 
 	static bool hasSignature(elf32_ehdr_t *header)
 	{
@@ -20,7 +26,7 @@ namespace Kernel::ELF
 	}
 
 	// TODO: This is an early implementation of stack setup
-	static void set_up_stack(const char *filename, void *exec_base, void *entry, void *loader_base, Process *process)
+	static void set_up_stack(const char *filepath, const char *filename, void *exec_base, void *entry, void *loader_base, Process *process)
 	{
 		// Arguments for testing purposes
 		static const char *arg2_data = "test";
@@ -32,7 +38,8 @@ namespace Kernel::ELF
 		char *env2 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env2_data, strlen(env2_data) + 1));
 		char *env1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env1_data, strlen(env1_data) + 1));
 		char *arg2 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, arg2_data, strlen(arg2_data) + 1));
-		char *arg1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filename, strlen(filename) + 1));
+		char *arg1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filepath, strlen(filepath) + 1));
+		char *name = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filename, strlen(filename) + 1));
 
 		auxv_t auxv{
 		    .a_type = AT_NULL,
@@ -54,7 +61,7 @@ namespace Kernel::ELF
 		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
 
 		auxv.a_type = AT_EXECFN;
-		auxv.a_un.a_ptr = arg1;
+		auxv.a_un.a_ptr = name;
 		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
 
 		auxv.a_type = AT_PAGESZ;
@@ -75,10 +82,62 @@ namespace Kernel::ELF
 		CPU::Processor::thread_push_userspace_data(main_thread, (int)2);
 	}
 
-	Process *load(File *file)
+	static void load_dynamic_loader_image()
 	{
-		auto region = Memory::VirtualMemoryManager::instance().allocate_region(0x6000);
-		file->read(0, 0x6000, region); // TODO: in VFS correctly implement reading from an offset;
+		if (s_loader_image_address)
+			return;
+
+		s_loader_file = VirtualFileSystem::instance().find_by_path("/lib/ld-owos.so");
+		auto region = Memory::VirtualMemoryManager::instance().allocate_region(s_loader_file->size());
+		s_loader_file->read(0, s_loader_file->size(), region);
+		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
+
+		assert(hasSignature(header)); // TODO: Error handling
+
+		for (int i = 0; i < header->e_phnum; i++)
+		{
+			auto *pheader = (elf32_phdr_t *)(region.virt_address + header->e_phoff + header->e_phentsize * i);
+			if (pheader->p_type == PT_LOAD)
+			{
+				s_loader_image_size = LibK::max(s_loader_image_size, pheader->p_vaddr + pheader->p_memsz);
+			}
+		}
+
+		s_loader_entry_offset = header->e_entry;
+
+		auto image_region = Memory::VirtualMemoryManager::instance().allocate_region(s_loader_image_size);
+		s_loader_image_address = image_region.virt_region().pointer();
+		assert(s_loader_image_address);
+
+		for (int i = 0; i < header->e_phnum; i++)
+		{
+			auto *pheader = (elf32_phdr_t *)(region.virt_address + header->e_phoff + header->e_phentsize * i);
+			if (pheader->p_type == PT_LOAD)
+			{
+				memcpy((void *)(image_region.virt_address + pheader->p_vaddr), (void *)(region.virt_address + pheader->p_offset), pheader->p_filesz);
+				memset((void *)(image_region.virt_address + pheader->p_vaddr + pheader->p_filesz), 0, pheader->p_memsz - pheader->p_filesz);
+			}
+		}
+	}
+
+	static uintptr_t map_dynamic_loader()
+	{
+		assert(s_loader_image_address);
+
+		uintptr_t offset = 0x88888000; // TODO: ASLR
+		auto mapping_conf = Memory::mapping_config_t();
+		mapping_conf.userspace = true;
+		auto region = Memory::VirtualMemoryManager::instance().allocate_region_at(offset, s_loader_image_size, mapping_conf);
+		assert(region.present);
+		memcpy((void *)offset, s_loader_image_address, s_loader_image_size);
+		return offset;
+	}
+
+	Process *load(const char *filepath)
+	{
+		File *file = VirtualFileSystem::instance().find_by_path(filepath);
+		auto region = Memory::VirtualMemoryManager::instance().allocate_region(file->size());
+		file->read(0, file->size(), region);
 		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
 
 		assert(hasSignature(header)); // TODO: Error handling
@@ -88,7 +147,12 @@ namespace Kernel::ELF
 		if (header->e_type == ET_DYN || header->e_type == ET_REL)
 			offset = 0x55555000; // TODO: ASLR
 
-		auto process = new Process(header->e_entry + offset);
+		load_dynamic_loader_image();
+		assert(s_loader_image_address);
+
+		uintptr_t entry = 0x88888000 + s_loader_entry_offset; // Ehh
+
+		auto process = new Process(entry);
 
 		// Temporary stdio device files
 		process->add_file(StdioDevice::get()->open(O_WRONLY));
@@ -118,7 +182,9 @@ namespace Kernel::ELF
 			}
 		}
 
-		set_up_stack(file->name().c_str(), reinterpret_cast<void *>(offset), reinterpret_cast<void *>(offset + header->e_entry), reinterpret_cast<void *>(offset), process);
+		uintptr_t loader_base = map_dynamic_loader();
+
+		set_up_stack(filepath, file->name().c_str(), reinterpret_cast<void *>(offset), reinterpret_cast<void *>(offset + header->e_entry), reinterpret_cast<void *>(loader_base), process);
 
 		Memory::VirtualMemoryManager::load_memory_space(old_memory_space);
 

@@ -19,6 +19,7 @@
 
 __LIBC_HEADER_BEGIN
 
-void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
+void *mmap(void *, size_t, int, int, int, off_t);
+int munmap(void *, size_t);
 
 __LIBC_HEADER_END

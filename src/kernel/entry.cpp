@@ -33,6 +33,7 @@ namespace Kernel
 
 	static Locking::Mutex s_dummy_mutex;
 
+	/*
 	static void dummy_thread_A()
 	{
 		log("DEBUG", "Thread A starting");
@@ -80,6 +81,7 @@ namespace Kernel
 		for (;;)
 			;
 	}
+	 */
 
 	extern "C" __noreturn void entry()
 	{
@@ -114,6 +116,7 @@ namespace Kernel
 
 		log("SMP", "Starting scheduler and sleeping until first tick...");
 
+		/*
 		auto threadA = GlobalScheduler::create_kernel_only_thread(nullptr, reinterpret_cast<uintptr_t>(dummy_thread_A));
 		auto threadB = GlobalScheduler::create_kernel_only_thread(nullptr, reinterpret_cast<uintptr_t>(dummy_thread_B));
 		GlobalScheduler::start_thread(threadA);
@@ -133,9 +136,9 @@ namespace Kernel
 		GlobalScheduler::start_thread(threadC);
 
 		Memory::VirtualMemoryManager::load_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
+		 */
 
-		auto file = VirtualFileSystem::instance().find_by_path("/lib/ld-owos.so");
-		auto process = ELF::load(file);
+		auto process = ELF::load("/bin/test");
 		process->start();
 
 		CoreScheduler::initialize();

@@ -20,3 +20,8 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off)
 
 	return (void *)(ret);
 }
+
+int munmap(void *addr, size_t len)
+{
+	return syscall(__SC_munmap, addr, len);
+}

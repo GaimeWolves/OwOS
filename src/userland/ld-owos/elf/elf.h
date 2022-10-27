@@ -95,6 +95,12 @@
 #define DT_TEXTREL 22
 #define DT_JMPREL 23
 #define DT_BIND_NOW 24
+#define DT_INIT_ARRAY 25
+#define DT_FINI_ARRAY 26
+#define DT_INIT_ARRAYSZ 27
+#define DT_FINI_ARRAYSZ 28
+#define DT_PREINIT_ARRAY 32
+#define DT_PREINIT_ARRAYSZ 33
 #define DT_LOPROC 0x70000000
 #define DT_HIPROC 0x7fffffff
 
@@ -103,6 +109,9 @@
 #define ELF32_R_TYPE(i) ((unsigned char)(i))
 #define ELF32_R_INFO(s,t) (((s)<<8)+(unsigned char)(t))
 
+#define R_386_NONE 0
+#define R_386_32 1
+#define R_386_PC32 2
 #define R_386_GOT32 3
 #define R_386_PLT32 4
 #define R_386_COPY 5
@@ -111,6 +120,27 @@
 #define R_386_RELATIVE 8
 #define R_386_GOTOFF 9
 #define R_386_GOTPC 10
+
+#define STN_UNDEF 0
+
+#define STB_LOCAL 0
+#define STB_GLOBAL 1
+#define STB_WEAK 2
+#define STB_LOPROC 13
+#define STB_HIPROC 15
+
+#define STT_NOTYPE 0
+#define STT_OBJECT 1
+#define STT_FUNC 2
+#define STT_SECTION 3
+#define STT_FILE 4
+#define STT_LOPROC 13
+#define STT_HIPROC 15
+
+// Parse Elf32_Sym->st_info
+#define ELF32_ST_BIND(i) ((i)>>4)
+#define ELF32_ST_TYPE(i) ((i)&0xf)
+#define ELF32_ST_INFO(b,t) (((b)<<4)+((t)&0xf))
 
 typedef uint32_t Elf32_Addr;
 typedef uint16_t Elf32_Half;
@@ -166,3 +196,12 @@ typedef struct {
 	Elf32_Word r_info;
 	Elf32_Sword r_addend;
 } __attribute__((packed)) Elf32_Rela;
+
+typedef struct {
+	Elf32_Word st_name;
+	Elf32_Addr st_value;
+	Elf32_Word st_size;
+	unsigned char st_info;
+	unsigned char st_other;
+	Elf32_Half st_shndx;
+} __attribute__((packed)) Elf32_Sym;

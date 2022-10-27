@@ -33,6 +33,8 @@ namespace Kernel
 
 		[[nodiscard]] size_t block_size() const override;
 
+		[[nodiscard]] size_t size() override { return 0; }
+
 		LibK::StringView name() override { return LibK::StringView(m_name); }
 
 		void add_partition(size_t offset, size_t length) { m_partitions.emplace_back(this, offset, length); }

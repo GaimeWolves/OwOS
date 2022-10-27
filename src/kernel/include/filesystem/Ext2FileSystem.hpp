@@ -140,6 +140,8 @@ namespace Kernel
 
 		LibK::StringView name() override { return LibK::StringView(m_name); };
 
+		[[nodiscard]] size_t size() override;
+
 	private:
 		static FileType from_inode_type(Ext2::InodeType type);
 
@@ -290,6 +292,8 @@ namespace Kernel
 		LibK::StringView name() override { return {}; };
 
 		size_t read(size_t block, size_t count, uintptr_t buffer);
+
+		[[nodiscard]] size_t size() override { return 0; }
 
 	private:
 		Ext2::inode_t read_inode_metadata(uint32_t inode_number);

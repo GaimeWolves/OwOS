@@ -22,7 +22,10 @@ __LIBC_HEADER_BEGIN
 #define stderr stderr
 
 	int fclose(FILE *);
+
 	int fflush(FILE *);
+    int fileno(FILE *);
+
 	FILE *fopen(const char *__restrict, const char *__restrict);
 	int fprintf(FILE *__restrict, const char *__restrict, ...) __attribute__ ((format (printf, 2, 3)));
     int fputc(int, FILE *);
@@ -40,5 +43,6 @@ __LIBC_HEADER_BEGIN
 	int sprintf(char *__restrict, const char *__restrict, ...);
 
 	int vfprintf(FILE *__restrict, const char *__restrict, va_list);
+    int vprintf(const char *__restrict, va_list);
 
 __LIBC_HEADER_END

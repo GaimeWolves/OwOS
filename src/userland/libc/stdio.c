@@ -1,6 +1,8 @@
 #include <stdio.h>
 
 #include <sys/internals.h>
+#include <fcntl.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <unistd.h>
 #include <string.h>
@@ -33,24 +35,35 @@ void __stdio_init()
 	stderr = &s_standard_streams[2];
 }
 
-int fclose(FILE *)
+int fclose(FILE *stream)
 {
-	return 0;
+	return close(stream->fd);
 }
 
-int fflush(FILE *)
+int fileno(FILE *stream)
 {
-	return 0;
+	return stream->fd;
 }
 
-FILE *fopen(const char *__restrict, const char *__restrict)
+FILE *fopen(const char *__restrict pathname, const char *__restrict mode)
 {
-	return 0;
+	(void)mode;
+
+	int fd = open(pathname, 0, 0);
+
+	FILE *file = (FILE *)malloc(sizeof(FILE));
+	file->fd = fd;
+
+	return file;
 }
 
-int fprintf(FILE *__restrict, const char *__restrict, ...)
+int fprintf(FILE *__restrict file, const char *__restrict fmt, ...)
 {
-	return 0;
+	va_list ap;
+	va_start(ap, fmt);
+	int written = vfprintf(file, fmt, ap);
+	va_end(ap);
+	return written;
 }
 
 int fputc(int c, FILE *file)
@@ -64,31 +77,12 @@ int fputc(int c, FILE *file)
 	return ch;
 }
 
-size_t fread(void *__restrict, size_t, size_t, FILE *__restrict)
-{
-	return 0;
-}
-
-int fseek(FILE *, long, int)
-{
-	return 0;
-}
-
-long ftell(FILE *)
-{
-	return 0;
-}
-
-size_t fwrite(const void *__restrict, size_t, size_t, FILE *__restrict)
-{
-	return 0;
-}
-
 int printf(const char *__restrict fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	int written = vfprintf(stdout, fmt, ap);
+	va_end(ap);
 	return written;
 }
 
@@ -113,16 +107,6 @@ int puts(const char *s)
 	return 0;
 }
 
-void setbuf(FILE *__restrict, char *__restrict)
-{
-
-}
-
-int sprintf(char *__restrict, const char *__restrict, ...)
-{
-	return 0;
-}
-
 int vfprintf(FILE *__restrict file, const char *__restrict fmt, va_list ap)
 {
 	printf_conv_t conversion = { 0 };
@@ -135,4 +119,9 @@ int vfprintf(FILE *__restrict file, const char *__restrict fmt, va_list ap)
 	__printf_impl(&conversion);
 
 	return conversion.written;
+}
+
+int vprintf(const char *__restrict format, va_list ap)
+{
+	return vfprintf(stdout, format, ap);
 }
