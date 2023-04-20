@@ -65,6 +65,20 @@ namespace Kernel::CPU
 		    "ltr %%ax"
 		    : : "a" (0x28)
 		    :);
+
+		asm volatile(
+		    "push $0x08\n"
+		    "lea %=f, %%eax\n"
+		    "push %%eax\n"
+		    "retf\n"
+		    "%=:\n"
+		    "mov $0x10, %%ax\n"
+		    "mov %%ax, %%ss\n"
+		    "mov %%ax, %%ds\n"
+		    "mov %%ax, %%es\n"
+		    "mov %%ax, %%fs\n"
+		    "mov %%ax, %%gs\n"
+		    : : "a"(0) : );
 	}
 
 	void Processor::update_tss(uint32_t esp0)

@@ -7,6 +7,7 @@
 
 #include <logging/logger.hpp>
 #include <devices/CharacterDevice.hpp>
+#include <vga/TextmodeBuffer.hpp>
 
 namespace Kernel
 {
@@ -28,6 +29,7 @@ namespace Kernel
 		{
 			char *buf = static_cast<char *>(region.virt_region().pointer());
 
+			/*
 			size_t left = bytes;
 			while (left--)
 			{
@@ -41,6 +43,13 @@ namespace Kernel
 					m_buf.resize(0);
 				}
 				buf++;
+			}
+			 */
+
+			for (size_t i = 0; i < bytes; i++)
+			{
+				if (VGA::Textmode::is_initialized())
+					VGA::Textmode::putc(buf[i]);
 			}
 
 			return bytes;

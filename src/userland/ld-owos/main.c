@@ -222,6 +222,7 @@ __attribute__((noreturn)) void _entry(int argc, char *arg0)
 	}
 
 	debug_printf(1, "main found at %p\n", main);
+	debug_printf(1, "main(%d, %p, %p)\n", argc, argv, envp);
 	main(argc, argv, envp);
 
 	abort();

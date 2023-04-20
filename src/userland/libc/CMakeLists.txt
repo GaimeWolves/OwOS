@@ -26,7 +26,7 @@ set(HEADERS
     setjmp.h
     signal.h
     sys/mman.h
-    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h sys/stat.h fcntl.h)
+    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h sys/stat.h fcntl.h termios.h)
 
 add_library(crt0 STATIC sys/arch/i386/crt0.S)
 add_library(crti STATIC sys/arch/i386/crti.S)

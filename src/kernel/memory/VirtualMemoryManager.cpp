@@ -20,6 +20,7 @@ namespace Kernel::Memory
 	void VirtualMemoryManager::init(multiboot_info_t *&mulitboot_info)
 	{
 		PhysicalMemoryManager::instance().init(mulitboot_info);
+		Arch::initialize();
 
 		m_kernel_paging_space = Arch::create_kernel_space();
 		Arch::load(m_kernel_paging_space);
@@ -67,11 +68,12 @@ namespace Kernel::Memory
 		uintptr_t phys_addr = reinterpret_cast<uintptr_t>(PhysicalMemoryManager::instance().alloc(size, config.bounds.address, config.bounds.end(), config.alignment));
 
 		bool is_kernel_space = in_kernel_space(virt_addr);
-		if (is_kernel_space)
-			m_lock.lock();
 
 		if (find_region(virt_addr))
 			return {};
+
+		if (is_kernel_space)
+			m_lock.lock();
 
 		auto mapping = map(phys_addr, virt_addr, size, config);
 
@@ -108,11 +110,12 @@ namespace Kernel::Memory
 		virt_addr = address;
 
 		bool is_kernel_space = in_kernel_space(virt_addr);
-		if (is_kernel_space)
-			m_lock.lock();
 
 		if (find_region(virt_addr))
 			return {};
+
+		if (is_kernel_space)
+			m_lock.lock();
 
 		auto mapping = map(phys_addr, virt_addr, size, config);
 

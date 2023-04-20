@@ -1,7 +1,7 @@
 #define ASM_FILE 1
 #include <multiboot.h>
 
-.set FLAGS, (MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO)
+.set FLAGS, (MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_VIDEO_MODE)
 .set MAGIC, MUTLIBOOT_HEADER_MAGIC
 .set CHECKSUM, -(MAGIC + FLAGS)
 .set virt_addr, 0xC0000000
@@ -11,6 +11,19 @@
 	.long MAGIC
 	.long FLAGS
 	.long CHECKSUM
+
+    // MULTIBOOT_MEMORY_INFO
+    .long   0
+    .long   0
+    .long   0
+    .long   0
+    .long   0
+
+    // MULTIBOOT_VIDEO_MODE
+    .long 0
+    .long 1280
+    .long 720
+    .long 32
 
 .section .bss
 	multiboot_magic: .4byte 0

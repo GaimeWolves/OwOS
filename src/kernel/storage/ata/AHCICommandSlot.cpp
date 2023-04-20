@@ -12,7 +12,7 @@ namespace Kernel
 	    , m_command_header(header)
 	{
 		Memory::mapping_config_t config;
-		config.cacheable = false;
+		config.caching_mode = Memory::CachingMode::Uncacheable;
 		m_command_table_region = Memory::VirtualMemoryManager::instance().allocate_region(sizeof (command_table_t) + NUM_PRTDS * sizeof (prdt_t));
 		m_command_table = reinterpret_cast<command_table_t *>(m_command_table_region.virt_address);
 		memset(m_command_table, 0, sizeof (command_table_t) + NUM_PRTDS * sizeof (prdt_t));

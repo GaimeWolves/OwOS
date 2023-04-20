@@ -1,18 +1,19 @@
 #include <arch/memory.hpp>
 
 #include <arch/Processor.hpp>
+#include <arch/i686/msr.hpp>
 #include <arch/spinlock.hpp>
 #include <common_attributes.h>
-#include <memory/PhysicalMemoryManager.hpp>
 #include <logging/logger.hpp>
+#include <memory/PhysicalMemoryManager.hpp>
 
 #include <libk/kcassert.hpp>
 #include <libk/kcmalloc.hpp>
 #include <libk/kcstring.hpp>
 #include <libk/kfunctional.hpp>
 #include <libk/kmath.hpp>
-#include <libk/kvector.hpp>
 #include <libk/kmemory.hpp>
+#include <libk/kvector.hpp>
 
 #define PAGE_COUNT     1024
 #define PAGE_SIZE_HUGE (PAGE_SIZE * PAGE_COUNT)
@@ -28,6 +29,19 @@
 
 #define PAGE_DIRECTORY_ADDR   0xFFFFF000
 #define PAGE_TABLE_ARRAY_ADDR 0xFFC00000
+
+#define PAT_MODE_UNCACHEABLE     0
+#define PAT_MODE_WRITE_COMBINING 1
+#define PAT_MODE_WRITETHROUGH    4
+#define PAT_MODE_WRITE_PROTECT   5
+#define PAT_MODE_WRITEBACK       6
+#define PAT_MODE_UNCACHED        7
+
+#define CACHE_MODE_INDEX_UNCACHEABLE     3
+#define CACHE_MODE_INDEX_WRITE_COMBINING 4
+#define CACHE_MODE_INDEX_WRITE_PROTECT   5
+#define CACHE_MODE_INDEX_WRITETHROUGH    1
+#define CACHE_MODE_INDEX_WRITEBACK       0
 
 extern "C"
 {
@@ -79,13 +93,19 @@ namespace Kernel::Memory::Arch
 	inline static page_directory_t &get_page_directory();
 	inline static page_table_t &get_page_table(size_t pd_index);
 
-	inline static page_directory_entry_t raw_create_pde(uintptr_t table_addr, bool is_user, bool is_writeable, bool disable_cache);
-	inline static page_table_entry_t raw_create_pte(uintptr_t page_addr, bool is_user, bool is_writeable, bool disable_cache);
+	inline static bool get_write_through_from_pat_index(uint8_t pat_index);
+	inline static bool get_cache_disable_from_pat_index(uint8_t pat_index);
+	inline static bool get_page_attribute_from_pat_index(uint8_t pat_index);
 
-	static page_directory_entry_t create_pde(size_t pd_index, paging_space_t &memory_space, bool is_user, bool is_writeable, bool disable_cache);
-	static page_table_entry_t create_pte(uintptr_t page_address, page_directory_entry_t &pde, bool is_user, bool is_writeable, bool disable_cache);
+	inline static page_directory_entry_t raw_create_pde(uintptr_t table_addr, bool is_user, bool is_writeable, uint8_t caching_mode);
+	inline static page_table_entry_t raw_create_pte(uintptr_t page_addr, bool is_user, bool is_writeable, uint8_t caching_mode);
+
+	static page_directory_entry_t create_pde(size_t pd_index, paging_space_t &memory_space, bool is_user, bool is_writeable, uint8_t caching_mode);
+	static page_table_entry_t create_pte(uintptr_t page_address, page_directory_entry_t &pde, bool is_user, bool is_writeable, uint8_t caching_mode);
 
 	static void for_page_in_range(uintptr_t virt_addr, size_t size, LibK::function<void(uintptr_t)> callback);
+
+	static uint8_t caching_mode_to_pat_index(CachingMode mode);
 
 	static paging_space_t s_kernel_paging_space{};
 
@@ -134,56 +154,72 @@ namespace Kernel::Memory::Arch
 		return *(page_table_t *)(PAGE_TABLE_ARRAY_ADDR + PAGE_SIZE * pd_index);
 	}
 
-	inline static page_directory_entry_t raw_create_pde(uintptr_t table_addr, bool is_user, bool is_writeable, bool disable_cache)
+	inline static bool get_write_through_from_pat_index(uint8_t pat_index)
+	{
+		return pat_index & 1;
+	}
+
+	inline static bool get_cache_disable_from_pat_index(uint8_t pat_index)
+	{
+		return (pat_index >> 1) & 1;
+	}
+
+	inline static bool get_page_attribute_from_pat_index(uint8_t pat_index)
+	{
+		return (pat_index >> 2) & 1;
+	}
+
+	inline static page_directory_entry_t raw_create_pde(uintptr_t table_addr, bool is_user, bool is_writeable, uint8_t pat_index)
 	{
 		return page_directory_entry_t{
 		    .present = true,
 		    .writeable = is_writeable,
 		    .user = is_user,
-		    .write_through = false,
-		    .cache_disable = disable_cache,
+		    .write_through = get_write_through_from_pat_index(pat_index),
+		    .cache_disable = get_cache_disable_from_pat_index(pat_index),
 		    .accessed = false,
 		    .page_size = false,
 		    .page_table_address = (uint32_t)table_addr >> OFFSET_BITS,
 		};
 	}
 
-	inline static page_table_entry_t raw_create_pte(uintptr_t page_addr, bool is_user, bool is_writeable, bool disable_cache)
+	inline static page_table_entry_t raw_create_pte(uintptr_t page_addr, bool is_user, bool is_writeable, uint8_t pat_index)
 	{
 		return page_table_entry_t{
 		    .present = true,
 		    .writeable = is_writeable,
 		    .user = is_user,
-		    .write_through = false,
-		    .cache_disable = disable_cache,
+		    .write_through = get_write_through_from_pat_index(pat_index),
+		    .cache_disable = get_cache_disable_from_pat_index(pat_index),
 		    .accessed = false,
 		    .dirty = false,
+		    .page_attribute = get_page_attribute_from_pat_index(pat_index),
 		    .global = false,
 		    .page_address = (uint32_t)page_addr >> OFFSET_BITS,
 		};
 	}
 
-	static page_directory_entry_t create_pde(size_t pd_index, paging_space_t &memory_space, bool is_user, bool is_writeable, bool disable_cache)
+	static page_directory_entry_t create_pde(size_t pd_index, paging_space_t &memory_space, bool is_user, bool is_writeable, uint8_t pat_index)
 	{
 		uintptr_t table_addr = (uintptr_t)PhysicalMemoryManager::instance().alloc(PAGE_SIZE);
 
 		auto &mapping_table = *memory_space.mapping_table;
-		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, true);
+		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 
 		// Clear it immediately to prevent bugs when we use this page table
 		auto page_table = &get_page_table(pd_index);
 		invalidate((uintptr_t)page_table);
 		memset(page_table, 0, PAGE_SIZE);
 
-		return raw_create_pde(table_addr, is_user, is_writeable, disable_cache);
+		return raw_create_pde(table_addr, is_user, is_writeable, pat_index);
 	}
 
-	static page_table_entry_t create_pte(uintptr_t page_address, page_directory_entry_t &pde, bool is_user, bool is_writeable, bool disable_cache)
+	static page_table_entry_t create_pte(uintptr_t page_address, page_directory_entry_t &pde, bool is_user, bool is_writeable, uint8_t pat_index)
 	{
 		// User pages are only allowed in user page directories
 		assert(!is_user || (is_user && pde.user));
 
-		return raw_create_pte(page_address, is_user, is_writeable, disable_cache);
+		return raw_create_pte(page_address, is_user, is_writeable, pat_index);
 	}
 
 	static void for_page_in_range(uintptr_t virt_addr, size_t size, LibK::function<void(uintptr_t)> callback)
@@ -192,6 +228,25 @@ namespace Kernel::Memory::Arch
 
 		for (; virt_addr < page_limit; virt_addr += PAGE_SIZE)
 			callback(virt_addr);
+	}
+
+	static uint8_t caching_mode_to_pat_index(CachingMode mode)
+	{
+		switch (mode)
+		{
+		case CachingMode::Uncacheable:
+			return CACHE_MODE_INDEX_UNCACHEABLE;
+		case CachingMode::WriteCombining:
+			return CACHE_MODE_INDEX_WRITE_COMBINING;
+		case CachingMode::WriteThrough:
+			return CACHE_MODE_INDEX_WRITETHROUGH;
+		case CachingMode::WriteProtect:
+			return CACHE_MODE_INDEX_WRITE_PROTECT;
+		case CachingMode::WriteBack:
+			return CACHE_MODE_INDEX_WRITEBACK;
+		}
+
+		return CACHE_MODE_INDEX_WRITETHROUGH;
 	}
 
 	uintptr_t as_physical(uintptr_t virt_addr)
@@ -205,6 +260,21 @@ namespace Kernel::Memory::Arch
 		assert(page_table[pt_index].present);
 
 		return (uintptr_t)page_table[pt_index].page() + get_offset(virt_addr);
+	}
+
+	void initialize()
+	{
+		uint64_t pat = 0;
+		pat |= (uint64_t)PAT_MODE_WRITEBACK;
+		pat |= (uint64_t)PAT_MODE_WRITETHROUGH << 8;
+		pat |= (uint64_t)PAT_MODE_UNCACHED << 16;
+		pat |= (uint64_t)PAT_MODE_UNCACHEABLE << 24;
+		pat |= (uint64_t)PAT_MODE_WRITE_COMBINING << 32;
+		pat |= (uint64_t)PAT_MODE_WRITE_PROTECT << 40;
+		pat |= (uint64_t)PAT_MODE_UNCACHED << 48;
+		pat |= (uint64_t)PAT_MODE_UNCACHEABLE << 56;
+
+		write_msr(IA32_PAT_MSR, pat);
 	}
 
 	paging_space_t create_kernel_space()
@@ -222,8 +292,8 @@ namespace Kernel::Memory::Arch
 		uintptr_t pt_address = (uintptr_t)&mapping_table - (uintptr_t)&_virtual_addr;
 		uintptr_t pd_address = (uintptr_t)&page_directory - (uintptr_t)&_virtual_addr;
 
-		page_directory[PAGE_COUNT - 1] = raw_create_pde(pt_address, false, true, false);
-		mapping_table[PAGE_COUNT - 1] = raw_create_pte(pd_address, false, true, false);
+		page_directory[PAGE_COUNT - 1] = raw_create_pde(pt_address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
+		mapping_table[PAGE_COUNT - 1] = raw_create_pte(pd_address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 
 		// Calculate the amount of pages needed for the kernel and map it
 		uintptr_t p_address = (uintptr_t)&_physical_addr;
@@ -248,8 +318,8 @@ namespace Kernel::Memory::Arch
 
 				uintptr_t address = (uintptr_t)&page_table - (uintptr_t)&_virtual_addr;
 
-				page_directory[pd_index] = raw_create_pde(address, false, true, false);
-				mapping_table[pd_index] = raw_create_pte(address, false, true, false);
+				page_directory[pd_index] = raw_create_pde(address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
+				mapping_table[pd_index] = raw_create_pte(address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 			}
 
 			auto &page_table = *(page_table_t *)((uintptr_t)page_directory[pd_index].table() + (uintptr_t)&_virtual_addr);
@@ -257,13 +327,13 @@ namespace Kernel::Memory::Arch
 			size_t pt_index = get_pt_index(v_address);
 			uintptr_t page_address = to_page_address(p_address);
 
-			page_table[pt_index] = raw_create_pte(page_address, false, true, false);
+			page_table[pt_index] = raw_create_pte(page_address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 		}
 
 		s_kernel_paging_space = paging_space_t{
-			.physical_pd_address = pd_address,
-			.page_directory = &page_directory,
-			.mapping_table = &mapping_table,
+		    .physical_pd_address = pd_address,
+		    .page_directory = &page_directory,
+		    .mapping_table = &mapping_table,
 		    .page_directory_version = 0,
 		};
 
@@ -316,6 +386,8 @@ namespace Kernel::Memory::Arch
 	{
 		assert(virt_addr + size < PAGE_TABLE_ARRAY_ADDR);
 
+		uint8_t pat_index = caching_mode_to_pat_index(config.caching_mode);
+
 		for_page_in_range(virt_addr, size, [&](uintptr_t virt_addr) {
 			size_t pd_index = get_pd_index(virt_addr);
 			size_t pt_index = get_pt_index(virt_addr);
@@ -329,13 +401,12 @@ namespace Kernel::Memory::Arch
 					s_page_directory_lock.lock();
 					if (s_master_page_directory->tables[pd_index].value() == 0)
 					{
-						s_master_page_directory->tables[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, !config.cacheable);
-						s_master_mapping_table->pages[pd_index] = raw_create_pte(s_master_page_directory->tables[pd_index].page_table_address, false, true, true);
+						s_master_page_directory->tables[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, caching_mode_to_pat_index(CachingMode::Uncacheable));
+						s_master_mapping_table->pages[pd_index] = raw_create_pte(s_master_page_directory->tables[pd_index].page_table_address << 12, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 						s_page_directory_version++;
 						auto &processor = CPU::Processor::current();
 						processor.get_memory_space()->paging_space.page_directory_version = s_page_directory_version;
 						processor.smp_broadcast(LibK::make_shared<DirectoryInvalidatedMessage>(), true);
-						s_page_directory_lock.unlock();
 					}
 					else
 					{
@@ -345,7 +416,7 @@ namespace Kernel::Memory::Arch
 				}
 				else
 				{
-					page_directory[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, !config.cacheable);
+					page_directory[pd_index] = create_pde(pd_index, memory_space, config.userspace, config.writeable, pat_index);
 				}
 			}
 
@@ -358,7 +429,7 @@ namespace Kernel::Memory::Arch
 			uintptr_t page_address = to_page_address(phys_addr);
 			phys_addr += PAGE_SIZE;
 
-			page_table[pt_index] = create_pte(page_address, page_directory[pd_index], config.userspace, config.writeable, !config.cacheable);
+			page_table[pt_index] = create_pte(page_address, page_directory[pd_index], config.userspace, config.writeable, pat_index);
 
 			invalidate(virt_addr);
 		});

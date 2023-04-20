@@ -6,6 +6,11 @@
 #include <common_attributes.h>
 #include <logging/logger.hpp>
 
+extern "C"
+{
+	extern uintptr_t _virtual_addr;
+}
+
 namespace Kernel::CPU
 {
 	// NOTE: Stack tracing past interrupts:
@@ -32,17 +37,25 @@ namespace Kernel::CPU
 		int current_index = 0;
 		while (stackframe)
 		{
-			symbol_t symbol = get_symbol_by_address(stackframe->eip - 5); // subtract size of call instruction
+			uintptr_t address = stackframe->eip - 5;
+
+			if (address < (uintptr_t)&_virtual_addr)
+			{
+				critical_printf("#%d %p (unknown)\n", current_index, address);
+				break;
+			}
+
+			symbol_t symbol = get_symbol_by_address(address); // subtract size of call instruction
 
 			if (symbol.address == 0)
 			{
-				critical_printf("#%d %p (unknown)\n", current_index, stackframe->eip - 5);
-				return;
+				critical_printf("#%d %p (unknown)\n", current_index,address);
+				break;
 			}
 			else if (symbol.file == nullptr)
-				critical_printf("#%d %p in %s\n", current_index, stackframe->eip - 5, symbol.name);
+				critical_printf("#%d %p in %s\n", current_index, address, symbol.name);
 			else
-				critical_printf("#%d %p in %s at %s\n", current_index, stackframe->eip - 5, symbol.name, symbol.file);
+				critical_printf("#%d %p in %s at %s\n", current_index, address, symbol.name, symbol.file);
 
 			current_index++;
 
@@ -58,6 +71,12 @@ namespace Kernel::CPU
 
 				if (regs->isr_number == 0xfc)
 					got_timer_interrupt = true;
+
+				if (regs->eip < (uintptr_t)&_virtual_addr)
+				{
+					critical_printf("#%d %p (unknown)\n", current_index, regs->eip);
+					break;
+				}
 
 				symbol_t interrupted_symbol = get_symbol_by_address(regs->eip);
 				critical_printf("#%d %p in %s at %s\n", current_index++, regs->eip, interrupted_symbol.name, interrupted_symbol.file);

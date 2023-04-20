@@ -7,16 +7,17 @@ _start:
     pushl %ebp
     movl %esp, %ebp
 
-    pushl %eax # argc
-    pushl %ebx # argv
-    pushl %ecx # envc
-    pushl %edx # envp
+    movl 0x0c(%ebp), %ecx # argc
+    movl 0x10(%ebp), %ebx # argv
+    movl 0x14(%ebp), %eax # envp
+
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
 
     call _init
 
     call __libc_init
-
-    addl $8, %esp
 
     call main
 

@@ -185,7 +185,7 @@ namespace Kernel::CPU
 	{
 		// TODO: For now we halt on every unhandled interrupt.
 		//       This is probably undesired for anything other than faults. (i.e. interrupts 0 to 31)
-		panic("Unhandled interrupt 0x%2x at %p", regs->isr_number, regs->eip);
+		panic("Unhandled interrupt 0x%.2x at %p", regs->isr_number, regs->eip);
 	}
 
 	void Processor::init_idt()

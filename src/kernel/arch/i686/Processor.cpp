@@ -1,11 +1,11 @@
 #include <arch/i686/Processor.hpp>
 
 #include <libk/kcmalloc.hpp>
-#include <libk/kutility.hpp>
 #include <libk/kcstdio.hpp>
+#include <libk/kutility.hpp>
 
-#include <logging/logger.hpp>
 #include <interrupts/LAPIC.hpp>
+#include <logging/logger.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 
 #define APIC_IPI_INTERRUPT (CPU::MAX_INTERRUPTS - 3)
@@ -48,7 +48,7 @@ namespace Kernel::CPU
 			return s_bsp;
 
 		size_t id = Interrupts::LAPIC::instance().get_ap_id();
-	return by_id(id);
+		return by_id(id);
 	}
 
 	void Processor::set_core_count(uint32_t core_count)
@@ -287,9 +287,9 @@ namespace Kernel::CPU
 		    "addl $0x8, %%esp\n"
 		    "iret\n"
 		    :
-		    : [esp] "d" ((uintptr_t)thread.registers.frame),
-		      [new_cr3] "a" (thread.registers.cr3),
-		      [old_cr3] "b" (old_cr3)
+		    : [esp] "d"((uintptr_t)thread.registers.frame),
+		      [new_cr3] "a"(thread.registers.cr3),
+		      [old_cr3] "b"(old_cr3)
 		    : "memory");
 	}
 
@@ -341,20 +341,20 @@ namespace Kernel::CPU
 		    "movl %[ebp], %%ebp\n"
 		    "iret\n"
 		    :
-		    : [ds] "m" (thread.registers.ds),
-		      [ebp] "m" (thread.registers.ebp),
-		      [ss] "m" (thread.registers.ss),
-		      [esp] "m" (thread.registers.esp),
-		      [flag] "m" (thread.registers.eflags),
-		      [cs] "m" (thread.registers.cs),
-		      [eip] "m" (thread.registers.eip),
-		      [cr3] "m" (thread.registers.cr3),
-		      [eax] "m" (thread.registers.eax),
-		      [ebx] "m" (thread.registers.ebx),
-		      [ecx] "m" (thread.registers.ecx),
-		      [edx] "m" (thread.registers.edx),
-		      [esi] "m" (thread.registers.esi),
-		      [edi] "m" (thread.registers.edi)
+		    : [ds] "m"(thread.registers.ds),
+		      [ebp] "m"(thread.registers.ebp),
+		      [ss] "m"(thread.registers.ss),
+		      [esp] "m"(thread.registers.esp),
+		      [flag] "m"(thread.registers.eflags),
+		      [cs] "m"(thread.registers.cs),
+		      [eip] "m"(thread.registers.eip),
+		      [cr3] "m"(thread.registers.cr3),
+		      [eax] "m"(thread.registers.eax),
+		      [ebx] "m"(thread.registers.ebx),
+		      [ecx] "m"(thread.registers.ecx),
+		      [edx] "m"(thread.registers.edx),
+		      [esi] "m"(thread.registers.esi),
+		      [edi] "m"(thread.registers.edi)
 		    : "memory");
 	}
 
@@ -381,4 +381,66 @@ namespace Kernel::CPU
 		thread.registers.eip = frame->eip;
 		thread.registers.frame = frame;
 	}
-}
+
+#define PRINT_REGISTER(name)                                 \
+	critical_printf(" %10s ", #name);                        \
+	Processor::enumerate([](Processor &core) {               \
+		if (core.get_interrupt_frame_stack().empty())        \
+			return true;                                     \
+		auto frame = core.get_interrupt_frame_stack().top(); \
+		critical_printf("| 0x%.8x ", frame->name);           \
+		return true;                                         \
+	});                                                      \
+	critical_putc('\n');
+
+	void print_registers()
+	{
+		critical_printf("            ");
+
+		Processor::enumerate([](Processor &core) {
+			critical_printf("| Core %5d ", core.id());
+			return true;
+		});
+
+		critical_putc('\n');
+
+		critical_printf("------------");
+
+		Processor::enumerate([](Processor &) {
+			critical_printf("-------------");
+			return true;
+		});
+
+		critical_putc('\n');
+
+		PRINT_REGISTER(ss)
+		PRINT_REGISTER(gs)
+		PRINT_REGISTER(fs)
+		PRINT_REGISTER(es)
+		PRINT_REGISTER(ds)
+		PRINT_REGISTER(edi)
+		PRINT_REGISTER(esi)
+		PRINT_REGISTER(ebp)
+		PRINT_REGISTER(esp)
+		PRINT_REGISTER(eax)
+		PRINT_REGISTER(ebx)
+		PRINT_REGISTER(ecx)
+		PRINT_REGISTER(edx)
+		PRINT_REGISTER(isr_number)
+		PRINT_REGISTER(error_code)
+		PRINT_REGISTER(eip)
+		PRINT_REGISTER(cs)
+		PRINT_REGISTER(eflags)
+		PRINT_REGISTER(old_esp)
+		PRINT_REGISTER(old_ss)
+
+		critical_printf("    old_cr3 ");
+
+		Processor::enumerate([](Processor &core) {
+			critical_printf("| 0x%.8x ", core.get_memory_space()->paging_space.physical_pd_address);
+			return true;
+		});
+
+		critical_putc('\n');
+	}
+} // namespace Kernel::CPU

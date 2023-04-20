@@ -206,6 +206,9 @@ namespace Kernel::LibK
 		template <typename putc_func>
 		int print_string(state_t &state, putc_func putc, char *&buffer, const char *str)
 		{
+			if (!str)
+				str = "";
+
 			size_t len = strlen(str);
 
 			if (state.has_precision)

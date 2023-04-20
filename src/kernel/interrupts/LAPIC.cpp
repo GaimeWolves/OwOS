@@ -207,7 +207,7 @@ namespace Kernel::Interrupts
 	void LAPIC::initialize(uintptr_t physical_addr)
 	{
 		Memory::mapping_config_t config;
-		config.cacheable = false;
+		config.caching_mode = Memory::CachingMode::Uncacheable;
 		m_registers = Memory::MMIO<uint8_t>(physical_addr, APIC_REGISTER_SIZE);
 
 		m_error_interrupt_handler = new APICErrorInterruptHandler(APIC_ERROR_INTERRUPT);

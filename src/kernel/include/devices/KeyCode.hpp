@@ -1,0 +1,123 @@
+#pragma once
+
+namespace Kernel
+{
+#define __ENUMERATE_KEYCODES(FN) \
+	FN(None)                     \
+	FN(Escape)                   \
+	FN(1)                        \
+	FN(2)                        \
+	FN(3)                        \
+	FN(4)                        \
+	FN(5)                        \
+	FN(6)                        \
+	FN(7)                        \
+	FN(8)                        \
+	FN(9)                        \
+	FN(0)                        \
+	FN(Minus)                    \
+	FN(Equals)                   \
+	FN(Backspace)                \
+	FN(Tab)                      \
+	FN(Q)                        \
+	FN(W)                        \
+	FN(E)                        \
+	FN(R)                        \
+	FN(T)                        \
+	FN(Y)                        \
+	FN(U)                        \
+	FN(I)                        \
+	FN(O)                        \
+	FN(P)                        \
+	FN(LeftBracket)              \
+	FN(RightBracket)             \
+	FN(Return)                   \
+	FN(LeftControl)              \
+	FN(A)                        \
+	FN(S)                        \
+	FN(D)                        \
+	FN(F)                        \
+	FN(G)                        \
+	FN(H)                        \
+	FN(J)                        \
+	FN(K)                        \
+	FN(L)                        \
+	FN(Semicolon)                \
+	FN(Apostrophe)               \
+	FN(BackTick)                 \
+	FN(LeftShift)                \
+	FN(Backslash)                \
+	FN(Z)                        \
+	FN(X)                        \
+	FN(C)                        \
+	FN(V)                        \
+	FN(B)                        \
+	FN(N)                        \
+	FN(M)                        \
+	FN(Comma)                    \
+	FN(Period)                   \
+	FN(Slash)                    \
+	FN(RightShift)               \
+	FN(Asterisk)                 \
+	FN(LeftAlt)                  \
+	FN(Space)                    \
+	FN(CapsLock)                 \
+	FN(F1)                       \
+	FN(F2)                       \
+	FN(F3)                       \
+	FN(F4)                       \
+	FN(F5)                       \
+	FN(F6)                       \
+	FN(F7)                       \
+	FN(F8)                       \
+	FN(F9)                       \
+	FN(F10)                      \
+	FN(NumLock)                  \
+	FN(ScrollLock)               \
+	FN(Home)                     \
+	FN(Up)                       \
+	FN(PageUp)                   \
+	FN(Left)                     \
+	FN(Right)                    \
+	FN(Plus)                     \
+	FN(End)                      \
+	FN(Down)                     \
+	FN(PageDown)                 \
+	FN(Insert)                   \
+	FN(Delete)                   \
+	FN(F11)                      \
+	FN(F12)                      \
+	FN(RightControl)             \
+	FN(Super)                    \
+	FN(Menu)                     \
+	FN(RightAlt)                 \
+	FN(ExclamationPoint)         \
+	FN(AtSign)                   \
+	FN(Hashtag)                  \
+	FN(Dollar)                   \
+	FN(Percent)                  \
+	FN(Circumflex)               \
+	FN(Ampersand)                \
+	FN(Underscore)               \
+	FN(LeftParenthesis)          \
+	FN(RightParenthesis)         \
+	FN(LeftBrace)                \
+	FN(RightBrace)               \
+	FN(LessThan)                 \
+	FN(GreaterThan)              \
+	FN(QuestionMark)             \
+	FN(Pipe)                     \
+	FN(Tilde)                    \
+	FN(Colon)                    \
+	FN(DoubleQuote)              \
+	FN(Max)
+
+	enum KeyCode
+	{
+#define __ENUMERATE(name) Key_##name,
+		__ENUMERATE_KEYCODES(__ENUMERATE)
+#undef __ENUMERATE
+	};
+
+#undef __ENUMERATE_KEYCODES
+} // namespace Kernel

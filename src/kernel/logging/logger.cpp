@@ -6,7 +6,7 @@
 #include <processes/GlobalScheduler.hpp>
 #include <processes/CoreScheduler.hpp>
 #include <devices/SerialDevice.hpp>
-#include <vga/textmode.hpp>
+#include <tty/TTY.hpp>
 #include <arch/Processor.hpp>
 
 namespace Kernel
@@ -15,32 +15,30 @@ namespace Kernel
 	static thread_t *s_logging_thread;
 	static bool s_logging_thread_started{false};
 
-	static void putc(const char ch)
+	static void putc(const char ch, bool critical)
 	{
-		if (VGA::Textmode::is_initialized())
-			VGA::Textmode::putc(ch);
+		Kernel::Memory::memory_region_t tmp;
+		tmp.virt_address = (uintptr_t)&ch;
+
+		if (critical)
+			TTY::get_tty()->write(0, 1, tmp);
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
-		{
-			Kernel::Memory::memory_region_t tmp;
-			tmp.virt_address = (uintptr_t)&ch;
 			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, tmp);
-		}
 	}
 
-	static void puts(const char *str)
+	static void puts(const char *str, bool critical)
 	{
-		if (VGA::Textmode::is_initialized())
-			VGA::Textmode::puts(str);
+		Kernel::Memory::memory_region_t tmp;
+		tmp.virt_address = (uintptr_t)str;
+
+		if (critical)
+			TTY::get_tty()->write(0, strlen(str), tmp);
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
-		{
-			Kernel::Memory::memory_region_t tmp;
-			tmp.virt_address = (uintptr_t)str;
 			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), tmp);
-		}
 
-		putc('\n');
+		putc('\n', critical);
 	}
 
 	[[noreturn]] static void print_log_messages()
@@ -54,16 +52,16 @@ namespace Kernel
 			}
 
 			auto message = s_message_queue.get();
-			puts(message.c_str());
+			puts(message.c_str(), false);
 		}
 	}
 
 	static void kill_logger()
 	{
-		if (s_logging_thread->state != ThreadState::Terminated)
+		if (s_logging_thread && s_logging_thread->state != ThreadState::Terminated)
 		{
 			CoreScheduler::terminate(s_logging_thread);
-			putc('\n');
+			putc('\n', true);
 		}
 	}
 
@@ -72,7 +70,7 @@ namespace Kernel
 		while (!s_message_queue.empty())
 		{
 			auto message = s_message_queue.get();
-			puts(message.c_str());
+			puts(message.c_str(), false);
 		}
 	}
 
@@ -103,13 +101,13 @@ namespace Kernel
 	void critical_putc(const char ch)
 	{
 		kill_logger();
-		putc(ch);
+		putc(ch, true);
 	}
 
 	void critical_puts(const char *str)
 	{
 		kill_logger();
-		puts(str);
+		puts(str, true);
 	}
 
 	void critical_printf(const char *fmt, ...)

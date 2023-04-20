@@ -13,7 +13,7 @@ extern "C"
 namespace Kernel::CPU
 {
 	// TODO: Somehow check if the actual symbol file exceeds this limit
-	__section(".kernel_symbols") static char kernel_symbols[0x40000];
+	__section(".kernel_symbols") static char kernel_symbols[0x50000];
 
 	LibK::vector<symbol_t> symbol_table;
 

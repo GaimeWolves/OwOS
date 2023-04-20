@@ -33,7 +33,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E env OBJCOPY=${CMAKE_OBJCOPY} NM=${CMAKE_NM} BIN_DIR=${CMAKE_INSTALL_PREFIX} sh ${CMAKE_SOURCE_DIR}/scripts/make_and_embed_symbol_map.sh
 	COMMAND ${CMAKE_COMMAND} -E env BIN_DIR=${CMAKE_INSTALL_PREFIX} sh ${CMAKE_SOURCE_DIR}/scripts/copy_test_dir.sh
 	COMMAND ${CMAKE_COMMAND} -E env "BIN_DIR=${CMAKE_INSTALL_PREFIX}" ${CMAKE_SOURCE_DIR}/scripts/create_img.sh
-	DEPENDS kernel c c_static ld-owos.so test # find a way to make this work better
+	DEPENDS kernel crt0 crti crtn c c_static ld-owos.so test # find a way to make this work better
 	USES_TERMINAL
 )
 
@@ -50,13 +50,13 @@ add_custom_target(libc
 )
 
 add_custom_target(run
-	COMMAND qemu-system-i386 -no-reboot -no-shutdown -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -drive id=disk,file="${CMAKE_INSTALL_PREFIX}"/img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -smp 4
+	COMMAND qemu-system-i386 -no-reboot -no-shutdown -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -drive id=disk,file="${CMAKE_INSTALL_PREFIX}"/img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -smp 4
 	DEPENDS ${CMAKE_INSTALL_PREFIX}/img
 	USES_TERMINAL
 )
 
 add_custom_target(debug
-	COMMAND qemu-system-i386 -s -S -no-reboot -no-shutdown -kernel ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -drive id=disk,file="${CMAKE_INSTALL_PREFIX}"/img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -smp 4 & cd ${CMAKE_SOURCE_DIR} && sleep 1 && ${GDB} -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
+	COMMAND qemu-system-i386 -s -S -no-reboot -no-shutdown -chardev stdio,id=char0,mux=on,logfile=${CMAKE_SOURCE_DIR}/log.txt,signal=off -serial chardev:char0 -drive id=disk,file="${CMAKE_INSTALL_PREFIX}"/img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -smp 4 & cd ${CMAKE_SOURCE_DIR} && sleep 1 && gdb -ex "target remote localhost:1234" -ex "symbol-file ${CMAKE_INSTALL_PREFIX}/sysroot/boot/kernel"
 	DEPENDS ${CMAKE_INSTALL_PREFIX}/img
 	USES_TERMINAL
 )

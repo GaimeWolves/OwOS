@@ -118,9 +118,28 @@ extern "C"
 
 	void *memset(void *dest, int ch, size_t count)
 	{
+#ifdef ARCH_i686
+		asm volatile("cld \n rep stosb" : : "a"(ch), "c"(count), "D"(dest) : "cc");
+#else
 		char *p = (char *)dest;
 		while (count--)
 			*p++ = (char)ch;
+#endif
+		return dest;
+	}
+
+	void *memset32(void *dest, uint32_t word, size_t count)
+	{
+#ifdef ARCH_i686
+		asm volatile("cld \n rep stosl" : : "a"(word), "c"(count), "D"(dest) : "cc");
+#else
+		uint32_t *data = (uint32_t *)dest;
+
+		while(count--)
+		{
+			*data++ = word;
+		}
+#endif
 
 		return dest;
 	}
@@ -139,10 +158,7 @@ extern "C"
 		}
 		else if (src > dest)
 		{
-			for (size_t i = 0; i < count; i++)
-			{
-				dp[i] = sp[i];
-			}
+			memcpy(dest, src, count);
 		}
 
 		return dest;
@@ -150,11 +166,24 @@ extern "C"
 
 	void *memcpy(void *dest, const void *src, size_t n)
 	{
+#ifdef ARCH_i686
+		int d0, d1, d2;
+		asm volatile("rep ; movsl\n"
+		             "movl %4, %%ecx\n"
+		             "andl $3, %%ecx\n"
+		             "jz 1f\n"
+		             "rep ; movsb\n"
+		             "1:"
+		             : "=&c"(d0), "=&D"(d1), "=&S"(d2)
+		             : "0"(n / 4), "g"(n), "1"((uintptr_t)dest), "2"((uintptr_t)src)
+		             : "memory");
+#else
 		const char *sp = (const char *)src;
 		char *dp = (char *)dest;
 
 		for (; n > 0; n--)
 			*dp++ = *sp++;
+#endif
 
 		return dest;
 	}

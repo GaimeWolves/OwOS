@@ -125,7 +125,7 @@ namespace Kernel
 	void AHCIPort::identify()
 	{
 		Memory::mapping_config_t config;
-		config.cacheable = false;
+		config.caching_mode = Memory::CachingMode::Uncacheable;
 		m_identify_block_region = Memory::VirtualMemoryManager::instance().allocate_region(512, config);
 		m_identify_block = reinterpret_cast<AHCI::ata_identify_block_t *>(m_identify_block_region.virt_address);
 		m_command_slots[0].identify(m_identify_block_region.phys_address);

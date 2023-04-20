@@ -20,7 +20,7 @@ namespace Kernel
 	uint32_t SyscallDispatcher::handle_syscall(uint32_t id, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4, uint32_t arg5)
 	{
 		assert(id < s_syscall_table.size());
-		if (id != __SC_write)
+		if (id != __SC_write && id != __SC_read)
 			log("SYSCALL", "%s(%p,%p,%p,%p,%p)", s_syscall_names[id], arg1, arg2, arg3, arg4, arg5);
 		return reinterpret_cast<syscall_t>(s_syscall_table[id])(arg1, arg2, arg3, arg4, arg5);
 	}

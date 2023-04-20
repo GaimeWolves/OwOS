@@ -4,9 +4,9 @@
 
 #include "elf/definitions.hpp"
 #include "filesystem/File.hpp"
-#include <filesystem/VirtualFileSystem.hpp>
-#include <devices/StdioDevice.hpp>
 #include <arch/Processor.hpp>
+#include <filesystem/VirtualFileSystem.hpp>
+#include <tty/TTY.hpp>
 
 namespace Kernel::ELF
 {
@@ -29,7 +29,6 @@ namespace Kernel::ELF
 	static void set_up_stack(const char *filepath, const char *filename, void *exec_base, void *entry, void *loader_base, Process *process)
 	{
 		// Arguments for testing purposes
-		static const char *arg2_data = "test";
 		static const char *env1_data = "HOME=/usr/";
 		static const char *env2_data = "PATH=/bin/";
 
@@ -37,7 +36,6 @@ namespace Kernel::ELF
 
 		char *env2 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env2_data, strlen(env2_data) + 1));
 		char *env1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env1_data, strlen(env1_data) + 1));
-		char *arg2 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, arg2_data, strlen(arg2_data) + 1));
 		char *arg1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filepath, strlen(filepath) + 1));
 		char *name = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filename, strlen(filename) + 1));
 
@@ -77,7 +75,6 @@ namespace Kernel::ELF
 		CPU::Processor::thread_push_userspace_data(main_thread, env1);
 
 		CPU::Processor::thread_push_userspace_data(main_thread, nullptr);
-		CPU::Processor::thread_push_userspace_data(main_thread, arg2);
 		CPU::Processor::thread_push_userspace_data(main_thread, arg1);
 		CPU::Processor::thread_push_userspace_data(main_thread, (int)2);
 	}
@@ -155,9 +152,9 @@ namespace Kernel::ELF
 		auto process = new Process(entry);
 
 		// Temporary stdio device files
-		process->add_file(StdioDevice::get()->open(O_WRONLY));
-		process->add_file(StdioDevice::get()->open(O_RDONLY));
-		process->add_file(StdioDevice::get()->open(O_WRONLY));
+		process->add_file(TTY::get_tty()->open(O_RDONLY));
+		process->add_file(TTY::get_tty()->open(O_WRONLY));
+		process->add_file(TTY::get_tty()->open(O_WRONLY));
 
 		auto fd = file->open(O_RDWR);
 		process->add_file(LibK::move(fd));

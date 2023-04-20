@@ -139,6 +139,9 @@ namespace Kernel::VGA::Textmode
 
 	void putc(char ch)
 	{
+		if (!initialized)
+			return;
+
 		vga_lock.lock();
 		if (ch == '\n')
 		{
@@ -164,6 +167,9 @@ namespace Kernel::VGA::Textmode
 
 	void puts(const char *str)
 	{
+		if (!initialized)
+			return;
+
 		puts_lock.lock();
 		for (size_t i = 0; str[i]; i++)
 			putc(str[i]);

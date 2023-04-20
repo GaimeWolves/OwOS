@@ -5,6 +5,15 @@
 
 namespace Kernel::Memory
 {
+	enum class CachingMode
+	{
+		Uncacheable,
+		WriteCombining,
+		WriteThrough,
+		WriteProtect,
+		WriteBack,
+	};
+
 	typedef struct region_t
 	{
 		uintptr_t address;
@@ -42,7 +51,7 @@ namespace Kernel::Memory
 		bool readable = true;
 		bool writeable = true;
 		bool userspace = false;
-		bool cacheable = true;
+		CachingMode caching_mode = CachingMode::WriteThrough;
 
 		region_t bounds = {
 		    .address = 0,

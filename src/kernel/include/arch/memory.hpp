@@ -17,6 +17,8 @@ namespace Kernel::Memory::Arch
 
 namespace Kernel::Memory::Arch
 {
+	void initialize();
+
 	paging_space_t create_kernel_space();
 	paging_space_t create_memory_space();
 

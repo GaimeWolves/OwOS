@@ -17,8 +17,8 @@ namespace Kernel::Memory::Arch
 		uint32_t write_through : 1;
 		uint32_t cache_disable : 1;
 		uint32_t accessed : 1;
-		uint32_t dirty : 1,
-		    : 1; // Always zero
+		uint32_t dirty : 1;
+		uint32_t page_attribute : 1;
 		uint32_t global : 1,
 		    : 3; // May be used for OS-specific things
 		uint32_t page_address : 20;

@@ -19,7 +19,7 @@ namespace Kernel::Memory
 		    : m_size(size)
 		{
 			mapping_config_t config;
-			config.cacheable = false;
+			config.caching_mode = CachingMode::Uncacheable;
 			m_region = VirtualMemoryManager::instance().map_region(address, size, config);
 			m_ref = reinterpret_cast<T *>(m_region.virt_address);
 			assert(m_ref);

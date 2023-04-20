@@ -12,12 +12,22 @@
 
 namespace Kernel
 {
+	static Locking::Spinlock s_trace_lock;
+
 	class PanicMessage final : public CPU::ProcessorMessage
 	{
 	public:
 		void handle() override
 		{
 			CPU::Processor::current().enter_critical();
+
+			s_trace_lock.lock();
+
+			critical_printf("\n\nStacktrace (Core #%d):\n", CPU::Processor::current().id());
+			CPU::print_stacktrace();
+
+			s_trace_lock.unlock();
+
 			for (;;)
 				CPU::Processor::halt();
 		}
@@ -43,8 +53,10 @@ namespace Kernel
 		s_is_panicking = true;
 		CPU::Processor::current().smp_broadcast(LibK::shared_ptr<CPU::ProcessorMessage>(&s_panic_message), true);
 
+		s_trace_lock.lock();
+
 		critical_empty_logger();
-		critical_puts("KERNEL PANIC: ");
+		critical_printf("KERNEL PANIC (Core #%d): ", CPU::Processor::current().id());
 
 		if (fmt)
 		{
@@ -54,9 +66,13 @@ namespace Kernel
 			va_end(ap);
 		}
 
-		critical_putc('\n');
+		critical_printf("\n\nRegisters:\n", CPU::Processor::current().id());
+		CPU::print_registers();
 
+		critical_printf("\nStacktrace (Core #%d):\n", CPU::Processor::current().id());
 		CPU::print_stacktrace();
+
+		s_trace_lock.unlock();
 
 		for (;;)
 			CPU::Processor::halt();

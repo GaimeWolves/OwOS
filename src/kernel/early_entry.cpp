@@ -23,7 +23,7 @@ namespace Kernel
 {
 	extern "C"
 	{
-		void entry();
+		void entry(multiboot_info_t *);
 
 		typedef void (*func_t)();
 
@@ -95,7 +95,7 @@ namespace Kernel
 			CPU::init_stacktracing();
 
 			// Main kernel entry point
-			entry();
+			entry(multiboot_info);
 
 			for (func_t *dtor = &_start_dtors; dtor < &_end_dtors; dtor++)
 				(*dtor)();
