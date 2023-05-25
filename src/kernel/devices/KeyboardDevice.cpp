@@ -1,6 +1,7 @@
 #include <devices/KeyboardDevice.hpp>
 
 #include <tty/TTY.hpp>
+#include <arch/Processor.hpp>
 
 namespace Kernel
 {
@@ -31,7 +32,12 @@ namespace Kernel
 		m_buffer.push(event);
 		m_lock.unlock();
 
-		if (m_listener)
-			m_listener->on_key_event(event);
+		if (!m_listeners.empty())
+		{
+			CPU::Processor::current().defer_call([this, event]() {
+				for (auto *it : m_listeners)
+					it->handle_key_event(event);
+			});
+		}
 	}
 }

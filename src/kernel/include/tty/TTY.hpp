@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../../../userland/libc/sys/types.h"
+#include "../../userland/libc/termios.h"
 #include "../devices/CharacterDevice.hpp"
 #include "../memory/definitions.hpp"
 
 #include <stddef.h>
 
-#include <libk/CircularBuffer.hpp>
+#include <libk/srmw_queue.hpp>
 
 #include <memory/definitions.hpp>
 #include <devices/CharacterDevice.hpp>
@@ -18,44 +18,56 @@ namespace Kernel
 	class TTY : public CharacterDevice
 	{
 	public:
-		static TTY *get_tty() { return &s_tty; }
-		static void initialize()
-		{
-			s_tty.m_keyboard = new PS2KeyboardDevice(0, 0);
-			s_tty.m_keyboard->set_listener(&s_tty);
-			reinterpret_cast<PS2KeyboardDevice *>(s_tty.m_keyboard)->enable();
-		}
-
 		size_t read(size_t, size_t bytes, Memory::memory_region_t region) override;
 		size_t write(size_t, size_t bytes, Memory::memory_region_t region) override;
 
-		LibK::StringView name() override { return LibK::StringView(m_name); };
+		LibK::ErrorOr<void> ioctl(uint32_t request, uintptr_t arg) override;
+
 		[[nodiscard]] size_t size() override { return 0; }
 
-		void on_key_event(key_event_t event);
+		[[nodiscard]] struct termios get_termios() const { return m_termios; }
+		void set_termios(struct termios new_termios);
 
 	protected:
+		TTY(size_t major, size_t minor)
+		    : CharacterDevice(major, minor)
+		    , m_input_char_buffer(4096)
+		{
+			reset_termios();
+		}
+
 		[[nodiscard]] bool can_open_for_read() const override { return true; };
 		[[nodiscard]] bool can_open_for_write() const override { return true; };
 
+		virtual void echo(char ch) = 0;
+		virtual void unecho() = 0;
+		void emit(char ch);
+
 	private:
-		TTY(size_t major, size_t minor)
-		    : CharacterDevice(major, minor)
-			, m_input_buffer(256)
-		{}
+		size_t canonical_read(size_t bytes, Memory::memory_region_t region);
+		size_t non_canonical_read(size_t bytes, Memory::memory_region_t region);
 
-		void advance();
+		void canonical_input(char ch);
+		void non_canonical_input(char ch);
 
-		LibK::string m_name{"tty0"};
-		KeyboardDevice *m_keyboard{nullptr};
-		LibK::CircularBuffer<char> m_input_buffer;
-		Locking::Spinlock m_input_lock{};
+		void reset_termios();
+		void switch_buffers(struct termios old_termios);
 
-		// TODO: abstract echoing into subclass
-		size_t m_row = 0;
-		size_t m_column = 0;
+		void empty_line_buffer();
+		void empty_char_buffer();
 
-		// TODO: Only one tty for now
-		static TTY s_tty;
+		void process_echo(char ch);
+
+		LibK::string m_name{};
+
+		// Canonical mode processing
+		LibK::string m_current_input_line{};
+		LibK::string m_current_read_line{};
+		LibK::SRMWQueue<LibK::string> m_input_line_buffer{};
+
+		// Non-canonical mode processing
+		LibK::CircularBuffer<char> m_input_char_buffer;
+
+		struct termios m_termios{};
 	};
 }

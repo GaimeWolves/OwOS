@@ -25,4 +25,6 @@ struct timespec
 	long tv_nsec;
 };
 
+time_t time(time_t *tloc);
+
 __LIBC_HEADER_END

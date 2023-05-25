@@ -51,6 +51,9 @@ namespace Kernel
 			};
 			core.leave_critical();
 		}
+
+		if (core.get_irq_counter() <= 1)
+			core.process_deferred_queue();
 	}
 
 	thread_t *CoreScheduler::pick_next()

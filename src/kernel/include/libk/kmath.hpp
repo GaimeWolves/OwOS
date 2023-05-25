@@ -69,6 +69,6 @@ namespace Kernel::LibK
 	template <typename T>
 	constexpr T round_down_to_power_of_two(T value, T power_of_two)
 	{
-		return value & power_of_two;
+		return value & ~(power_of_two - 1);
 	}
 } // namespace Kernel::LibK

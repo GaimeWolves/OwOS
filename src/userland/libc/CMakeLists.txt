@@ -4,7 +4,7 @@ set(SOURCES
     unistd.c
     string.c
     dlfcn.c
-    math.c sys/mman.c errno.c sys/arch/i386/syscall.c __printf.h __printf.c ctype.c assert.c sys/internals.c __malloc.c __heap.h __heap.c sys/stat.c fcntl.c)
+    math.c sys/mman.c errno.c sys/arch/i386/syscall.c __printf.h __printf.c ctype.c assert.c sys/internals.c __malloc.c __heap.h __heap.c sys/stat.c fcntl.c termios.c sys/ioctl.c signal.c locale.c time.c dirent.c __debug.c)
 
 set(HEADERS
     sys/arch/i386/syscall.h
@@ -26,7 +26,7 @@ set(HEADERS
     setjmp.h
     signal.h
     sys/mman.h
-    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h sys/stat.h fcntl.h termios.h)
+    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h sys/stat.h fcntl.h termios.h sys/ioctl.h stddef.h dirent.h bits/environ.h __debug.h)
 
 add_library(crt0 STATIC sys/arch/i386/crt0.S)
 add_library(crti STATIC sys/arch/i386/crti.S)
@@ -62,6 +62,8 @@ target_compile_options(c PRIVATE -ffreestanding -fpic -pie -Og -g -Wall -Wextra 
 target_link_options(c PRIVATE -ffreestanding -Og -g -nostdlib -pie -Wl,-E,-shared)
 target_link_libraries(c PRIVATE gcc)
 target_include_directories(c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# target_compile_definitions(c PRIVATE __LIBC_DEBUG)
 
 target_sources(c PUBLIC FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}

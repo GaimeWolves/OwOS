@@ -120,7 +120,7 @@ namespace Kernel::LibK
 			if (m_invoke_fn && m_functor_size <= SMALL_SIZE)
 				m_construct_fn(m_functor_small, (char *)rhs.m_functor_small);
 
-			rhs->~function();
+			rhs.~function();
 
 			return *this;
 		}

@@ -141,7 +141,7 @@ namespace Kernel::LibK
 			m_size++;
 		}
 
-		void pop_back() { resize(m_size - 1); }
+		void pop_back() { resize(m_size - 2); }
 
 		const charT *data() const { return m_array; }
 

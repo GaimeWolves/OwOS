@@ -29,6 +29,12 @@ namespace Kernel
 		char code_point;
 	} key_event_t;
 
+	class KeyboardListener
+	{
+	public:
+		virtual void handle_key_event(key_event_t event) = 0;
+	};
+
 	class KeyboardDevice : public CharacterDevice
 	{
 	public:
@@ -44,7 +50,8 @@ namespace Kernel
 
 		[[nodiscard]] size_t size() override{ return m_buffer.size() * sizeof(key_event_t); };
 
-		void set_listener(TTY *listener) { m_listener = listener; }
+		void register_listener(KeyboardListener *listener) { m_listeners.push_back(listener); }
+		void unregister_listener(KeyboardListener *) { assert(false); }
 
 	protected:
 		[[nodiscard]] bool can_open_for_read() const override { return true; }
@@ -56,6 +63,6 @@ namespace Kernel
 		LibK::CircularBuffer<key_event_t> m_buffer;
 		Locking::Spinlock m_lock;
 		LibK::string m_name{"kbd"};
-		TTY *m_listener;
+		LibK::vector<KeyboardListener *> m_listeners{};
 	};
 }

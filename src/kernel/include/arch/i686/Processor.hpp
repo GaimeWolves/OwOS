@@ -65,6 +65,10 @@ namespace Kernel::CPU
 		void unregister_interrupt_handler(Interrupts::InterruptHandler &handler);
 		[[nodiscard]] uint32_t get_used_interrupt_count() const;
 
+		void increment_irq_counter() { m_irq_counter++; }
+		void decrement_irq_counter() { m_irq_counter--; }
+		[[nodiscard]] uint32_t get_irq_counter() const { return m_irq_counter; }
+
 		always_inline LibK::stack<interrupt_frame_t *> &get_interrupt_frame_stack() { return m_frame_stack; }
 		always_inline LibK::stack<LibK::function<void()>> &get_exit_function_stack() { return m_exit_function_stack; }
 
@@ -79,6 +83,9 @@ namespace Kernel::CPU
 		void smp_broadcast(LibK::shared_ptr<ProcessorMessage> message, bool excluding_self);
 		void smp_enqueue_message(LibK::shared_ptr<ProcessorMessage> message);
 		void smp_process_messages();
+
+		void defer_call(LibK::function<void()> &&callback);
+		void process_deferred_queue();
 
 		Time::EventManager::EventQueue &get_event_queue() { return m_scheduled_events; }
 
@@ -100,12 +107,13 @@ namespace Kernel::CPU
 		[[nodiscard]] bool is_scheduler_running() const { return m_scheduler_initialized; }
 		[[nodiscard]] bool is_thread_running() const { return m_current_thread; }
 		[[nodiscard]] thread_t *get_current_thread() const { return m_current_thread; }
+
+		[[nodiscard]] static uint64_t get_nanoseconds_since_boot();
+		void increment_nanoseconds_since_boot(uint64_t nanoseconds);
 		always_inline void set_remaining_time_to_tick(uint64_t remaining_time_to_tick) { m_remaining_time_to_tick = remaining_time_to_tick; }
 		[[nodiscard]] always_inline uint64_t get_remaining_time_to_tick() const { return m_remaining_time_to_tick; }
 		always_inline void set_next_timer_tick(uint64_t next_timer_tick) { m_next_timer_tick = next_timer_tick; }
 		[[nodiscard]] always_inline uint64_t get_next_timer_tick() const { return m_next_timer_tick; }
-		always_inline void set_handling_events(bool handling_events) { m_handling_events = handling_events; }
-		[[nodiscard]] always_inline bool is_handling_events() const { return m_handling_events; }
 
 		[[nodiscard]] static uint32_t count();
 		[[nodiscard]] uint32_t id() const { return m_id; }
@@ -211,6 +219,7 @@ namespace Kernel::CPU
 		uint32_t m_id{0};
 		bool m_interrupts_enabled{false};
 		uint32_t m_in_critical{0};
+		LibK::atomic_uint32_t m_irq_counter{0};
 		LibK::stack<interrupt_frame_t *>m_frame_stack{};
 		LibK::stack<LibK::function<void()>> m_exit_function_stack{};
 
@@ -227,11 +236,11 @@ namespace Kernel::CPU
 		// TODO: Implement an actual FIFO data structure
 		LibK::SRMWQueue<LibK::shared_ptr<ProcessorMessage>> m_queued_messages{};
 		Time::EventManager::EventQueue m_scheduled_events{};
+		LibK::SRMWQueue<LibK::function<void()>> m_deferred_calls{};
 
 		bool m_scheduler_initialized{false};
 		uint64_t m_remaining_time_to_tick{};
 		uint64_t m_next_timer_tick{};
-		bool m_handling_events{true};
 		LibK::vector<thread_t *> m_running_threads{};
 		thread_t *m_current_thread{nullptr};
 		size_t m_current_thread_index{0};

@@ -12,6 +12,8 @@
 
 namespace Kernel::CPU
 {
+	static LibK::atomic_uint64_t s_nanoseconds_since_boot;
+
 	class APICIPIInterruptHandler final : public Interrupts::InterruptHandler
 	{
 	public:
@@ -105,6 +107,17 @@ namespace Kernel::CPU
 		}
 	}
 
+	uint64_t Processor::get_nanoseconds_since_boot()
+	{
+		return s_nanoseconds_since_boot;
+	}
+
+	void Processor::increment_nanoseconds_since_boot(uint64_t increment)
+	{
+		assert(m_id == 0);
+		s_nanoseconds_since_boot += increment;
+	}
+
 	void Processor::smp_initialize_messaging()
 	{
 		s_ipi_handler.register_handler();
@@ -147,6 +160,19 @@ namespace Kernel::CPU
 		while (!m_queued_messages.empty())
 		{
 			m_queued_messages.get()->handle();
+		}
+	}
+
+	void Processor::defer_call(LibK::function<void()> &&callback)
+	{
+		m_deferred_calls.put(move(callback));
+	}
+
+	void Processor::process_deferred_queue()
+	{
+		while (!m_deferred_calls.empty())
+		{
+			m_deferred_calls.get()();
 		}
 	}
 

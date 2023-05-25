@@ -49,6 +49,7 @@ printf "\nMounting image\n"
 
 guestmount -a "$BIN_DIR"/img -m /dev/sda2 --pid-file mount.pid "$BIN_DIR"/mnt
 pid="$(cat mount.pid)"
+rm mount.pid
 rm -rf "${BIN_DIR:?}"/mnt/*
 printf "\nCopying Files\n"
 cp -r "$BIN_DIR"/sysroot/* "$BIN_DIR"/mnt

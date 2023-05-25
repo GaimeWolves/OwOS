@@ -4,8 +4,10 @@
 #include <string.h>
 #include <assert.h>
 
-#define HEAP_REGION_SIZE 0x4096
+#define HEAP_REGION_SIZE (2 << 16)
 #define HEAP_BLOCK_SIZE 0x16
+
+#include <stdio.h>
 
 #include "__heap.h"
 
@@ -18,7 +20,12 @@ void __malloc_init()
 
 void *malloc(size_t size)
 {
-	return __heap_alloc(size, sizeof(int));
+	void *ptr = __heap_alloc(size, sizeof(int));
+
+	if (!ptr)
+		puts("alloc failed");
+
+	return ptr;
 }
 
 void free(void *ptr)

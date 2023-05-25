@@ -444,11 +444,11 @@ void __printf_impl(printf_conv_t *conversion)
 	const char **format = &conversion->format;
 	size_t *bufsz = &conversion->bufsz;
 
-	if (bufsz == 0)
+	if (*bufsz == 0)
 		return;
 
 	if (conversion->putc == (printf_putc_callback)str_putc)
-		bufsz--;
+		(*bufsz)--;
 
 	while (**format && *bufsz > 1)
 	{

@@ -1,11 +1,11 @@
 #include <interrupts/LAPIC.hpp>
 
-#include <arch/interrupts.hpp>
 #include <arch/Processor.hpp>
+#include <arch/interrupts.hpp>
+#include <arch/smp.hpp>
 #include <interrupts/InterruptHandler.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 #include <time/EventManager.hpp>
-#include <arch/smp.hpp>
 
 #include "logging/logger.hpp"
 #include <libk/katomic.hpp>
@@ -281,7 +281,7 @@ namespace Kernel::Interrupts
 			Time::EventManager::instance().early_sleep(200);
 		}
 
-		while(cpu_id < m_available_aps)
+		while (cpu_id < m_available_aps)
 			Time::EventManager::instance().early_sleep(200);
 
 		CPU::set_bsp_initialization_finished();
@@ -341,15 +341,15 @@ namespace Kernel::Interrupts
 		uint64_t elapsed_time = core.get_next_timer_tick();
 		uint64_t next_interval = 0;
 
-		if (core.is_handling_events())
-		{
-			next_interval = m_reduce_callback(*this, elapsed_time * m_time_quantum);
-			next_interval /= m_time_quantum;
+		if (core.id() == 0)
+			core.increment_nanoseconds_since_boot(elapsed_time * m_time_quantum);
 
-			if (next_interval == 0)
-			{
-				m_handle_callback(*this);
-			}
+		next_interval = m_reduce_callback(*this, elapsed_time * m_time_quantum);
+		next_interval /= m_time_quantum;
+
+		if (next_interval == 0)
+		{
+			m_handle_callback(*this);
 		}
 
 		if (core.is_scheduler_running())
@@ -371,7 +371,7 @@ namespace Kernel::Interrupts
 				next_interval = remaining_time;
 			}
 
- 			if (next_interval > m_time_to_tick || next_interval == 0)
+			if (next_interval > m_time_to_tick || next_interval == 0)
 			{
 				next_interval = m_time_to_tick;
 			}
@@ -393,7 +393,6 @@ namespace Kernel::Interrupts
 
 	uint64_t APICTimer::stop()
 	{
-		CPU::Processor::current().set_handling_events(false);
 		uint64_t ticks_remaining = LAPIC::instance().read_register(APIC_REG_TIMER_CURRENT_COUNT);
 		uint64_t elapsed_ticks = CPU::Processor::current().get_next_timer_tick() - ticks_remaining;
 		uint64_t elapsed_time = elapsed_ticks * m_time_quantum;

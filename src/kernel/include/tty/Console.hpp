@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
+
+#include <tty/ANSIColor.hpp>
 
 namespace Kernel
 {
@@ -15,5 +18,14 @@ namespace Kernel
 
 		virtual void put_char_at(size_t row, size_t column, char ch) = 0;
 		virtual void clear(size_t from_row, size_t from_column, size_t to_row, size_t to_column) = 0;
+		virtual void clear() = 0;
+
+		virtual void set_fg_color(uint32_t color) = 0;
+		virtual void set_fg_color(ANSIColor color) = 0;
+		virtual void set_bg_color(uint32_t color) = 0;
+		virtual void set_bg_color(ANSIColor color) = 0;
+
+		virtual void set_cursor_at(size_t row, size_t column) = 0;
+		virtual void toggle_cursor(bool on) = 0;
 	};
 }

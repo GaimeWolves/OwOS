@@ -16,6 +16,10 @@ namespace Kernel
 		assert(process);
 
 		auto *file = VirtualFileSystem::instance().find_by_path(path);
+
+		if (!file)
+			return -ENOENT;
+
 		auto context = file->open(O_RDWR);
 
 		int fd = process->add_file(LibK::move(context));

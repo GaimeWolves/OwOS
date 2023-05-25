@@ -6,7 +6,7 @@
 #include <processes/GlobalScheduler.hpp>
 #include <processes/CoreScheduler.hpp>
 #include <devices/SerialDevice.hpp>
-#include <tty/TTY.hpp>
+#include <tty/VirtualConsole.hpp>
 #include <arch/Processor.hpp>
 
 namespace Kernel
@@ -21,7 +21,7 @@ namespace Kernel
 		tmp.virt_address = (uintptr_t)&ch;
 
 		if (critical)
-			TTY::get_tty()->write(0, 1, tmp);
+			VirtualConsole::get_current().write(0, 1, tmp);
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
 			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, tmp);
@@ -33,7 +33,7 @@ namespace Kernel
 		tmp.virt_address = (uintptr_t)str;
 
 		if (critical)
-			TTY::get_tty()->write(0, strlen(str), tmp);
+			VirtualConsole::get_current().write(0, strlen(str), tmp);
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
 			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), tmp);

@@ -5,6 +5,7 @@
 #include <libk/StringView.hpp>
 #include <libk/kstring.hpp>
 #include <libk/kvector.hpp>
+#include <libk/ErrorOr.hpp>
 
 #include <filesystem/definitions.hpp>
 #include <memory/VirtualMemoryManager.hpp>
@@ -60,6 +61,8 @@ namespace Kernel
 		virtual File *find_file(const LibK::string &file_name) = 0;
 		virtual File *make_file(const LibK::string &file_name) = 0;
 		virtual bool is_directory() = 0;
+
+		virtual LibK::ErrorOr<void> ioctl(uint32_t, uintptr_t) { return ENOTTY; };
 
 		virtual LibK::StringView name() = 0;
 

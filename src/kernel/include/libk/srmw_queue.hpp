@@ -29,11 +29,8 @@ namespace Kernel::LibK
 			assert(!empty());
 
 			auto *node = head.next;
-
-			queue_lock.lock();
+			node->next->prev = &head;
 			head.next = node->next;
-			head.next->prev = &head;
-			queue_lock.unlock();
 
 			T data = LibK::move(node->data);
 			delete node;
@@ -41,7 +38,7 @@ namespace Kernel::LibK
 			return LibK::move(data);
 		}
 
-		void put(T data)
+		void put(T &&data)
 		{
 			auto *node = new list_node_t;
 
@@ -53,6 +50,11 @@ namespace Kernel::LibK
 			node->next = &head;
 			head.prev = node;
 			queue_lock.unlock();
+		}
+
+		void put(const T &data)
+		{
+			put(move(data));
 		}
 
 		[[nodiscard]] bool empty() const { return head.next == &head; }

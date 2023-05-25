@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libk/kcstddef.hpp>
 #include <libk/katomic.hpp>
 #include <libk/kcassert.hpp>
 

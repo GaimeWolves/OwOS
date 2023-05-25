@@ -174,7 +174,7 @@ __attribute__((noreturn)) void _entry(int argc, char *arg0)
 	do_early_relocations(auxvc, auxvp);
 
 	puts(" Initializing static libc");
-	__libc_init();
+	__libc_init(argc, argv, envp);
 
 	debug_print_arguments(argc, argv, envc, envp, auxvc, auxvp);
 

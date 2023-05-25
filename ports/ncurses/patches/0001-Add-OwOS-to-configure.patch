@@ -1,0 +1,39 @@
+From 4c01621c2aeeb560e6046c18532617ec86af7859 Mon Sep 17 00:00:00 2001
+From: Nick Djerfi <gamewolvesofficial@gmail.com>
+Date: Thu, 25 May 2023 21:05:16 +0200
+Subject: [PATCH] Add OwOS to configure
+
+---
+ config.sub | 2 +-
+ configure  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/config.sub b/config.sub
+index fbaa37f..4b27d59 100755
+--- a/config.sub
++++ b/config.sub
+@@ -1723,7 +1723,7 @@ case $os in
+ 	# Now accept the basic system types.
+ 	# The portable systems comes first.
+ 	# Each alternative MUST end in a * to match a version number.
+-	gnu* | android* | bsd* | mach* | minix* | genix* | ultrix* | irix* \
++	gnu* | android* | bsd* | mach* | minix* | genix* | ultrix* | owos* | irix* \
+ 	     | *vms* | esix* | aix* | cnk* | sunos | sunos[34]* \
+ 	     | hpux* | unos* | osf* | luna* | dgux* | auroraux* | solaris* \
+ 	     | sym* |  plan9* | psp* | sim* | xray* | os68k* | v88r* \
+diff --git a/configure b/configure
+index 4c39d24..4bc9805 100755
+--- a/configure
++++ b/configure
+@@ -6386,7 +6386,7 @@ echo "${ECHO_T}$cf_cv_ldflags_search_paths_first" >&6
+ 		fi
+ 		cf_cv_rm_so_locs=yes
+ 		;;
+-	(linux*|gnu*|k*bsd*-gnu)
++	(linux*|gnu*|k*bsd*-gnu|*owos*)
+ 		if test "$DFT_LWR_MODEL" = "shared" && test -n "$LD_RPATH_OPT" ; then
+ 			LOCAL_LDFLAGS="${LD_RPATH_OPT}\$(LOCAL_LIBDIR)"
+ 			LOCAL_LDFLAGS2="$LOCAL_LDFLAGS"
+-- 
+2.40.1
+

@@ -18,6 +18,7 @@ namespace Kernel::LibK
 		typedef size_t size_type;
 
 		void push(const_reference value) { m_container.push_back(value); }
+		void push(value_type &&value) { m_container.push_back(move(value)); }
 
 		void pop() { m_container.pop_back(); }
 

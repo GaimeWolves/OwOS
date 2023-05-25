@@ -19,7 +19,7 @@
 #include <tests.hpp>
 #include <time/EventManager.hpp>
 #include <time/PIT.hpp>
-#include <tty/TTY.hpp>
+#include <tty/VirtualConsole.hpp>
 #include <vga/textmode.hpp>
 
 namespace Kernel
@@ -55,16 +55,16 @@ namespace Kernel
 		// TODO: Get root partition through cmdline arguments
 		VirtualFileSystem::instance().initialize(AHCIManager::instance().devices()[0].partitions()[1]);
 
-		TTY::initialize();
+		VirtualConsole::initialize();
 
 		log("SMP", "Starting scheduler and sleeping until first tick...");
 
 		auto process = ELF::load("/bin/test");
 		process->start();
 
-		CoreScheduler::initialize();
-
 		start_logger_thread();
+
+		CoreScheduler::initialize();
 
 		for (;;)
 			CPU::Processor::sleep();

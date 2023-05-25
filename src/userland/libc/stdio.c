@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <__debug.h>
+
 #include <sys/internals.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -7,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #include "__printf.h"
 
@@ -37,16 +40,57 @@ void __stdio_init()
 
 int fclose(FILE *stream)
 {
+	TRACE("fclose(%p)\n", stream);
+
 	return close(stream->fd);
+}
+
+int fflush(FILE *stream)
+{
+	TRACE("fflush(%p)\n", stream);
+	(void)stream;
+	puts("fflush() not fully implemented, as no buffering is done at the moment");
+	return 0;
 }
 
 int fileno(FILE *stream)
 {
+	TRACE("fileno(%p)\n", stream);
+
 	return stream->fd;
+}
+
+int feof(FILE *stream)
+{
+	TRACE("feof(%p)\n", stream);
+
+	(void)stream;
+	puts("feof() not implemented");
+	abort();
+}
+
+int ferror(FILE *stream)
+{
+	TRACE("ferror(%p)\n", stream);
+
+	(void)stream;
+	puts("ferror() not implemented");
+	abort();
+}
+
+void clearerr(FILE *stream)
+{
+	TRACE("clearerr(%p)\n", stream);
+
+	(void)stream;
+	puts("clearerr() not implemented");
+	abort();
 }
 
 FILE *fopen(const char *__restrict pathname, const char *__restrict mode)
 {
+	TRACE("fopen(%s, %s)\n", pathname, mode);
+
 	(void)mode;
 
 	int fd = open(pathname, 0, 0);
@@ -57,17 +101,33 @@ FILE *fopen(const char *__restrict pathname, const char *__restrict mode)
 	return file;
 }
 
-int fprintf(FILE *__restrict file, const char *__restrict fmt, ...)
+FILE *fdopen(int fildes, const char *mode)
 {
-	va_list ap;
-	va_start(ap, fmt);
-	int written = vfprintf(file, fmt, ap);
-	va_end(ap);
-	return written;
+	TRACE("fdopen(%d, %s)\n", fildes, mode);
+
+	(void)mode;
+
+	FILE *file = (FILE *)malloc(sizeof(FILE));
+	file->fd = fildes;
+
+	return file;
+}
+
+FILE *freopen(const char *restrict pathname, const char *restrict mode, FILE *restrict stream)
+{
+	TRACE("freopen(%s, %s, %p)\n", pathname, mode, stream);
+
+	(void)pathname;
+	(void)mode;
+	(void)stream;
+	puts("freopen() not implemented");
+	abort();
 }
 
 int fputc(int c, FILE *file)
 {
+	// TRACE("fputc(%c, %p)\n", c, file);
+
 	unsigned char ch = c;
 	ssize_t ret = write(file->fd, &ch, 1);
 
@@ -77,18 +137,114 @@ int fputc(int c, FILE *file)
 	return ch;
 }
 
-int printf(const char *__restrict fmt, ...)
+int fputs(const char *restrict s, FILE *restrict stream)
 {
-	va_list ap;
-	va_start(ap, fmt);
-	int written = vfprintf(stdout, fmt, ap);
-	va_end(ap);
-	return written;
+	TRACE("fputs(%s, %p)\n", s, stream);
+
+	(void)s;
+	(void)stream;
+	puts("fputs() not implemented");
+	abort();
+}
+
+int fgetc(FILE *stream)
+{
+	TRACE("fgetc(%p)\n", stream);
+
+	int ch = 0;
+	ssize_t ret = read(stream->fd, &ch, 1);
+
+	if (ret < 0)
+		return EOF;
+
+	return ch;
+}
+
+char *fgets(char *restrict s, int n, FILE *restrict stream)
+{
+	TRACE("fgets(%s, %d, %p)\n", s, n, stream);
+
+	(void)s;
+	(void)n;
+	(void)stream;
+	puts("fgets() not implemented");
+	abort();
+}
+
+// https://pubs.opengroup.org/onlinepubs/9699919799/functions/fread.html
+size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream)
+{
+	TRACE("fread(%p, %lu, %lu, %p)\n", ptr, size, nitems, stream);
+
+	if (!ptr || !stream)
+		return 0;
+
+	// NOTE: The spec says:
+	// For each object, size calls shall be made to the fgetc() function and the results stored,
+	// in the order read, in an array of unsigned char exactly overlaying the object.
+	//
+	// But a single call to read is equivalent for now
+
+	return read(stream->fd, ptr, nitems * size);
+}
+
+int fseek(FILE *stream, long offset, int whence)
+{
+	TRACE("fseek(%p, %ld, %d)\n", stream, offset, whence);
+
+	(void)stream;
+	(void)offset;
+	(void)whence;
+	puts("fseek() not implemented");
+	abort();
+}
+
+void rewind(FILE *stream)
+{
+	TRACE("rewind(%p)\n", stream);
+
+	(void)stream;
+	puts("rewind() not implemented");
+	abort();
+}
+
+long ftell(FILE *stream)
+{
+	TRACE("ftell(%p)\n", stream);
+
+	(void)stream;
+	puts("ftell() not implemented");
+	abort();
+}
+
+size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream)
+{
+	TRACE("fwrite(%p, %lu, %lu, %p)\n", ptr, size, nitems, stream);
+
+	size_t num = 0;
+	const char *data = ptr;
+	while (nitems--) {
+		size_t count = size;
+		while (count--) {
+			fputc(*data++, stream);
+		}
+		num++;
+	}
+
+	return num;
 }
 
 int putchar(int c)
 {
 	return fputc(c, stdout);
+}
+
+int putc(int c, FILE *stream)
+{
+	(void)c;
+	(void)stream;
+	puts("putc() not implemented");
+	abort();
 }
 
 int puts(const char *s)
@@ -107,8 +263,68 @@ int puts(const char *s)
 	return 0;
 }
 
+void perror(const char *s)
+{
+	if (s && *s)
+		fprintf(stderr, "%s: %s\n", s, strerror(errno));
+	else
+		fprintf(stderr, "%s\n", strerror(errno));
+}
+
+int printf(const char *__restrict fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	int written = vfprintf(stdout, fmt, ap);
+
+	va_end(ap);
+
+	return written;
+}
+
+int fprintf(FILE *__restrict file, const char *__restrict fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	int written = vfprintf(file, fmt, ap);
+
+	va_end(ap);
+
+	return written;
+}
+
+int sprintf(char *restrict s, const char *restrict format, ...)
+{
+	TRACE("sprintf(%p, %s)\n", s, format);
+
+	va_list ap;
+	va_start(ap, format);
+
+	int written = vsnprintf(s, INT_MAX, format, ap);
+
+	va_end(ap);
+
+	return written;
+}
+
+int snprintf(char *restrict s, size_t n, const char *restrict format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+
+	int written = vsnprintf(s, n, format, ap);
+
+	va_end(ap);
+
+	return written;
+}
+
 int vfprintf(FILE *__restrict file, const char *__restrict fmt, va_list ap)
 {
+	TRACE("vfprintf(%p, %s, %p)\n", file, fmt, ap);
+
 	printf_conv_t conversion = { 0 };
 
 	conversion.ap = ap;
@@ -124,4 +340,44 @@ int vfprintf(FILE *__restrict file, const char *__restrict fmt, va_list ap)
 int vprintf(const char *__restrict format, va_list ap)
 {
 	return vfprintf(stdout, format, ap);
+}
+
+int vsprintf(char *restrict s, const char *restrict format, va_list ap)
+{
+	return vsnprintf(s, INT_MAX, format, ap);
+}
+
+int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list ap)
+{
+	TRACE("vsnprintf(%p, %lu, %s, %p)\n", s, n, format, ap);
+
+	printf_conv_t conversion = { 0 };
+
+	conversion.ap = ap;
+	conversion.buffer = s;
+	conversion.bufsz = n;
+	conversion.format = format;
+
+	__printf_impl(&conversion);
+
+	return conversion.written;
+}
+
+int sscanf(const char *restrict s, const char *restrict format, ...)
+{
+	TRACE("sscanf(%s, %s)\n", s, format);
+
+	(void)s;
+	(void)format;
+	puts("sscanf() not implemented");
+	abort();
+}
+
+char *tmpnam(char *s)
+{
+	TRACE("tmpnam(%s)\n", s);
+
+	(void)s;
+	puts("tmpnam() not implemented");
+	abort();
 }

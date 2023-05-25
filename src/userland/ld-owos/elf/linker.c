@@ -67,6 +67,10 @@ void do_relocation(shared_object_t *shared_object, Elf32_Rel *relocation)
 		if (!name)
 			name = "R_386_JMP_SLOT";
 		__attribute__((fallthrough));
+	case R_386_32:
+		if (!name)
+			name = "R_386_32";
+		__attribute__((fallthrough));
 	case R_386_PC32:
 		if (!name)
 			name = "R_386_PC32";
@@ -99,5 +103,6 @@ void do_relocation_with_addend(shared_object_t *shared_object, Elf32_Rela *reloc
 	(void)shared_object;
 	(void)relocation;
 	puts("TODO: rela relocations");
+	abort();
 }
 

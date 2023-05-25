@@ -11,6 +11,11 @@
 
 namespace Kernel::Time
 {
+	constexpr uint64_t from_seconds(uint64_t seconds) { return seconds *= 1000000000; }
+	constexpr uint64_t from_milliseconds(uint64_t milliseconds) { return milliseconds *= 1000000; }
+	constexpr uint64_t from_microseconds(uint64_t microseconds) { return microseconds *= 1000; }
+
+	// TODO: Prevent timer interrupts getting missed (specifically non core-local)
 	class EventManager
 	{
 	private:

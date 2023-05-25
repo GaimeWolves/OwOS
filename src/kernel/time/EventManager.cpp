@@ -66,19 +66,7 @@ namespace Kernel::Time
 
 		for (auto it = event_queue.begin(); it != event_queue.end(); ++it)
 		{
-			if (event.nanoseconds == it->nanoseconds)
-			{
-				// Merge the two events into one, calling both callback methods
-				auto firstCall = it->callback;
-				auto secondCall = event.callback;
-				it->callback = [=]() {
-					firstCall();
-					secondCall();
-				};
-
-				return;
-			}
-			else if (event.nanoseconds < it->nanoseconds)
+			if (event.nanoseconds <= it->nanoseconds)
 			{
 				bool reschedule = it == event_queue.begin();
 
@@ -120,20 +108,36 @@ namespace Kernel::Time
 	{
 		event_t event;
 
+		CPU::Processor &core = CPU::Processor::current();
+		EventQueue &event_queue = timer.timer_type() == TimerType::CPU ? core.get_event_queue() : m_scheduled_events;
+
+		while (true)
 		{
-			CPU::Processor &core = CPU::Processor::current();
-			EventQueue &event_queue = timer.timer_type() == TimerType::CPU ? core.get_event_queue() : m_scheduled_events;
-			auto queue = event_queue.get();
+			{
+				auto queue = event_queue.get();
 
-			if (queue->empty())
-				return;
+				if (queue->empty())
+					return;
 
-			event = queue->front();
-			queue->erase(queue->begin());
-			schedule_next_event(*queue);
+				event = queue->front();
+				queue->erase(queue->begin());
+			}
+
+			if (core.is_scheduler_running())
+				CPU::Processor::current().defer_call(LibK::move(event.callback));
+			else
+				event.callback();
+
+			{
+				auto queue = event_queue.get();
+
+				if (!queue->empty() && queue->front().nanoseconds == 0)
+					continue;
+
+				schedule_next_event(*queue);
+				break;
+			}
 		}
-
-		event.callback();
 	}
 
 	uint64_t EventManager::reduce_by(Timer &timer, uint64_t nanoseconds)
@@ -157,12 +161,15 @@ namespace Kernel::Time
 		uint64_t largest_possible_time = 0;
 		Timer *best_timer;
 
+		assert(event.nanoseconds > 0);
+
 		for (auto timer : m_available_timers)
 		{
 			if ((timer->timer_type() != TimerType::CPU && event.core_local) || (timer->timer_type() != TimerType::Global && !event.core_local))
 				continue;
 
 			uint64_t interval = (event.nanoseconds) / timer->get_time_quantum_in_ns();
+
 			if (interval <= timer->get_maximum_interval())
 			{
 				timer->start(interval);

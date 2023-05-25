@@ -31,14 +31,14 @@ set(LIBK_INCLUDES
     include/libk/kutility.hpp
     include/libk/kvector.hpp
     include/libk/printf.hpp
-    include/libk/StringView.hpp)
+    include/libk/StringView.hpp include/libk/ErrorOr.hpp include/libk/kcstdlib.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
     libk/kcctype.cpp
     libk/kcstdio.cpp
     libk/kcstring.cpp
-    libk/printf.cpp)
+    libk/printf.cpp libk/kcstdlib.cpp)
 
 set(KERNEL_INCLUDES
     include/arch/definitions.hpp
@@ -116,7 +116,7 @@ set(KERNEL_INCLUDES
     include/tty/FramebufferConsole.hpp
     include/tty/psf.hpp
     include/tty/TTY.hpp
-    include/vga/textmode.hpp)
+    include/vga/textmode.hpp include/tty/Terminal.hpp include/tty/ANSIColor.hpp include/tty/VirtualConsole.hpp)
 
 set(KERNEL_SOURCES
     arch/Processor.cpp
@@ -159,13 +159,13 @@ set(KERNEL_SOURCES
     storage/PartitionDevice.cpp
     storage/StorageDevice.cpp
     syscall/close.cpp
+    syscall/ioctl.cpp
     syscall/mmap.cpp
     syscall/munmap.cpp
     syscall/open.cpp
     syscall/read.cpp
     syscall/stat.cpp
     syscall/SyscallDispatcher.cpp
-    syscall/test.cpp
     syscall/write.cpp
     tests/definitions.hpp
     tests/test_crtx.cpp
@@ -177,7 +177,7 @@ set(KERNEL_SOURCES
     tty/FramebufferConsole.cpp
     tty/psf.cpp
     tty/TTY.cpp
-    vga/textmode.cpp)
+    vga/textmode.cpp tty/Terminal.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

@@ -14,6 +14,7 @@ libc:
 	mkdir -p bin
 	cmake -H. -Bbuild
 	${MAKE} -C build libc
+	${MAKE} -C build install
 
 .PHONY: run
 run: all

@@ -6,7 +6,7 @@
 #include "filesystem/File.hpp"
 #include <arch/Processor.hpp>
 #include <filesystem/VirtualFileSystem.hpp>
-#include <tty/TTY.hpp>
+#include <tty/VirtualConsole.hpp>
 
 namespace Kernel::ELF
 {
@@ -31,9 +31,11 @@ namespace Kernel::ELF
 		// Arguments for testing purposes
 		static const char *env1_data = "HOME=/usr/";
 		static const char *env2_data = "PATH=/bin/";
+		static const char *env3_data = "TERM=xterm";
 
 		auto main_thread = process->get_thread_by_index(0);
 
+		char *env3 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env3_data, strlen(env3_data) + 1));
 		char *env2 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env2_data, strlen(env2_data) + 1));
 		char *env1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env1_data, strlen(env1_data) + 1));
 		char *arg1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filepath, strlen(filepath) + 1));
@@ -71,12 +73,13 @@ namespace Kernel::ELF
 		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
 
 		CPU::Processor::thread_push_userspace_data(main_thread, nullptr);
+		CPU::Processor::thread_push_userspace_data(main_thread, env3);
 		CPU::Processor::thread_push_userspace_data(main_thread, env2);
 		CPU::Processor::thread_push_userspace_data(main_thread, env1);
 
 		CPU::Processor::thread_push_userspace_data(main_thread, nullptr);
 		CPU::Processor::thread_push_userspace_data(main_thread, arg1);
-		CPU::Processor::thread_push_userspace_data(main_thread, (int)2);
+		CPU::Processor::thread_push_userspace_data(main_thread, (int)1);
 	}
 
 	static void load_dynamic_loader_image()
@@ -152,9 +155,9 @@ namespace Kernel::ELF
 		auto process = new Process(entry);
 
 		// Temporary stdio device files
-		process->add_file(TTY::get_tty()->open(O_RDONLY));
-		process->add_file(TTY::get_tty()->open(O_WRONLY));
-		process->add_file(TTY::get_tty()->open(O_WRONLY));
+		process->add_file(VirtualConsole::get_current().open(O_RDONLY));
+		process->add_file(VirtualConsole::get_current().open(O_WRONLY));
+		process->add_file(VirtualConsole::get_current().open(O_WRONLY));
 
 		auto fd = file->open(O_RDWR);
 		process->add_file(LibK::move(fd));

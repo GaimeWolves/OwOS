@@ -1,5 +1,6 @@
 #include <filesystem/Ext2FileSystem.hpp>
 
+#include "logging/logger.hpp"
 #include <libk/kcstdio.hpp>
 
 #define EXT2_SIGNATURE 0xef53
@@ -64,15 +65,17 @@ namespace Kernel
 			if (m_current_pointer.triply_indirect_block != next_pointer.triply_indirect_block)
 			{
 				m_filesystem.read(m_inode_metadata.triply_indirect_ptr, 1, m_triple_region.phys_address);
-				m_filesystem.read(m_triple_array[m_current_pointer.doubly_indirect_block], 1, m_double_region.phys_address);
-				m_filesystem.read(m_double_array[m_current_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				m_filesystem.read(m_triple_array[next_pointer.doubly_indirect_block], 1, m_double_region.phys_address);
+				m_filesystem.read(m_double_array[next_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				m_current_pointer = next_pointer;
 				return;
 			}
 
 			if (m_current_pointer.doubly_indirect_block != next_pointer.doubly_indirect_block)
 			{
 				m_filesystem.read(m_inode_metadata.doubly_indirect_ptr, 1, m_double_region.phys_address);
-				m_filesystem.read(m_double_array[m_current_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				m_filesystem.read(m_double_array[next_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				m_current_pointer = next_pointer;
 				return;
 			}
 
@@ -119,11 +122,25 @@ namespace Kernel
 			block_pointer.direct_block = 0;
 			block_pointer.singly_indirect_block++;
 
+			if (block_pointer.triply_indirect_block == 0 && block_pointer.doubly_indirect_block == 0 && block_pointer.singly_indirect_block == 2)
+			{
+				block_pointer.singly_indirect_block = 0;
+				block_pointer.doubly_indirect_block++;
+				return block_pointer;
+			}
+
 			if (block_pointer.singly_indirect_block < inodes_per_block)
 				return block_pointer;
 
 			block_pointer.singly_indirect_block = 0;
 			block_pointer.doubly_indirect_block++;
+
+			if (block_pointer.triply_indirect_block == 0 && block_pointer.doubly_indirect_block == 2)
+			{
+				block_pointer.doubly_indirect_block = 0;
+				block_pointer.triply_indirect_block++;
+				return block_pointer;
+			}
 
 			if (block_pointer.doubly_indirect_block < inodes_per_block)
 				return block_pointer;
@@ -166,6 +183,7 @@ namespace Kernel
 		while (bytes > 0)
 		{
 			uint32_t block = block_iterator.get();
+
 			m_filesystem->read(block, 1, region.phys_address);
 			region.phys_address += m_filesystem->m_block_size;
 
@@ -340,19 +358,36 @@ namespace Kernel
 
 		// TODO: Extend API to accept physical addresses instead of regions
 		auto region = Memory::VirtualMemoryManager::instance().allocate_region(blocks_used * m_block_size);
-		m_device->read_blocks(inode.direct_ptr[0] * m_sectors_per_block, m_sectors_per_block, region);
 		auto directory_entry = reinterpret_cast<directory_entry_t *>(region.virt_address);
+
+		auto block_iterator = Ext2BlockIterator(0, inode, m_block_size, *this);
+
+		for (size_t i = 0; i < blocks_used; i++)
+		{
+			uint32_t block = block_iterator.get();
+
+			read(block, 1, region.phys_address);
+			region.phys_address += m_block_size;
+
+			block_iterator.next();
+		}
+
+		char *name = static_cast<char *>(kmalloc(UINT8_MAX + 1));
 
 		while (directory_entry->inode != 0)
 		{
+			memcpy(name, directory_entry->name, directory_entry->name_length_low);
+			name[directory_entry->name_length_low] = '\0';
+
 			if (m_superblock->directory_types)
-				files.push_back(new Ext2File(this, directory_entry->inode, directory_entry->name, from_directory_entry_type(directory_entry->type_indicator)));
+				files.push_back(new Ext2File(this, directory_entry->inode, name, from_directory_entry_type(directory_entry->type_indicator)));
 			else
-				files.push_back(new Ext2File(this, directory_entry->inode, directory_entry->name));
+				files.push_back(new Ext2File(this, directory_entry->inode, name));
 
 			directory_entry = reinterpret_cast<directory_entry_t *>((uintptr_t)directory_entry + directory_entry->size);
 		}
 
+		kfree(name);
 		Memory::VirtualMemoryManager::instance().free(region);
 
 		return files;

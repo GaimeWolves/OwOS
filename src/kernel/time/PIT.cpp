@@ -1,6 +1,7 @@
 #include <time/PIT.hpp>
 
 #include <time/EventManager.hpp>
+#include <logging/logger.hpp>
 
 #define CMD_CHANNEL_0 (0b00 << 6)
 #define CMD_CHANNEL_1 (0b01 << 6)
@@ -48,6 +49,8 @@ namespace Kernel::Time
 
 	void PIT::handle_interrupt(const CPU::interrupt_frame_t &regs __unused)
 	{
+		// TODO: investigate missed PIT interrupts
+		log("DEBUG", "PIT called");
 		m_handle_callback(*this);
 	}
 } // namespace Kernel::Time

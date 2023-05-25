@@ -83,3 +83,20 @@ uintptr_t __do_syscall5(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __s
 
 	return ret;
 }
+
+uintptr_t __do_syscall6(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4, __sc_word_t arg5, __sc_word_t arg6)
+{
+	uintptr_t ret;
+
+	asm volatile(
+	    "push %%ebp\n"
+	    "push %[ebp]\n"
+	    "pop %%ebp\n"
+	    "int $0x80\n"
+	    "pop %%ebp"
+	             : "=a"(ret)
+	             : "a"(syscall), "b"(arg1), "c"(arg2), "d"(arg3), "D"(arg4), "S"(arg5), [ebp] "m"(arg6)
+	             : "memory");
+
+	return ret;
+}

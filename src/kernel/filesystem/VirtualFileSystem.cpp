@@ -28,7 +28,10 @@ namespace Kernel
 	{
 		auto current_offset = path.c_str();
 
-		assert(*current_offset++ == '/'); // TODO: Relative paths using process CWD
+		// TODO: Relative paths using process CWD
+		if (*current_offset++ != '/') {
+			return nullptr;
+		}
 
 		vfs_node_t *current_file = &m_root_node;
 

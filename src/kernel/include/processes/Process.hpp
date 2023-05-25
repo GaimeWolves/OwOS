@@ -36,5 +36,6 @@ namespace Kernel
 		LibK::vector<thread_t *> m_threads;
 		Memory::memory_space_t m_memory_space;
 		uintptr_t m_entrypoint{};
+		bool m_initialized{false};
 	};
 }

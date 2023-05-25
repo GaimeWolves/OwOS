@@ -1,5 +1,9 @@
 #pragma once
 
+#include <bits/guards.h>
+
+__LIBC_HEADER_BEGIN
+
 #define __ENUM_ERRNO_CODES(E)     \
 	E(ESUCCESS, "No error")       \
 	E(EACCES, "")                 \
@@ -11,9 +15,12 @@
 	E(ENOMEM, "")                 \
 	E(ENOTSUP, "")                \
 	E(ENXIO, "")                  \
-	E(EOVERFLOW, "")
+	E(EOVERFLOW, "")              \
+	E(ENOTTY, "")                 \
+	E(ENOENT, "")                 \
+	E(EINTR, "")
 
-enum ErrnoCodes
+enum __ErrnoCode
 {
 #define __ENUM_FN(constant, string) constant,
 	__ENUM_ERRNO_CODES(__ENUM_FN)
@@ -25,3 +32,5 @@ extern int errno;
 #ifndef __LIBC_KEEP_DEFS
 #	undef __ENUM_ERRNO_CODES
 #endif
+
+__LIBC_HEADER_END

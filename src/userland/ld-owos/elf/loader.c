@@ -233,11 +233,23 @@ shared_object_t *load_dependency_by_name(const char *soname)
 		return shared_object;
 
 	// TODO: correct library search
-	size_t path_length = strlen("/lib/") + strlen(soname) + 1;
-	char *path = malloc(path_length);
-	memset(path, 0, path_length);
-	strcat(path, "/lib/");
-	strcat(path, soname);
+	char *path;
+	if (strcmp(soname, "libc.so.1") == 0)
+	{
+		size_t path_length = strlen("/lib/") + strlen(soname) + 1;
+		path = malloc(path_length);
+		memset(path, 0, path_length);
+		strcat(path, "/lib/");
+		strcat(path, soname);
+	}
+	else
+	{
+		size_t path_length = strlen("/usr/lib/") + strlen(soname) + 1;
+		path = malloc(path_length);
+		memset(path, 0, path_length);
+		strcat(path, "/usr/lib/");
+		strcat(path, soname);
+	}
 
 	FILE *file = fopen(path, "r");
 	free(path);
@@ -308,7 +320,7 @@ static void recursive_call_init_functions(shared_object_t *so)
 	}
 
 	if (so->sections.init)
-		call_function(so->sections.init[0]);
+		call_function((Elf32_Addr)so->sections.init);
 
 	for (size_t i = 0; i < so->init_count; i++)
 		call_function(so->sections.init_array[i]);
@@ -325,7 +337,7 @@ void call_init_functions(shared_object_t *so)
 
 	debug_puts(1, "Calling init functions recursively");
 
-	for (size_t i = 0; i < so->dependency_count; i++)
+ 	for (size_t i = 0; i < so->dependency_count; i++)
 	{
 		if (so->dependencies[i]->handled)
 			continue;

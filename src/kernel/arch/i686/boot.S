@@ -21,8 +21,8 @@
 
     // MULTIBOOT_VIDEO_MODE
     .long 0
-    .long 1280
-    .long 720
+    .long 1024
+    .long 768
     .long 32
 
 .section .bss

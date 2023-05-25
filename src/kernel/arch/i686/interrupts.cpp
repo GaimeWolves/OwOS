@@ -132,6 +132,8 @@ namespace Kernel::CPU
 	extern "C" void common_interrupt_handler(interrupt_frame_t *regs)
 	{
 		Processor &core = Processor::current();
+		if (regs->isr_number != 0x80)
+			core.increment_irq_counter();
 
 		/*
 		if (regs->isr_number == 0xfc)
@@ -164,8 +166,10 @@ namespace Kernel::CPU
 		}
 		 */
 
+		core.enter_critical();
 		core.get_exit_function_stack().push([](){});
 		core.get_interrupt_frame_stack().push(regs);
+		core.leave_critical();
 		auto handler = core.get_interrupt_handler(regs->isr_number);
 
 		if (!handler)
@@ -174,10 +178,16 @@ namespace Kernel::CPU
 		Memory::Arch::check_page_directory();
 
 		handler->handle_interrupt(*regs);
+		core.enter_critical();
 		core.get_interrupt_frame_stack().pop();
-		handler->eoi();
 		auto exit = core.get_exit_function_stack().top();
 		core.get_exit_function_stack().pop();
+		core.leave_critical();
+
+		if (regs->isr_number != 0x80)
+			core.decrement_irq_counter();
+
+		handler->eoi();
 		exit();
 	}
 
