@@ -59,5 +59,7 @@ namespace Kernel::CPU
 		uint32_t eflags;
 		uint32_t old_esp;
 		uint32_t old_ss;
+
+		void set_return_value(uintptr_t value) { eax = value; }
 	} interrupt_frame_t;
 } // namespace Kernel::Processor

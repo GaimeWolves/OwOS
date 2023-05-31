@@ -19,11 +19,11 @@ __LIBC_HEADER_BEGIN
 
 	int close(int);
 
-	int execv(const char *, char *const []);
-	int execve(const char *, char *const [], char *const []);
+    int execv(const char *path, char *const argv[]);
+    int execve(const char *path, char *const argv[], char *const envp[]);
 	int execvp(const char *, char *const []);
 
-	pid_t fork(void);
+    pid_t fork(void);
 
     int access(const char *path, int amode);
     int chdir(const char *path);

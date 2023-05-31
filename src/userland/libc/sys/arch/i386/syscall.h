@@ -12,7 +12,11 @@
 	S(stat)               \
 	S(open)               \
 	S(close)              \
-	S(ioctl)
+	S(ioctl)              \
+	S(exec)               \
+	S(fork)               \
+	S(exit)               \
+	S(waitpid)
 
 typedef enum Syscall
 {
@@ -53,7 +57,7 @@ uintptr_t __do_syscall4(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __s
 uintptr_t __do_syscall5(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4, __sc_word_t arg5);
 uintptr_t __do_syscall6(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4, __sc_word_t arg5, __sc_word_t arg6);
 
-#define __SC_stat_TYPE_FSTAT 1
-#define __SC_stat_TYPE_LSTAT 2
-#define __SC_stat_TYPE_STAT 3
+#define __SC_stat_TYPE_FSTAT   1
+#define __SC_stat_TYPE_LSTAT   2
+#define __SC_stat_TYPE_STAT    3
 #define __SC_stat_TYPE_FSTATAT 4

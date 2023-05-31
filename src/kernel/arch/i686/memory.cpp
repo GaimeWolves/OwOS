@@ -30,6 +30,8 @@
 #define PAGE_DIRECTORY_ADDR   0xFFFFF000
 #define PAGE_TABLE_ARRAY_ADDR 0xFFC00000
 
+#define FIXED_PAGE_TABLE_MAP_ADDR (PAGE_TABLE_ARRAY_ADDR - PAGE_SIZE)
+
 #define PAT_MODE_UNCACHEABLE     0
 #define PAT_MODE_WRITE_COMBINING 1
 #define PAT_MODE_WRITETHROUGH    4
@@ -93,6 +95,9 @@ namespace Kernel::Memory::Arch
 	inline static page_directory_t &get_page_directory();
 	inline static page_table_t &get_page_table(size_t pd_index);
 
+	inline static page_directory_t &get_page_directory_for(paging_space_t &memory_space);
+	inline static page_table_t &get_page_table_for(paging_space_t &memory_space, size_t pd_index);
+
 	inline static bool get_write_through_from_pat_index(uint8_t pat_index);
 	inline static bool get_cache_disable_from_pat_index(uint8_t pat_index);
 	inline static bool get_page_attribute_from_pat_index(uint8_t pat_index);
@@ -154,6 +159,28 @@ namespace Kernel::Memory::Arch
 		return *(page_table_t *)(PAGE_TABLE_ARRAY_ADDR + PAGE_SIZE * pd_index);
 	}
 
+	inline static page_directory_t &get_page_directory_for(paging_space_t &memory_space)
+	{
+		return *memory_space.page_directory;
+	}
+
+	inline static page_table_t &get_page_table_for(paging_space_t &memory_space, size_t pd_index)
+	{
+		constexpr uintptr_t map_pd_index = get_pd_index(FIXED_PAGE_TABLE_MAP_ADDR);
+		constexpr uintptr_t map_pt_index = get_pt_index(FIXED_PAGE_TABLE_MAP_ADDR);
+
+		auto page_directory = get_page_directory();
+
+		assert(page_directory[map_pd_index].present);
+
+		auto &page_table = get_page_table(map_pd_index);
+
+		page_table[map_pt_index] = create_pte((uintptr_t)memory_space.mapping_table->pages[pd_index].page(), page_directory[map_pd_index], false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
+
+		invalidate(FIXED_PAGE_TABLE_MAP_ADDR);
+		return *(page_table_t *)FIXED_PAGE_TABLE_MAP_ADDR;
+	}
+
 	inline static bool get_write_through_from_pat_index(uint8_t pat_index)
 	{
 		return pat_index & 1;
@@ -207,8 +234,7 @@ namespace Kernel::Memory::Arch
 		mapping_table[pd_index] = raw_create_pte(table_addr, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 
 		// Clear it immediately to prevent bugs when we use this page table
-		auto page_table = &get_page_table(pd_index);
-		invalidate((uintptr_t)page_table);
+		auto page_table = &get_page_table_for(memory_space, pd_index);
 		memset(page_table, 0, PAGE_SIZE);
 
 		return raw_create_pde(table_addr, is_user, is_writeable, pat_index);
@@ -260,6 +286,18 @@ namespace Kernel::Memory::Arch
 		assert(page_table[pt_index].present);
 
 		return (uintptr_t)page_table[pt_index].page() + get_offset(virt_addr);
+	}
+
+	uintptr_t as_physical_for(paging_space_t &memory_space, uintptr_t virt_addr)
+	{
+		uintptr_t pd_index = get_pd_index(virt_addr);
+		uintptr_t pt_index = get_pt_index(virt_addr);
+
+		auto &page_table = get_page_table_for(memory_space, pd_index);
+		assert(page_table[pt_index].present);
+		uintptr_t address = (uintptr_t)page_table[pt_index].page() + get_offset(virt_addr);
+
+		return address;
 	}
 
 	void initialize()
@@ -330,6 +368,17 @@ namespace Kernel::Memory::Arch
 			page_table[pt_index] = raw_create_pte(page_address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
 		}
 
+		auto *page_table_ptr = (page_table_t *)kcalloc(PAGE_SIZE, PAGE_SIZE);
+		assert(page_table_ptr);
+
+		auto &page_table = *page_table_ptr;
+
+		uintptr_t address = (uintptr_t)&page_table - (uintptr_t)&_virtual_addr;
+
+		constexpr uintptr_t map_pd_index = get_pd_index(FIXED_PAGE_TABLE_MAP_ADDR);
+		page_directory[map_pd_index] = raw_create_pde(address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
+		mapping_table[map_pd_index] = raw_create_pte(address, false, true, caching_mode_to_pat_index(CachingMode::Uncacheable));
+
 		s_kernel_paging_space = paging_space_t{
 		    .physical_pd_address = pd_address,
 		    .page_directory = &page_directory,
@@ -388,11 +437,11 @@ namespace Kernel::Memory::Arch
 
 		uint8_t pat_index = caching_mode_to_pat_index(config.caching_mode);
 
+		auto &page_directory = get_page_directory_for(memory_space);
+
 		for_page_in_range(virt_addr, size, [&](uintptr_t virt_addr) {
 			size_t pd_index = get_pd_index(virt_addr);
 			size_t pt_index = get_pt_index(virt_addr);
-
-			auto &page_directory = get_page_directory();
 
 			if (page_directory[pd_index].value() == 0)
 			{
@@ -408,10 +457,7 @@ namespace Kernel::Memory::Arch
 						processor.get_memory_space()->paging_space.page_directory_version = s_page_directory_version;
 						processor.smp_broadcast(LibK::make_shared<DirectoryInvalidatedMessage>(), true);
 					}
-					else
-					{
-						page_directory[pd_index] = s_master_page_directory->tables[pd_index];
-					}
+					page_directory[pd_index] = s_master_page_directory->tables[pd_index];
 					s_page_directory_lock.unlock();
 				}
 				else
@@ -422,7 +468,7 @@ namespace Kernel::Memory::Arch
 
 			assert(page_directory[pd_index].present);
 
-			auto &page_table = get_page_table(pd_index);
+			auto &page_table = get_page_table_for(memory_space, pd_index);
 
 			assert(!page_table[pt_index].present);
 
@@ -442,15 +488,16 @@ namespace Kernel::Memory::Arch
 		LibK::vector<size_t> page_tables_to_check = LibK::vector<size_t>();
 		size_t current = PAGE_COUNT;
 
+		auto &page_directory = get_page_directory_for(memory_space);
+
 		for_page_in_range(virt_addr, size, [&](uintptr_t virt_addr) {
 			static const page_table_entry_t null_pt_entry{};
 
 			size_t pd_index = get_pd_index(virt_addr);
-			auto &page_directory = get_page_directory();
 			assert(page_directory[pd_index].present);
 
 			size_t pt_index = get_pt_index(virt_addr);
-			auto &page_table = get_page_table(pd_index);
+			auto &page_table = get_page_table_for(memory_space, pd_index);
 			assert(page_table[pt_index].present);
 
 			page_table[pt_index] = null_pt_entry;
@@ -470,7 +517,7 @@ namespace Kernel::Memory::Arch
 		// Check if page directories have become empty
 		for (auto pd_index : page_tables_to_check)
 		{
-			auto &page_table = get_page_table(pd_index);
+			auto &page_table = get_page_table_for(memory_space, pd_index);
 			bool to_delete = true;
 
 			for (size_t i = 0; i < PAGE_COUNT; i++)
@@ -484,7 +531,6 @@ namespace Kernel::Memory::Arch
 
 			if (to_delete)
 			{
-				auto &page_directory = get_page_directory();
 				void *phys_addr = (void *)page_directory[pd_index].table();
 				page_directory[pd_index] = null_pd_entry;
 				PhysicalMemoryManager::instance().free(phys_addr, PAGE_SIZE);

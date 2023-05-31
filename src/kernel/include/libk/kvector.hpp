@@ -107,6 +107,8 @@ namespace Kernel::LibK
 			m_size = n;
 		}
 
+		void clear() { resize(0); }
+
 		void ensure_capacity(size_t n)
 		{
 			if (n > m_capacity)

@@ -7,6 +7,7 @@
 #include <libk/kvector.hpp>
 #include <libk/ErrorOr.hpp>
 
+#include <locking/Mutex.hpp>
 #include <filesystem/definitions.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 
@@ -68,7 +69,20 @@ namespace Kernel
 
 		[[nodiscard]] virtual size_t size() = 0;
 
+		void lock() { m_mutex->lock(); }
+		void unlock() { m_mutex->unlock(); }
+
 	protected:
+		File()
+		    : m_mutex(new Locking::Mutex())
+		{
+		}
+
+		~File()
+		{
+			delete m_mutex;
+		}
+
 		[[nodiscard]] virtual bool can_open_for_read() const = 0;
 		[[nodiscard]] virtual bool can_open_for_write() const = 0;
 
@@ -78,5 +92,7 @@ namespace Kernel
 	private:
 		size_t m_open_read_contexts{0};
 		size_t m_open_write_contexts{0};
+
+		Locking::Mutex *m_mutex{};
 	};
 } // namespace Kernel

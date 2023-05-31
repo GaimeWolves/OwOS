@@ -16,12 +16,14 @@
 #include <processes/CoreScheduler.hpp>
 #include <processes/GlobalScheduler.hpp>
 #include <processes/Process.hpp>
+#include <syscall/SyscallDispatcher.hpp>
 
 namespace Kernel::CPU
 {
 	class Processor
 	{
 	private:
+		friend SyscallDispatcher;
 		friend CoreScheduler;
 		friend GlobalScheduler;
 	public:
@@ -90,20 +92,37 @@ namespace Kernel::CPU
 		Time::EventManager::EventQueue &get_event_queue() { return m_scheduled_events; }
 
 		static thread_t *create_kernel_thread(uintptr_t main_function);
-		static thread_t *create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memorySpace);
+		static thread_t *create_userspace_thread(Memory::memory_space_t &memorySpace);
+		static void initialize_userspace_thread(thread_t *thread, uintptr_t main_function, Memory::memory_space_t &memory_space);
+		static thread_registers_t create_state_for_exec(uintptr_t main_function, uintptr_t userspace_stack_ptr, Memory::memory_space_t &memory_space);
 		static uintptr_t thread_push_userspace_data(thread_t *thread, const char *data, size_t count);
 
 		template <typename T>
 		static uintptr_t thread_push_userspace_data(thread_t *thread, T data)
 		{
-			thread->registers.esp -= sizeof(T);
-			new (reinterpret_cast<void *>(thread->registers.esp)) T(data);
-			return thread->registers.esp;
+			current().enter_critical();
+			uintptr_t esp = thread->has_started ? current().get_interrupt_frame_stack().top()->old_esp : thread->registers.esp;
+
+			if (thread->has_started)
+			{
+				current().get_interrupt_frame_stack().top()->old_esp -= sizeof(T);
+				esp = current().get_interrupt_frame_stack().top()->old_esp;
+			}
+			else
+			{
+				thread->registers.esp -= sizeof(T);
+				esp = thread->registers.esp;
+			}
+			current().leave_critical();
+
+			new (reinterpret_cast<void *>(esp)) T(data);
+			return esp;
 		}
 
 		void enter_thread_context(thread_t &thread);
 		void initial_enter_thread_context(thread_t thread);
 		void update_thread_context(thread_t &thread);
+		void enter_thread_after_exec(thread_t *thread, thread_registers_t registers);
 		[[nodiscard]] bool is_scheduler_running() const { return m_scheduler_initialized; }
 		[[nodiscard]] bool is_thread_running() const { return m_current_thread; }
 		[[nodiscard]] thread_t *get_current_thread() const { return m_current_thread; }
@@ -194,6 +213,7 @@ namespace Kernel::CPU
 		void update_tss(uint32_t esp0);
 
 		static thread_registers_t create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr, bool is_userspace_thread, Memory::Arch::paging_space_t paging_space);
+		static void frame_set_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr);
 
 		always_inline static void sti()
 		{
@@ -245,5 +265,6 @@ namespace Kernel::CPU
 		thread_t *m_current_thread{nullptr};
 		size_t m_current_thread_index{0};
 		thread_t *m_idle_thread{nullptr};
+		thread_t m_thread_enter_store{};
 	};
 }

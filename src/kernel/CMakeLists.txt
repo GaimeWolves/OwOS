@@ -177,7 +177,7 @@ set(KERNEL_SOURCES
     tty/FramebufferConsole.cpp
     tty/psf.cpp
     tty/TTY.cpp
-    vga/textmode.cpp tty/Terminal.cpp)
+    vga/textmode.cpp tty/Terminal.cpp syscall/exit.cpp syscall/exec.cpp syscall/fork.cpp syscall/waitpid.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
@@ -203,8 +203,8 @@ add_custom_command(
 
 add_executable(kernel ${SOURCES} font_out.S)
 
-target_compile_options(kernel PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
-target_compile_options(kernel_heap PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
+target_compile_options(kernel PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
+target_compile_options(kernel_heap PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
 target_link_options(kernel PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
 target_link_options(kernel_heap PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
 

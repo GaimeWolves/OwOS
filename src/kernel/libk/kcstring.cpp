@@ -220,3 +220,21 @@ const char *strchr(const char *str, int character)
 
 	return str;
 }
+
+char *strcpy(char *__restrict dest, const char *__restrict src)
+{
+	char* buf = dest;
+
+	if (!src)
+	{
+		*dest = '\0';
+		return buf;
+	}
+
+	while (*src)
+		*dest++ = *src++;
+
+	*dest = '\0';
+
+	return buf;
+}

@@ -2,7 +2,7 @@
 
 #include <arch/Processor.hpp>
 #include <arch/memory.hpp>
-#include <processes/Process.hpp>
+#include <filesystem/File.hpp>
 
 namespace Kernel
 {
@@ -15,6 +15,11 @@ namespace Kernel
 		region.virt_address = reinterpret_cast<uintptr_t>(buf);
 		region.phys_address = Memory::Arch::as_physical(region.virt_address);
 		region.size = count;
-		return file.read(count, region);
+
+		file.file().lock();
+		uintptr_t read = file.read(count, region);
+		file.file().unlock();
+
+		return read;
 	}
 }

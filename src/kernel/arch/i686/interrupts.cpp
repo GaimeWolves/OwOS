@@ -65,7 +65,7 @@ namespace Kernel::CPU
 		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
 			uint32_t ret_code = SyscallDispatcher::handle_syscall(reg.eax, reg.ebx, reg.ecx, reg.edx, reg.edi, reg.esi);
-			Processor::current().get_interrupt_frame_stack().top()->eax	= ret_code;
+			Processor::current().get_interrupt_frame_stack().top()->set_return_value(ret_code);
 		}
 
 		void eoi() override {}
@@ -134,37 +134,6 @@ namespace Kernel::CPU
 		Processor &core = Processor::current();
 		if (regs->isr_number != 0x80)
 			core.increment_irq_counter();
-
-		/*
-		if (regs->isr_number == 0xfc)
-		{
-		log("DBG", "ORIGINAL FRAME at %p for THREAD %p at TIME %lld:\nss: 0x%.2x\ngs: 0x%.2x\nfs: 0x%.2x\nes: 0x%.2x\nds: 0x%.2x\nedi: %p\nesi: %p\nebp: %p\nesp: %p\nebx: %p\nedx: %p\necx: %p\neax: %p\nisr: 0x%.2x\nerr: %p\neip: %p\ncs: 0x%.2x\neflags: %p\nold_esp: %p\nold_ss: %p",
-		    regs,
-		    core.get_current_thread(),
-		    Processor::read_tsc(),
-		    regs->ss,
-		    regs->gs,
-		    regs->fs,
-		    regs->es,
-		    regs->ds,
-		    regs->edi,
-		    regs->esi,
-		    regs->ebp,
-		    regs->esp,
-		    regs->ebx,
-		    regs->edx,
-		    regs->ecx,
-		    regs->eax,
-		    regs->isr_number,
-		    regs->error_code,
-		    regs->eip,
-		    regs->cs,
-		    regs->eflags,
-		    regs->old_esp,
-		    regs->old_ss
-		);
-		}
-		 */
 
 		core.enter_critical();
 		core.get_exit_function_stack().push([](){});

@@ -12,7 +12,7 @@
 
 shared_object_t *parse_elf_headers(void *base, const char *soname)
 {
-	debug_printf(1, "Parsing shared object '%s'\n", soname);
+	DEBUG_PRINTF(1, "Parsing shared object '%s'\n", soname);
 
 	Elf32_Ehdr *header = (Elf32_Ehdr *)base;
 
@@ -166,45 +166,45 @@ shared_object_t *parse_elf_headers(void *base, const char *soname)
 	object->rel_dyn_count = rel_dyn_count;
 	object->rela_dyn_count = rela_dyn_count;
 
-	debug_puts(2, "Sections:");
-	debug_printf(3, ".dynamic: %p\n", object->sections.dynamic);
-	debug_printf(3, ".dynsym: %p\n", object->sections.dynsym);
-	debug_printf(3, ".dynstr: %p\n", object->sections.dynstr);
-	debug_printf(3, ".got: %p\n", object->sections.got);
-	debug_printf(3, ".rel_dyn: %p\n", object->sections.rel_dyn);
-	debug_printf(3, ".rela_dyn: %p\n", object->sections.rela_dyn);
-	debug_printf(3, ".rel(a)_plt: %p\n", object->sections.rel_plt);
-	debug_printf(3, ".init: %p\n", object->sections.init);
-	debug_printf(3, ".init_array: %p\n", object->sections.init_array);
-	debug_printf(3, ".fini: %p\n", object->sections.fini);
-	debug_printf(3, ".fini_array: %p\n", object->sections.fini_array);
-	debug_printf(3, ".preinit_array: %p\n", object->sections.preinit_array);
+	DEBUG_PUTS(2, "Sections:");
+	DEBUG_PRINTF(3, ".dynamic: %p\n", object->sections.dynamic);
+	DEBUG_PRINTF(3, ".dynsym: %p\n", object->sections.dynsym);
+	DEBUG_PRINTF(3, ".dynstr: %p\n", object->sections.dynstr);
+	DEBUG_PRINTF(3, ".got: %p\n", object->sections.got);
+	DEBUG_PRINTF(3, ".rel_dyn: %p\n", object->sections.rel_dyn);
+	DEBUG_PRINTF(3, ".rela_dyn: %p\n", object->sections.rela_dyn);
+	DEBUG_PRINTF(3, ".rel(a)_plt: %p\n", object->sections.rel_plt);
+	DEBUG_PRINTF(3, ".init: %p\n", object->sections.init);
+	DEBUG_PRINTF(3, ".init_array: %p\n", object->sections.init_array);
+	DEBUG_PRINTF(3, ".fini: %p\n", object->sections.fini);
+	DEBUG_PRINTF(3, ".fini_array: %p\n", object->sections.fini_array);
+	DEBUG_PRINTF(3, ".preinit_array: %p\n", object->sections.preinit_array);
 
-	debug_puts(2, "Relocation counts:");
-	debug_printf(3, ".rel_dyn: %d\n", object->rel_dyn_count);
-	debug_printf(3, ".rela_dyn: %d\n", object->rela_dyn_count);
-	debug_printf(3, ".rel(a)_plt: %d\n", object->rel_plt_count);
+	DEBUG_PUTS(2, "Relocation counts:");
+	DEBUG_PRINTF(3, ".rel_dyn: %d\n", object->rel_dyn_count);
+	DEBUG_PRINTF(3, ".rela_dyn: %d\n", object->rela_dyn_count);
+	DEBUG_PRINTF(3, ".rel(a)_plt: %d\n", object->rel_plt_count);
 
-	debug_puts(2, "Function counts:");
-	debug_printf(3, ".init_array: %d\n", object->init_count);
-	debug_printf(3, ".fini_array: %d\n", object->fini_count);
-	debug_printf(3, ".preinit_array: %d\n", object->preinit_count);
+	DEBUG_PUTS(2, "Function counts:");
+	DEBUG_PRINTF(3, ".init_array: %d\n", object->init_count);
+	DEBUG_PRINTF(3, ".fini_array: %d\n", object->fini_count);
+	DEBUG_PRINTF(3, ".preinit_array: %d\n", object->preinit_count);
 
 	add_shared_object(object);
 
-	debug_puts(2, "Dependencies:");
+	DEBUG_PUTS(2, "Dependencies:");
 
 	for (Elf32_Word i = 0; i < dyn_count; i++)
 	{
 		Elf32_Dyn vec = dynamic_vector[i];
 		if (vec.d_tag == DT_NEEDED)
 		{
-			debug_puts(3, &object->sections.dynstr[vec.d_un.d_val]);
+			DEBUG_PUTS(3, &object->sections.dynstr[vec.d_un.d_val]);
 		}
 	}
 
 	if (dependency_count == 0)
-		debug_puts(3, "(none)");
+		DEBUG_PUTS(3, "(none)");
 
 	int index = 0;
 	for (Elf32_Word i = 0; i < dyn_count; i++)
@@ -226,7 +226,7 @@ shared_object_t *parse_elf_headers(void *base, const char *soname)
 
 shared_object_t *load_dependency_by_name(const char *soname)
 {
-	debug_printf(1, "Loading shared object '%s'\n", soname);
+	DEBUG_PRINTF(1, "Loading shared object '%s'\n", soname);
 	shared_object_t *shared_object = get_shared_object_by_soname(soname);
 
 	if (shared_object)
@@ -277,7 +277,7 @@ shared_object_t *load_dependency_by_name(const char *soname)
 
 	void *image_base = mmap(0, image_size, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-	debug_printf(2, "Loading at %p. Image size: %d\n", image_base, image_size);
+	DEBUG_PRINTF(2, "Loading at %p. Image size: %d\n", image_base, image_size);
 
 	for (int i = 0; i < header->e_phnum; i++)
 	{
@@ -303,14 +303,14 @@ static void call_function(Elf32_Addr func)
 {
 	if (func != 0 && (int)func != -1)
 	{
-		debug_printf(2, "Calling function %p\n", func);
+		DEBUG_PRINTF(2, "Calling function %p\n", func);
 		((init_func_t)func)();
 	}
 }
 
 static void recursive_call_init_functions(shared_object_t *so)
 {
-	debug_printf(2, "Calling init functions of %s\n", so->so_name);
+	DEBUG_PRINTF(2, "Calling init functions of %s\n", so->so_name);
 	for (size_t i = 0; i < so->dependency_count; i++)
 	{
 		if (so->dependencies[i]->handled)
@@ -330,12 +330,12 @@ static void recursive_call_init_functions(shared_object_t *so)
 
 void call_init_functions(shared_object_t *so)
 {
-	debug_puts(1, "Calling preinit functions");
+	DEBUG_PUTS(1, "Calling preinit functions");
 
 	for (size_t i = 0; i < so->preinit_count; i++)
 		call_function(so->sections.preinit_array[i]);
 
-	debug_puts(1, "Calling init functions recursively");
+	DEBUG_PUTS(1, "Calling init functions recursively");
 
  	for (size_t i = 0; i < so->dependency_count; i++)
 	{

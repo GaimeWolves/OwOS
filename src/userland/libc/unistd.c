@@ -2,6 +2,7 @@
 
 #include <__debug.h>
 
+#include <bits/environ.h>
 #include <sys/arch/i386/syscall.h>
 
 #include <sys/stat.h>
@@ -22,10 +23,23 @@ void _exit(int status)
 	(void)status;
 	TRACE("_exit(%d)\n", status);
 
-	printf("_exit(%d)\n", status);
-
 	for(;;)
 		;
+}
+
+int execv(const char *path, char *const argv[])
+{
+	return execve(path, argv, environ);
+}
+
+int execve(const char *path, char *const argv[], char *const envp[])
+{
+	return syscall(__SC_exec, path, argv, envp);
+}
+
+pid_t fork(void)
+{
+	return syscall(__SC_fork);
 }
 
 ssize_t read(int fd, void *buf, size_t count)

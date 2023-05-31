@@ -8,4 +8,6 @@ target_link_libraries(ld-owos.so PRIVATE c_static gcc)
 target_include_directories(ld-owos.so PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(ld-owos.so PRIVATE ${CMAKE_SYSROOT}/usr/include)
 
+target_compile_definitions(ld-owos.so PRIVATE NDEBUG)
+
 install(TARGETS ld-owos.so RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/)

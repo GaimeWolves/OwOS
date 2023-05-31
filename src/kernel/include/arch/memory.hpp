@@ -25,6 +25,7 @@ namespace Kernel::Memory::Arch
 	void map(paging_space_t &memory_space, uintptr_t phys_addr, uintptr_t virt_addr, size_t size, mapping_config_t config);
 	void unmap(paging_space_t &memory_space, uintptr_t virt_addr, size_t size);
 	uintptr_t as_physical(uintptr_t virt_addr);
+	uintptr_t as_physical_for(paging_space_t &memory_space, uintptr_t virt_addr);
 
 	memory_region_t get_kernel_region();
 	memory_region_t get_mapping_region();

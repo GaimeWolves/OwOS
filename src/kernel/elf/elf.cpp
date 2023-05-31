@@ -16,7 +16,7 @@ namespace Kernel::ELF
 	static size_t s_loader_entry_offset = 0;
 
 	static bool hasSignature(elf32_ehdr_t *header);
-	static void set_up_stack(const char *filepath, const char *filename, void *exec_base, void *entry, void *loader_base, Process *process);
+	static void set_up_stack(const char **argv, const char **envp, const char *filename, void *exec_base, void *entry, void *loader_base, thread_t *thread);
 	static void load_dynamic_loader_image();
 	static uintptr_t map_dynamic_loader();
 
@@ -25,61 +25,62 @@ namespace Kernel::ELF
 		return header->e_ident[EI_MAG0] == ELFMAG0 && header->e_ident[EI_MAG1] == ELFMAG1 && header->e_ident[EI_MAG2] == ELFMAG2 && header->e_ident[EI_MAG3] == ELFMAG3;
 	}
 
-	// TODO: This is an early implementation of stack setup
-	static void set_up_stack(const char *filepath, const char *filename, void *exec_base, void *entry, void *loader_base, Process *process)
+	static void set_up_stack(const char **argv, const char **envp, const char *filename, void *exec_base, void *entry, void *loader_base, thread_t *thread)
 	{
-		// Arguments for testing purposes
-		static const char *env1_data = "HOME=/usr/";
-		static const char *env2_data = "PATH=/bin/";
-		static const char *env3_data = "TERM=xterm";
+		LibK::vector<char *> env_list;
+		LibK::vector<char *> args;
 
-		auto main_thread = process->get_thread_by_index(0);
+		while (*envp != NULL)
+		{
+			const char *env = *envp++;
+			char *env_copy = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(thread, env, strlen(env) + 1));
+			env_list.push_back(env_copy);
+		}
 
-		char *env3 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env3_data, strlen(env3_data) + 1));
-		char *env2 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env2_data, strlen(env2_data) + 1));
-		char *env1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, env1_data, strlen(env1_data) + 1));
-		char *arg1 = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filepath, strlen(filepath) + 1));
-		char *name = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(main_thread, filename, strlen(filename) + 1));
+		while (*argv != NULL)
+		{
+			const char *arg = *argv++;
+			char *arg_copy = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(thread, arg, strlen(arg) + 1));
+			args.push_back(arg_copy);
+		}
+
+		char *name = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(thread, filename, strlen(filename) + 1));
 
 		auxv_t auxv{
 		    .a_type = AT_NULL,
 		    .a_un{ .a_val = 0 }
 		};
 
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+		CPU::Processor::thread_push_userspace_data(thread, auxv);
 
 		auxv.a_type = AT_EXECBASE;
 		auxv.a_un.a_ptr = exec_base;
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+		CPU::Processor::thread_push_userspace_data(thread, auxv);
 
 		auxv.a_type = AT_ENTRY;
 		auxv.a_un.a_ptr = entry;
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
-
-		auxv.a_type = AT_EXECFD;
-		auxv.a_un.a_val = 4;
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+		CPU::Processor::thread_push_userspace_data(thread, auxv);
 
 		auxv.a_type = AT_EXECFN;
 		auxv.a_un.a_ptr = name;
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+		CPU::Processor::thread_push_userspace_data(thread, auxv);
 
 		auxv.a_type = AT_PAGESZ;
 		auxv.a_un.a_val = PAGE_SIZE;
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+		CPU::Processor::thread_push_userspace_data(thread, auxv);
 
 		auxv.a_type = AT_BASE;
 		auxv.a_un.a_ptr = loader_base;
-		CPU::Processor::thread_push_userspace_data(main_thread, auxv);
+		CPU::Processor::thread_push_userspace_data(thread, auxv);
 
-		CPU::Processor::thread_push_userspace_data(main_thread, nullptr);
-		CPU::Processor::thread_push_userspace_data(main_thread, env3);
-		CPU::Processor::thread_push_userspace_data(main_thread, env2);
-		CPU::Processor::thread_push_userspace_data(main_thread, env1);
+		CPU::Processor::thread_push_userspace_data(thread, nullptr);
+		for (int i = (int)env_list.size() - 1; i >= 0; i--)
+			CPU::Processor::thread_push_userspace_data(thread, env_list[i]);
 
-		CPU::Processor::thread_push_userspace_data(main_thread, nullptr);
-		CPU::Processor::thread_push_userspace_data(main_thread, arg1);
-		CPU::Processor::thread_push_userspace_data(main_thread, (int)1);
+		CPU::Processor::thread_push_userspace_data(thread, nullptr);
+		for (int i = (int)args.size() - 1; i >= 0; i--)
+			CPU::Processor::thread_push_userspace_data(thread, args[i]);
+		CPU::Processor::thread_push_userspace_data(thread, (int)args.size());
 	}
 
 	static void load_dynamic_loader_image()
@@ -133,9 +134,8 @@ namespace Kernel::ELF
 		return offset;
 	}
 
-	Process *load(const char *filepath)
+	thread_t *load(Process *parent_process, File *file, const char **argv, const char **envp, bool is_exec_syscall)
 	{
-		File *file = VirtualFileSystem::instance().find_by_path(filepath);
 		auto region = Memory::VirtualMemoryManager::instance().allocate_region(file->size());
 		file->read(0, file->size(), region);
 		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
@@ -152,18 +152,9 @@ namespace Kernel::ELF
 
 		uintptr_t entry = 0x88888000 + s_loader_entry_offset; // Ehh
 
-		auto process = new Process(entry);
-
-		// Temporary stdio device files
-		process->add_file(VirtualConsole::get_current().open(O_RDONLY));
-		process->add_file(VirtualConsole::get_current().open(O_WRONLY));
-		process->add_file(VirtualConsole::get_current().open(O_WRONLY));
-
-		auto fd = file->open(O_RDWR);
-		process->add_file(LibK::move(fd));
-
 		auto old_memory_space = CPU::Processor::current().get_memory_space();
-		auto &memory_space = process->get_memory_space();
+		auto &memory_space = parent_process->get_memory_space();
+		CPU::Processor::current().enter_critical();
 		Memory::VirtualMemoryManager::load_memory_space(&memory_space);
 
 		for (int i = 0; i < header->e_phnum; i++)
@@ -184,10 +175,17 @@ namespace Kernel::ELF
 
 		uintptr_t loader_base = map_dynamic_loader();
 
-		set_up_stack(filepath, file->name().c_str(), reinterpret_cast<void *>(offset), reinterpret_cast<void *>(offset + header->e_entry), reinterpret_cast<void *>(loader_base), process);
+		thread_t *thread = parent_process->get_thread_by_index(0);
+		CPU::Processor::initialize_userspace_thread(thread, entry, parent_process->get_memory_space());
+
+		set_up_stack(argv, envp, file->name().c_str(), reinterpret_cast<void *>(offset), reinterpret_cast<void *>(offset + header->e_entry), reinterpret_cast<void *>(loader_base), thread);
 
 		Memory::VirtualMemoryManager::load_memory_space(old_memory_space);
+		CPU::Processor::current().leave_critical();
 
-		return process;
+		if (!is_exec_syscall)
+			parent_process->start_thread(0);
+
+		return thread;
 	}
 }

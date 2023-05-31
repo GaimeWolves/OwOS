@@ -197,7 +197,7 @@ namespace Kernel
 
 		// TODO: only for testing purposes
 
-		if (event.code_point == '/')
+		if (event.code_point == '\\')
 			event.code_point = '\025';
 
 		push(event);

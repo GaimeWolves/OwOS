@@ -10,6 +10,7 @@ extern "C"
 	int strcmp(const char *lhs, const char *rhs);
 	int strncmp(const char *lhs, const char *rhs, size_t count);
 	char *strchr(char *str, int character);
+	char *strcpy(char *__restrict, const char *__restrict);
 
 	unsigned long strtoul(const char *str, char **str_end, int base);
 

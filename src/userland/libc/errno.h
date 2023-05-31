@@ -18,7 +18,8 @@ __LIBC_HEADER_BEGIN
 	E(EOVERFLOW, "")              \
 	E(ENOTTY, "")                 \
 	E(ENOENT, "")                 \
-	E(EINTR, "")
+	E(EINTR, "")                 \
+	E(ECHILD, "")
 
 enum __ErrnoCode
 {

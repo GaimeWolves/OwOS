@@ -18,4 +18,8 @@ namespace Kernel
 	uintptr_t syscall$write(int fd, void *buf, size_t count);
 	uintptr_t syscall$stat(int type, int cwd, const char *path, int fd, struct stat *buf, int flags);
 	uintptr_t syscall$ioctl(int fd, uint32_t request, uintptr_t arg);
+	[[noreturn]] uintptr_t syscall$exit(int exit_code);
+	uintptr_t syscall$exec(const char *path, const char *argv[], const char *envp[]);
+	uintptr_t syscall$fork();
+	uintptr_t syscall$waitpid(pid_t pid, int *stat_loc, int options);
 }

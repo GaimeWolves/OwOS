@@ -4,6 +4,8 @@
 
 #include <bits/environ.h>
 
+#include <sys/arch/i386/syscall.h>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,7 +13,6 @@
 void abort(void)
 {
 	TRACE("abort()\n", "");
-	puts("abort");
 
 	for (;;)
 		;
@@ -51,9 +52,11 @@ void exit(int status)
 {
 	TRACE("exit(%d)\n", status);
 
-	(void)status;
+	// TODO: atexit functions and flushing open streams
 
-	printf("exit(%d)\n", status);
+	syscall(__SC_exit, status);
+
+	perror("exit syscall returned!");
 
 	for (;;)
 		;

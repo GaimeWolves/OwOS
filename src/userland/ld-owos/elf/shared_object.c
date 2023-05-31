@@ -87,7 +87,7 @@ void *resolve_symbol(const char *name, shared_object_t *shared_object)
 	while (head != tail)
 	{
 		shared_object_t *so = *tail++;
-		debug_printf(3, "Checking %s for %s\n", so->so_name, name);
+		// DEBUG_PRINTF(3, "Checking %s for %s\n", so->so_name, name);
 		symbol = find_symbol_by_name(name, so);
 
 		if (symbol)

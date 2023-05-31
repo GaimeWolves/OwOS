@@ -12,7 +12,7 @@ namespace Kernel
 	{
 	public:
 		static thread_t *create_kernel_only_thread(Process *parent, uintptr_t main);
-		static thread_t *create_userspace_thread(Process *parent, uintptr_t main, Memory::memory_space_t &memorySpace);
+		static thread_t *create_userspace_thread(Process *parent, Memory::memory_space_t &memorySpace);
 		static void start_thread(thread_t *thread);
 
 	private:

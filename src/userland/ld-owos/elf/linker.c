@@ -6,7 +6,7 @@
 
 void do_relocations(shared_object_t *shared_object)
 {
-	debug_printf(1, "Relocating %s\n", shared_object->so_name);
+	DEBUG_PRINTF(1, "Relocating %s\n", shared_object->so_name);
 
 	if (shared_object->sections.rel_dyn)
 	{
@@ -58,7 +58,7 @@ void do_relocation(shared_object_t *shared_object, Elf32_Rel *relocation)
 	{
 	case R_386_RELATIVE:
 		*ptr += (Elf32_Addr)shared_object->base;
-		debug_printf(2, "R_386_RELATIVE: %p -> %p\n", relocation->r_offset, *ptr);
+		// DEBUG_PRINTF(2, "R_386_RELATIVE: %p -> %p\n", relocation->r_offset, *ptr);
 		break;
 	case R_386_GLOB_DAT:
 		name = "R_386_GLOB_DAT";
@@ -78,11 +78,11 @@ void do_relocation(shared_object_t *shared_object, Elf32_Rel *relocation)
 		if (!symbol_ptr)
 			symbol_ptr = resolve_symbol(symbol_name, shared_object);
 
-		debug_printf(2, "%s: %s (%p) -> %p\n", name, symbol_name, ptr, symbol_ptr);
+		// DEBUG_PRINTF(2, "%s: %s (%p) -> %p\n", name, symbol_name, ptr, symbol_ptr);
 
 		if (!symbol_ptr && bind != STB_WEAK)
 		{
-			debug_printf(2, "Undefined symbol %s\n", symbol_name);
+			DEBUG_PRINTF(2, "Undefined symbol %s\n", symbol_name);
 			abort();
 		}
 
@@ -93,7 +93,7 @@ void do_relocation(shared_object_t *shared_object, Elf32_Rel *relocation)
 
 		break;
 	default:
-		printf("TODO: rel type %d\n", ELF32_R_TYPE(relocation->r_info));
+		DEBUG_PRINTF(0, "TODO: rel type %d\n", ELF32_R_TYPE(relocation->r_info));
 		abort();
 	}
 }
@@ -102,7 +102,7 @@ void do_relocation_with_addend(shared_object_t *shared_object, Elf32_Rela *reloc
 {
 	(void)shared_object;
 	(void)relocation;
-	puts("TODO: rela relocations");
+	DEBUG_PUTS(0, "TODO: rela relocations");
 	abort();
 }
 

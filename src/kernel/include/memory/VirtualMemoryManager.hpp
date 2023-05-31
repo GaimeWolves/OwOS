@@ -58,31 +58,35 @@ namespace Kernel::Memory
 			return reinterpret_cast<T *>(region.virt_address + offset);
 		}
 
+		memory_region_t allocate_region_at_for(memory_space_t *memory_space, uintptr_t virt_addr, size_t size, mapping_config_t config = {});
+
 		void free(void *ptr);
 		void free(const memory_region_t &region);
 
-		[[nodiscard]] const memory_region_t *find_region(uintptr_t virtual_addr);
+		[[nodiscard]] const memory_region_t *find_region(memory_space_t *memory_space, uintptr_t virtual_addr);
 
 		void enumerate(const LibK::function<bool(memory_region_t)> &callback);
 
 		static void load_memory_space(memory_space_t *memory_space);
 		[[nodiscard]] static memory_space_t create_memory_space();
+		[[nodiscard]] static memory_space_t copy_current_memory_space();
+		static void free_current_userspace();
 		[[nodiscard]] memory_space_t *get_kernel_memory_space() { return &m_kernel_memory_space; }
 
 	private:
 		VirtualMemoryManager() = default;
 		~VirtualMemoryManager() = default;
 
-		[[nodiscard]] bool check_free(const region_t &region) const;
+		[[nodiscard]] bool check_free(memory_space_t *memory_space, const region_t &region) const;
 
-		[[nodiscard]] region_t find_free_region(size_t size, bool is_kernel_space) const;
+		[[nodiscard]] region_t find_free_region(memory_space_t *memory_space, size_t size, bool is_kernel_space) const;
 
-		memory_region_t map(uintptr_t phys_address, uintptr_t virt_address, size_t size, mapping_config_t config);
-		void unmap(const memory_region_t &region);
+		memory_region_t map(memory_space_t *memory_space, uintptr_t phys_address, uintptr_t virt_address, size_t size, mapping_config_t config);
+		void unmap(memory_space_t *memory_space, const memory_region_t &region);
 
-		void traverse_all(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
-		void traverse_unmapped(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
-		void traverse_mapped(bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
+		void traverse_all(memory_space_t *memory_space, bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
+		void traverse_unmapped(memory_space_t *memory_space, bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
+		void traverse_mapped(memory_space_t *memory_space, bool is_kernel_space, const LibK::function<bool(memory_region_t)> &callback) const;
 
 		bool in_kernel_space(uintptr_t virt_address) const;
 

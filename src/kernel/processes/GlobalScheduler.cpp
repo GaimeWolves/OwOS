@@ -15,9 +15,9 @@ namespace Kernel
 		return thread;
 	}
 
-	thread_t *GlobalScheduler::create_userspace_thread(Process *parent, uintptr_t main, Memory::memory_space_t &memorySpace)
+	thread_t *GlobalScheduler::create_userspace_thread(Process *parent, Memory::memory_space_t &memory_space)
 	{
-		thread_t *thread = CPU::Processor::create_userspace_thread(main, memorySpace);
+		thread_t *thread = CPU::Processor::create_userspace_thread(memory_space);
 		thread->parent_process = parent;
 		return thread;
 	}

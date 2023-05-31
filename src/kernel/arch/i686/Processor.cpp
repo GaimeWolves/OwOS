@@ -10,6 +10,11 @@
 
 #define APIC_IPI_INTERRUPT (CPU::MAX_INTERRUPTS - 3)
 
+extern "C"
+{
+	extern uintptr_t _virtual_addr;
+}
+
 namespace Kernel::CPU
 {
 	static LibK::atomic_uint64_t s_nanoseconds_since_boot;
@@ -196,11 +201,35 @@ namespace Kernel::CPU
 		    .edx = 0,
 		    .ecx = 0,
 		    .eax = 0,
-		    .eflags = eflags(),
+		    .eflags = eflags() | 0x200,
 		    .cr3 = paging_space.physical_pd_address,
 		    .eip = main_ptr,
 		    .frame = 0,
 		};
+	}
+
+	void Processor::frame_set_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr)
+	{
+		current().enter_critical();
+		interrupt_frame_t *frame = current().get_interrupt_frame_stack().top();
+		current().leave_critical();
+
+		// frame->cs = 0x18 | 0x03,
+		// frame->ss = 0x20 | 0x03,
+		frame->gs = 0x20 | 0x03,
+		frame->fs = 0x20 | 0x03,
+		frame->es = 0x20 | 0x03,
+		frame->ds = 0x20 | 0x03,
+		frame->edi = 0,
+		frame->esi = 0,
+		frame->ebx = 0,
+		frame->edx = 0,
+		frame->ecx = 0,
+		frame->eax = 0,
+		frame->eip = main_ptr;
+		frame->eflags = eflags() | 0x200;
+		frame->old_esp = stack_ptr;
+		frame->old_ss = 0x20 | 0x03;
 	}
 
 	thread_t *Processor::create_kernel_thread(uintptr_t main_function)
@@ -219,23 +248,15 @@ namespace Kernel::CPU
 		};
 	}
 
-	thread_t *Processor::create_userspace_thread(uintptr_t main_function, Memory::memory_space_t &memory_space)
+	thread_t *Processor::create_userspace_thread(Memory::memory_space_t &memory_space)
 	{
-		auto stack_region = Memory::VirtualMemoryManager::instance().allocate_region(KERNEL_STACK_SIZE);
+		Memory::mapping_config_t config;
+		config.userspace = false;
+		auto stack_region = Memory::VirtualMemoryManager::instance().allocate_region_at_for(&memory_space, (uintptr_t)&_virtual_addr - KERNEL_STACK_SIZE, KERNEL_STACK_SIZE, config);
 		uintptr_t kernel_stack = stack_region.virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
 
-		auto old_memory_space = CPU::Processor::current().get_memory_space();
-		Memory::VirtualMemoryManager::load_memory_space(&memory_space);
-
-		// TODO: Do this in the process/thread spawning code
-		Memory::mapping_config_t config;
-		config.userspace = true;
-		uintptr_t userspace_stack = (uintptr_t)Memory::VirtualMemoryManager::instance().allocate_region_at(0xb0000000, KERNEL_STACK_SIZE, config).virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
-
-		Memory::VirtualMemoryManager::load_memory_space(old_memory_space);
-
 		return new thread_t{
-		    .registers = create_initial_state(userspace_stack, main_function, true, memory_space.paging_space),
+		    .registers = {},
 		    .has_started = false,
 		    .kernel_stack = kernel_stack,
 		    .kernel_stack_region = stack_region,
@@ -245,11 +266,78 @@ namespace Kernel::CPU
 		};
 	}
 
+	void Processor::initialize_userspace_thread(thread_t *thread, uintptr_t main_function, Memory::memory_space_t &memory_space)
+	{
+		Memory::mapping_config_t config;
+		config.userspace = true;
+		uintptr_t userspace_stack = (uintptr_t)Memory::VirtualMemoryManager::instance().allocate_region_at_for(&memory_space, 0xb0000000, KERNEL_STACK_SIZE, config).virt_address + KERNEL_STACK_SIZE - sizeof(uintptr_t);
+
+		thread->registers.cs = 0x18 | 0x03;
+		thread->registers.ss = 0x20 | 0x03;
+		thread->registers.gs = 0x20 | 0x03;
+		thread->registers.fs = 0x20 | 0x03;
+		thread->registers.es = 0x20 | 0x03;
+		thread->registers.ds = 0x20 | 0x03;
+		thread->registers.edi = 0;
+		thread->registers.esi = 0;
+		thread->registers.ebp = 0;
+		thread->registers.esp = userspace_stack;
+		thread->registers.ebx = 0;
+		thread->registers.edx = 0;
+		thread->registers.ecx = 0;
+		thread->registers.eax = 0;
+		thread->registers.eflags = eflags() | 0x200;
+		thread->registers.cr3 = memory_space.paging_space.physical_pd_address;
+		thread->registers.eip = main_function;
+
+		if (!current().m_frame_stack.empty())
+			frame_set_initial_state(userspace_stack, main_function);
+	}
+
+	thread_registers_t Processor::create_state_for_exec(uintptr_t main_function, uintptr_t userspace_stack_ptr, Memory::memory_space_t &memory_space)
+	{
+		thread_registers_t registers;
+
+		registers.cs = 0x18 | 0x03;
+		registers.ss = 0x20 | 0x03;
+		registers.gs = 0x20 | 0x03;
+		registers.fs = 0x20 | 0x03;
+		registers.es = 0x20 | 0x03;
+		registers.ds = 0x20 | 0x03;
+		registers.edi = 0;
+		registers.esi = 0;
+		registers.ebp = 0;
+		registers.esp = userspace_stack_ptr;
+		registers.ebx = 0;
+		registers.edx = 0;
+		registers.ecx = 0;
+		registers.eax = 0;
+		registers.eflags = eflags() | 0x200;
+		registers.cr3 = memory_space.paging_space.physical_pd_address;
+		registers.eip = main_function;
+
+		return registers;
+	}
+
 	uintptr_t Processor::thread_push_userspace_data(thread_t *thread, const char *data, size_t count)
 	{
-		thread->registers.esp -= count;
-		memcpy(reinterpret_cast<char *>(thread->registers.esp), data, count);
-		return thread->registers.esp;
+		current().enter_critical();
+		uintptr_t esp = thread->has_started ? current().get_interrupt_frame_stack().top()->old_esp : thread->registers.esp;
+
+		if (thread->has_started)
+		{
+			current().get_interrupt_frame_stack().top()->old_esp -= count;
+			esp = current().get_interrupt_frame_stack().top()->old_esp;
+		}
+		else
+		{
+			thread->registers.esp -= count;
+			esp = thread->registers.esp;
+		}
+		current().leave_critical();
+
+		memcpy(reinterpret_cast<char *>(esp), data, count);
+		return esp;
 	}
 
 	void Processor::enter_thread_context(thread_t &thread)
@@ -263,38 +351,6 @@ namespace Kernel::CPU
 		update_tss(esp0);
 
 		uintptr_t old_cr3 = get_page_directory();
-
-		/*
-		log("DBG", "RETURNING FRAME at %p for THREAD %p at TIME %lld:\nss: 0x%.2x\ngs: 0x%.2x\nfs: 0x%.2x\nes: 0x%.2x\nds: 0x%.2x\nedi: %p\nesi: %p\nebp: %p\nesp: %p\nebx: %p\nedx: %p\necx: %p\neax: %p\nisr: 0x%.2x\nerr: %p\neip: %p\ncs: 0x%.2x\neflags: %p\nold_esp: %p\nold_ss: %p\nold_cr3: %p\nnew_cr3: %p\nstack: %p - %p",
-		    thread.registers.frame,
-		    &thread,
-		    read_tsc(),
-		    thread.registers.frame->ss,
-		    thread.registers.frame->gs,
-		    thread.registers.frame->fs,
-		    thread.registers.frame->es,
-		    thread.registers.frame->ds,
-		    thread.registers.frame->edi,
-		    thread.registers.frame->esi,
-		    thread.registers.frame->ebp,
-		    thread.registers.frame->esp,
-		    thread.registers.frame->ebx,
-		    thread.registers.frame->edx,
-		    thread.registers.frame->ecx,
-		    thread.registers.frame->eax,
-		    thread.registers.frame->isr_number,
-		    thread.registers.frame->error_code,
-		    thread.registers.frame->eip,
-		    thread.registers.frame->cs,
-		    thread.registers.frame->eflags,
-		    thread.registers.frame->old_esp,
-		    thread.registers.frame->old_ss,
-		    old_cr3,
-		    thread.registers.cr3,
-		    thread.kernel_stack_region.virt_address,
-		    thread.kernel_stack_region.virt_address + KERNEL_STACK_SIZE
-		);
-		 */
 
 		assert(thread.kernel_stack_region.virt_region().contains((uintptr_t)thread.registers.frame));
 
@@ -381,6 +437,50 @@ namespace Kernel::CPU
 		      [edx] "m"(thread.registers.edx),
 		      [esi] "m"(thread.registers.esi),
 		      [edi] "m"(thread.registers.edi)
+		    : "memory");
+	}
+
+	void Processor::enter_thread_after_exec(thread_t *thread, thread_registers_t registers)
+	{
+		cli(); // NOTE: gets set again by registers.eflags through iret
+		update_tss(thread->kernel_stack);
+
+		asm volatile(
+		    "movl %[ds], %%eax\n"
+		    "mov %%ax, %%ds\n"
+		    "mov %%ax, %%es\n"
+		    "mov %%ax, %%fs\n"
+		    "mov %%ax, %%gs\n"
+		    "pushl %[ss]\n"
+		    "pushl %[esp]\n"
+		    "pushl %[flag]\n"
+		    "pushl %[cs]\n"
+		    "pushl %[eip]\n"
+		    "movl %[cr3], %%eax\n"
+		    "movl %%eax, %%cr3\n"
+		    "movl %[eax], %%eax\n"
+		    "movl %[ebx], %%ebx\n"
+		    "movl %[ecx], %%ecx\n"
+		    "movl %[edx], %%edx\n"
+		    "movl %[esi], %%esi\n"
+		    "movl %[edi], %%edi\n"
+		    "movl %[ebp], %%ebp\n"
+		    "iret\n"
+		    :
+		    : [ds] "m"(registers.ds),
+		      [ebp] "m"(registers.ebp),
+		      [ss] "m"(registers.ss),
+		      [esp] "m"(registers.esp),
+		      [flag] "m"(registers.eflags),
+		      [cs] "m"(registers.cs),
+		      [eip] "m"(registers.eip),
+		      [cr3] "m"(registers.cr3),
+		      [eax] "m"(registers.eax),
+		      [ebx] "m"(registers.ebx),
+		      [ecx] "m"(registers.ecx),
+		      [edx] "m"(registers.edx),
+		      [esi] "m"(registers.esi),
+		      [edi] "m"(registers.edi)
 		    : "memory");
 	}
 

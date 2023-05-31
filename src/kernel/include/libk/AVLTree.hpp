@@ -22,6 +22,47 @@ namespace Kernel::LibK
 		} node_t;
 
 	public:
+		AVLTree() = default;
+
+		~AVLTree()
+		{
+			delete_subtree(m_tree);
+			m_tree = nullptr;
+		}
+
+		AVLTree(const AVLTree &other)
+		{
+			this->~AVLTree();
+			m_tree = copy_subtree(other.m_tree);
+		}
+
+		AVLTree(AVLTree &&other) noexcept
+		{
+			this->~AVLTree();
+			m_tree = other.m_tree;
+			other.m_tree = nullptr;
+		}
+
+		AVLTree &operator=(const AVLTree &rhs)
+		{
+			if (&rhs == this)
+				return *this;
+
+			this->~AVLTree();
+			m_tree = copy_subtree(rhs.m_tree);
+
+			return *this;
+		}
+
+		AVLTree &operator=(AVLTree &&rhs) noexcept
+		{
+			this->~AVLTree();
+			m_tree = rhs.m_tree;
+			rhs.m_tree = nullptr;
+
+			return *this;
+		}
+
 		void insert(T value)
 		{
 			node_t *current = m_tree;
@@ -108,6 +149,39 @@ namespace Kernel::LibK
 		}
 
 	private:
+		static void delete_subtree(node_t *tree)
+		{
+			if (!tree)
+				return;
+
+			delete_subtree(tree->left);
+			delete_subtree(tree->right);
+
+			delete tree;
+		}
+
+		static node_t *copy_subtree(node_t *other_tree)
+		{
+			if (!other_tree)
+				return nullptr;
+
+			node_t tree = new node_t {
+				.parent = nullptr,
+				.left = copy_subtree(other_tree->left),
+				.right = copy_subtree(other_tree->right),
+				.value = other_tree->value,
+				.height = other_tree->height,
+			};
+
+			if (tree.left)
+				tree.left->parent = tree;
+
+			if (tree.right)
+				tree.right->parent = tree;
+
+			return tree;
+		}
+
 		bool remove(node_t *node)
 		{
 			if (!node)

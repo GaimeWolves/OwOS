@@ -7,5 +7,5 @@
 namespace Kernel::ELF
 {
 	// Basic loader to load the dynamic loader which loads the actual program
-	Process *load(const char *filepath);
+	thread_t *load(Process *parent_process, File *file, const char **argv, const char **envp, bool is_exec_syscall);
 }

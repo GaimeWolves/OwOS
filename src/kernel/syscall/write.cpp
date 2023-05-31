@@ -1,7 +1,7 @@
 #include <syscall/syscalls.hpp>
 
 #include <arch/Processor.hpp>
-#include <processes/Process.hpp>
+#include <filesystem/File.hpp>
 
 namespace Kernel
 {
@@ -13,6 +13,11 @@ namespace Kernel
 		Memory::memory_region_t region;
 		region.virt_address = reinterpret_cast<uintptr_t>(buf);
 		region.size = count;
-		return file.write(count, region);
+
+		file.file().lock();
+		uintptr_t written = file.write(count, region);
+		file.file().unlock();
+
+		return written;
 	}
 }

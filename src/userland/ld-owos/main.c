@@ -1,6 +1,5 @@
 #include <sys/arch/i386/auxv.h>
 #include <sys/internals.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -91,19 +90,22 @@ static void do_early_relocations(int auxvc, auxv_t *auxvp)
 
 static void debug_print_arguments(int argc, char *argv[], int envc, char *envp[], int auxvc, auxv_t *auxvp)
 {
-	debug_puts(1, "Arguments:");
+	(void)argv;
+	(void)envp;
+
+	DEBUG_PUTS(1, "Arguments:");
 	for (int i = 0; i < argc; i++)
 	{
-		debug_puts(2, argv[i]);
+		DEBUG_PUTS(2, argv[i]);
 	}
 
-	debug_puts(1, "Environment:");
+	DEBUG_PUTS(1, "Environment:");
 	for (int i = 0; i < envc; i++)
 	{
-		debug_puts(2, envp[i]);
+		DEBUG_PUTS(2, envp[i]);
 	}
 
-	debug_puts(1, "Auxiliary vectors:");
+	DEBUG_PUTS(1, "Auxiliary vectors:");
 	for (int i = 0; i < auxvc; i++)
 	{
 		auxv_t auxv = auxvp[i];
@@ -112,25 +114,25 @@ static void debug_print_arguments(int argc, char *argv[], int envc, char *envp[]
 		case AT_NULL:
 			break;
 		case AT_BASE:
-			debug_printf(2, "AT_BASE:     %p\n", auxv.a_un.a_ptr);
+			DEBUG_PRINTF(2, "AT_BASE:     %p\n", auxv.a_un.a_ptr);
 			break;
 		case AT_EXECFD:
-			debug_printf(2, "AT_EXECFD:   %ld\n", auxv.a_un.a_val);
+			DEBUG_PRINTF(2, "AT_EXECFD:   %ld\n", auxv.a_un.a_val);
 			break;
 		case AT_PAGESZ:
-			debug_printf(2, "AT_PAGESZ:   %ld\n", auxv.a_un.a_val);
+			DEBUG_PRINTF(2, "AT_PAGESZ:   %ld\n", auxv.a_un.a_val);
 			break;
 		case AT_ENTRY:
-			debug_printf(2, "AT_ENTRY:    %p\n", auxv.a_un.a_ptr);
+			DEBUG_PRINTF(2, "AT_ENTRY:    %p\n", auxv.a_un.a_ptr);
 			break;
 		case AT_EXECFN:
-			debug_printf(2, "AT_EXECFN:   %s\n", (char *)auxv.a_un.a_ptr);
+			DEBUG_PRINTF(2, "AT_EXECFN:   %s\n", (char *)auxv.a_un.a_ptr);
 			break;
 		case AT_EXECBASE:
-			debug_printf(2, "AT_EXECBASE: %p\n", auxv.a_un.a_ptr);
+			DEBUG_PRINTF(2, "AT_EXECBASE: %p\n", auxv.a_un.a_ptr);
 			break;
 		default:
-			debug_printf(2, "UNKNOWN:     %d - %ld\n", auxv.a_type, auxv.a_un.a_val);
+			DEBUG_PRINTF(2, "UNKNOWN:     %d - %ld\n", auxv.a_type, auxv.a_un.a_val);
 			break;
 		}
 	}
@@ -149,9 +151,9 @@ __attribute__((naked)) void _start()
 // Stack layout is in accordance with http://www.sco.com/developers/devspecs/abi386-4.pdf
 __attribute__((noreturn)) void _entry(int argc, char *arg0)
 {
-	puts("Hello from the dynamic linker");
-	puts("Stage 0: Initialization");
-	puts(" Parsing stack");
+	DEBUG_PUTS(0, "Hello from the dynamic linker");
+	DEBUG_PUTS(0, "Stage 0: Initialization");
+	DEBUG_PUTS(0, " Parsing stack");
 
 	char **argv = &arg0;
 	char **envp = &argv[argc + 1];
@@ -170,17 +172,17 @@ __attribute__((noreturn)) void _entry(int argc, char *arg0)
 	while ((auxv++)->a_type != AT_NULL)
 		auxvc++;
 
-	puts(" Relocating ourselves");
+	DEBUG_PUTS(0, " Relocating ourselves");
 	do_early_relocations(auxvc, auxvp);
 
-	puts(" Initializing static libc");
+	DEBUG_PUTS(0, " Initializing static libc");
 	__libc_init(argc, argv, envp);
 
 	debug_print_arguments(argc, argv, envc, envp, auxvc, auxvp);
 
 	initialize_shared_object_list();
 
-	debug_puts(0, "Stage 1: Loading dependencies");
+	DEBUG_PUTS(0, "Stage 1: Loading dependencies");
 
 	void *execbase = NULL;
 	const char *soname = NULL;
@@ -200,14 +202,14 @@ __attribute__((noreturn)) void _entry(int argc, char *arg0)
 
 	shared_object_t *executable = parse_elf_headers(execbase, soname);
 
-	debug_puts(0, "Stage 2: Perform relocations");
+	DEBUG_PUTS(0, "Stage 2: Perform relocations");
 	for (shared_object_t **so = get_shared_object_list(); *so; so++)
 		do_relocations(*so);
 
-	debug_puts(0, "Stage 3: Init functions");
+	DEBUG_PUTS(0, "Stage 3: Init functions");
 	call_init_functions(executable);
 
-	debug_puts(0, "Stage 4: Calling main");
+	DEBUG_PUTS(0, "Stage 4: Calling main");
 
 	typedef void(*main_func_t)(int, char**, char**);
 
@@ -221,8 +223,8 @@ __attribute__((noreturn)) void _entry(int argc, char *arg0)
 		}
 	}
 
-	debug_printf(1, "main found at %p\n", main);
-	debug_printf(1, "main(%d, %p, %p)\n", argc, argv, envp);
+	DEBUG_PRINTF(1, "main found at %p\n", main);
+	DEBUG_PRINTF(1, "main(%d, %p, %p)\n", argc, argv, envp);
 	main(argc, argv, envp);
 
 	abort();

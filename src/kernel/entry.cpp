@@ -59,8 +59,25 @@ namespace Kernel
 
 		log("SMP", "Starting scheduler and sleeping until first tick...");
 
-		auto process = ELF::load("/bin/test");
-		process->start();
+		Process *init = new Process();
+		init->add_thread(GlobalScheduler::create_userspace_thread(init, init->get_memory_space()));
+
+		init->add_file(VirtualConsole::get_current().open(O_RDONLY));
+		init->add_file(VirtualConsole::get_current().open(O_WRONLY));
+		init->add_file(VirtualConsole::get_current().open(O_WRONLY));
+
+		const char *argv[] = {
+		    "/bin/init",
+		    NULL,
+		};
+
+		const char *envp[] = {
+		    "TERM=xterm",
+		    NULL,
+		};
+
+		File *file = VirtualFileSystem::instance().find_by_path(argv[0]);
+		assert(ELF::load(init, file, argv, envp, false));
 
 		start_logger_thread();
 
