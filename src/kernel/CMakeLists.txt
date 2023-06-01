@@ -177,7 +177,7 @@ set(KERNEL_SOURCES
     tty/FramebufferConsole.cpp
     tty/psf.cpp
     tty/TTY.cpp
-    vga/textmode.cpp tty/Terminal.cpp syscall/exit.cpp syscall/exec.cpp syscall/fork.cpp syscall/waitpid.cpp)
+    vga/textmode.cpp tty/Terminal.cpp syscall/exit.cpp syscall/exec.cpp syscall/fork.cpp syscall/waitpid.cpp crt/ssp.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
@@ -203,10 +203,13 @@ add_custom_command(
 
 add_executable(kernel ${SOURCES} font_out.S)
 
-target_compile_options(kernel PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
-target_compile_options(kernel_heap PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
+target_compile_options(kernel PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
+target_compile_options(kernel_heap PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
 target_link_options(kernel PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
 target_link_options(kernel_heap PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
+
+set_source_files_properties(arch/i686/interrupts.cpp PROPERTIES COMPILE_FLAGS -fno-stack-protector)
+set_source_files_properties(crt/ssp.cpp PROPERTIES COMPILE_FLAGS -fno-stack-protector)
 
 target_link_libraries(kernel kernel_heap gcc)
 target_include_directories(kernel PRIVATE include)

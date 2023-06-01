@@ -20,3 +20,5 @@ set(ARCH_SOURCES
     arch/i686/spinlock.cpp
     PARENT_SCOPE
 )
+
+set_source_files_properties(arch/i686/interrupts.cpp PROPERTIES COMPILE_FLAGS -fno-stack-protector)

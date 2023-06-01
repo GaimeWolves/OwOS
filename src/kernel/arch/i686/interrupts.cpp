@@ -78,7 +78,7 @@ namespace Kernel::CPU
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type);
 
-	extern "C" __naked void common_interrupt_handler_entry();
+	extern "C" void common_interrupt_handler_entry();
 	extern "C" void common_interrupt_handler(interrupt_frame_t *regs);
 
 	static __noreturn void unhandled_interrupt_handler(interrupt_frame_t *regs);
@@ -101,7 +101,7 @@ namespace Kernel::CPU
 		};
 	}
 
-	extern "C" __naked void common_interrupt_handler_entry()
+	extern "C" __naked __noreturn void common_interrupt_handler_entry()
 	{
 		asm(
 		    "pusha\n"

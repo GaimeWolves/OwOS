@@ -340,7 +340,7 @@ namespace Kernel::CPU
 		return esp;
 	}
 
-	void Processor::enter_thread_context(thread_t &thread)
+	__noreturn void Processor::enter_thread_context(thread_t &thread)
 	{
 		uint32_t esp0 = (uint32_t)thread.registers.frame + sizeof(interrupt_frame_t);
 
@@ -373,9 +373,12 @@ namespace Kernel::CPU
 		      [new_cr3] "a"(thread.registers.cr3),
 		      [old_cr3] "b"(old_cr3)
 		    : "memory");
+
+		for(;;)
+			;
 	}
 
-	void Processor::initial_enter_thread_context(thread_t thread)
+	__noreturn void Processor::initial_enter_thread_context(thread_t thread)
 	{
 		update_tss(thread.kernel_stack);
 
@@ -438,9 +441,12 @@ namespace Kernel::CPU
 		      [esi] "m"(thread.registers.esi),
 		      [edi] "m"(thread.registers.edi)
 		    : "memory");
+
+		for(;;)
+			;
 	}
 
-	void Processor::enter_thread_after_exec(thread_t *thread, thread_registers_t registers)
+	__noreturn void Processor::enter_thread_after_exec(thread_t *thread, thread_registers_t registers)
 	{
 		cli(); // NOTE: gets set again by registers.eflags through iret
 		update_tss(thread->kernel_stack);
@@ -482,6 +488,9 @@ namespace Kernel::CPU
 		      [esi] "m"(registers.esi),
 		      [edi] "m"(registers.edi)
 		    : "memory");
+
+		for(;;)
+			;
 	}
 
 	void Processor::update_thread_context(thread_t &thread)

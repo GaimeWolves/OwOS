@@ -6,6 +6,7 @@
 #define __noreturn    __attribute__((noreturn))
 #define __naked       __attribute__((naked))
 #define __unused      __attribute__((unused))
+#define __used      __attribute__((used))
 #define __constructor __attribute__((constructor))
 
 #define __section(x)      __attribute__((section(x)))
