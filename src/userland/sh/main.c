@@ -8,8 +8,6 @@
 
 int main(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 {
-	// TODO: just for testing for now
-
 	char buf[256] = {0};
 	memset(buf, 0, sizeof(buf));
 

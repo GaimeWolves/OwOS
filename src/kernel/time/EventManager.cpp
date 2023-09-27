@@ -159,7 +159,7 @@ namespace Kernel::Time
 
 		event_t &event = event_queue.front();
 		uint64_t largest_possible_time = 0;
-		Timer *best_timer;
+		Timer *best_timer = nullptr;
 
 		assert(event.nanoseconds > 0);
 

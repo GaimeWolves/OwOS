@@ -31,14 +31,17 @@ set(LIBK_INCLUDES
     include/libk/kutility.hpp
     include/libk/kvector.hpp
     include/libk/printf.hpp
-    include/libk/StringView.hpp include/libk/ErrorOr.hpp include/libk/kcstdlib.hpp)
+    include/libk/StringView.hpp
+    include/libk/ErrorOr.hpp
+    include/libk/kcstdlib.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
     libk/kcctype.cpp
     libk/kcstdio.cpp
     libk/kcstring.cpp
-    libk/printf.cpp libk/kcstdlib.cpp)
+    libk/printf.cpp
+    libk/kcstdlib.cpp)
 
 set(KERNEL_INCLUDES
     include/arch/definitions.hpp
@@ -116,7 +119,10 @@ set(KERNEL_INCLUDES
     include/tty/FramebufferConsole.hpp
     include/tty/psf.hpp
     include/tty/TTY.hpp
-    include/vga/textmode.hpp include/tty/Terminal.hpp include/tty/ANSIColor.hpp include/tty/VirtualConsole.hpp)
+    include/vga/textmode.hpp
+    include/tty/Terminal.hpp
+    include/tty/ANSIColor.hpp
+    include/tty/VirtualConsole.hpp)
 
 set(KERNEL_SOURCES
     arch/Processor.cpp
@@ -177,7 +183,14 @@ set(KERNEL_SOURCES
     tty/FramebufferConsole.cpp
     tty/psf.cpp
     tty/TTY.cpp
-    vga/textmode.cpp tty/Terminal.cpp syscall/exit.cpp syscall/exec.cpp syscall/fork.cpp syscall/waitpid.cpp crt/ssp.cpp)
+    vga/textmode.cpp
+    tty/Terminal.cpp
+    syscall/exit.cpp
+    syscall/exec.cpp
+    syscall/fork.cpp
+    syscall/waitpid.cpp
+    crt/ssp.cpp
+    crt/ubsan.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}
@@ -203,10 +216,13 @@ add_custom_command(
 
 add_executable(kernel ${SOURCES} font_out.S)
 
-target_compile_options(kernel PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
-target_compile_options(kernel_heap PRIVATE -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer)
-target_link_options(kernel PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
-target_link_options(kernel_heap PRIVATE LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -Og -g -nostdlib)
+set(CFLAGS -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer -fsanitize=undefined)
+set(LFLAGS LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -O0 -g3 -nostdlib)
+
+target_compile_options(kernel PRIVATE ${CFLAGS})
+target_compile_options(kernel_heap PRIVATE ${CFLAGS})
+target_link_options(kernel PRIVATE ${LFLAGS})
+target_link_options(kernel_heap PRIVATE  ${LFLAGS})
 
 set_source_files_properties(arch/i686/interrupts.cpp PROPERTIES COMPILE_FLAGS -fno-stack-protector)
 set_source_files_properties(crt/ssp.cpp PROPERTIES COMPILE_FLAGS -fno-stack-protector)

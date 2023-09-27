@@ -21,6 +21,7 @@ __LIBC_HEADER_BEGIN
     char *strstr(const char *s1, const char *s2);
     char *strtok(char *__restrict s, const char *__restrict sep);
     char *strpbrk(const char *s1, const char *s2);
+    char *strdup(const char *s);
 
 	size_t strlen(const char *);
     size_t strspn(const char *s1, const char *s2);

@@ -26,11 +26,15 @@ namespace Kernel::CPU
 		interrupt_frame_t *regs_fault; // NOTE: Only used in interrupts
 	} __packed stackframe_t;
 
-	void print_stacktrace()
+	void print_stacktrace(uintptr_t starting_frame)
 	{
-		stackframe_t *stackframe = nullptr;
-		asm volatile("mov %%ebp, %%eax"
-		             : "=a"(stackframe));
+		stackframe_t *stackframe = reinterpret_cast<stackframe_t *>(starting_frame);
+
+		if (!starting_frame)
+		{
+			asm volatile("mov %%ebp, %%eax"
+			             : "=a"(stackframe));
+		}
 
 		bool got_timer_interrupt = false;
 
@@ -59,7 +63,7 @@ namespace Kernel::CPU
 
 			current_index++;
 
-			if (strcmp(symbol.name, "common_interrupt_handler") == 0)
+			if (strcmp(symbol.name, "common_interrupt_handler_entry") == 0)
 			{
 				// TODO: Investigate, why faults have a different stack layout (I thought I already mitigated this)
 				interrupt_frame_t *regs = (uintptr_t) stackframe->regs_fault > 0xc0000000 ? stackframe->regs_fault : stackframe->regs;

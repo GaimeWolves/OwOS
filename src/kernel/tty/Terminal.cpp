@@ -455,7 +455,7 @@ namespace Kernel
 
 	void Terminal::SGR(int type)
 	{
-		if (type < 30 || (type > 37 && type < 40) || type > 47)
+		if (type < 30 || type == 38 || type > 49 || type == 48)
 		{
 			NOT_IMPLEMENTED();
 			return;
@@ -470,6 +470,16 @@ namespace Kernel
 		if (type >= 40 && type < 48)
 		{
 			m_console->set_bg_color((ANSIColor)(type - 30));
+			return;
+		}
+
+		if (type == 39) {
+			m_console->set_fg_color(ANSIColor::BrightWhite);
+			return;
+		}
+
+		if (type == 49) {
+			m_console->set_bg_color(ANSIColor::Black);
 			return;
 		}
 	}

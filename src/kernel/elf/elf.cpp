@@ -46,6 +46,8 @@ namespace Kernel::ELF
 
 		char *name = reinterpret_cast<char *>(CPU::Processor::thread_push_userspace_data(thread, filename, strlen(filename) + 1));
 
+		CPU::Processor::thread_align_userspace_stack(thread, alignof(auxv_t));
+
 		auxv_t auxv{
 		    .a_type = AT_NULL,
 		    .a_un{ .a_val = 0 }

@@ -18,7 +18,9 @@ namespace Kernel
 			uintptr_t ebda_base_addr = *(uint16_t *)(bda_region.virt_address + 0x0E);
 			ebda_base_addr <<= 4;
 
-			uint16_t ebda_size = *(uint16_t *)(bda_region.virt_address + 0x13);
+			uint8_t ebda_size_low = *(uint8_t *)(bda_region.virt_address + 0x13);
+			uint8_t ebda_size_high = *(uint8_t *)(bda_region.virt_address + 0x14);
+			uint16_t ebda_size = ((uint16_t)(ebda_size_high) << 8) | (uint16_t)(ebda_size_low);
 
 			Memory::VirtualMemoryManager::instance().free(bda_region);
 

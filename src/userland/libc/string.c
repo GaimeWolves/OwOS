@@ -247,10 +247,29 @@ char *strstr(const char *s1, const char *s2)
 char *strtok(char *restrict s, const char *restrict sep)
 {
 	TRACE("strtok(%s, %s)\n", s, sep);
-	(void)s;
-	(void)sep;
-	puts("strtok() not implemented");
-	abort();
+
+	static char *state = NULL;
+
+	if (!s && !state)
+		return NULL;
+
+	if (s)
+		state = s;
+
+	while (strchr(sep, *state))
+		state++;
+
+	if (*state == '\0')
+		return NULL;
+
+	char *next_delim = state;
+	while (*next_delim != '\0' && strchr(sep, *next_delim) == NULL)
+		next_delim++;
+
+	*next_delim = '\0';
+	char *ret = state;
+	state = next_delim + 1;
+	return ret;
 }
 
 char *strpbrk(const char *s1, const char *s2)
@@ -270,6 +289,23 @@ size_t strspn(const char *s1, const char *s2)
 	(void)s2;
 	puts("strspn() not implemented");
 	abort();
+}
+
+// https://pubs.opengroup.org/onlinepubs/9699919799/functions/strdup.html
+char *strdup(const char *s)
+{
+	size_t len = strlen(s) + 1;
+
+	char *copy = malloc(len);
+
+	if (!copy) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	strcpy(copy, s);
+
+	return copy;
 }
 
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/strrchr.html

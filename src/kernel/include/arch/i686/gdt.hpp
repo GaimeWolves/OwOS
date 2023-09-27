@@ -7,7 +7,7 @@
 
 namespace Kernel::CPU
 {
-	inline constexpr uint32_t GDT_ENTRY_COUNT = 6;
+	inline constexpr uint32_t GDT_ENTRY_COUNT = 8;
 
 	typedef struct gdt_entry_t
 	{

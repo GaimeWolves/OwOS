@@ -83,6 +83,7 @@ namespace Kernel::CPU
 	{
 		Processor &core = by_id(id);
 		core.m_id = id;
+		core.m_page_fault_stack = new char[PAGE_SIZE];
 		core.init_gdt();
 		core.init_idt();
 	}
@@ -340,6 +341,28 @@ namespace Kernel::CPU
 		return esp;
 	}
 
+	uintptr_t Processor::thread_align_userspace_stack(thread_t *thread, uintptr_t alignment)
+	{
+		current().enter_critical();
+		uintptr_t esp = thread->has_started ? current().get_interrupt_frame_stack().top()->old_esp : thread->registers.esp;
+
+		uintptr_t count = esp & (alignment - 1);
+
+		if (thread->has_started)
+		{
+			current().get_interrupt_frame_stack().top()->old_esp -= count;
+			esp = current().get_interrupt_frame_stack().top()->old_esp;
+		}
+		else
+		{
+			thread->registers.esp -= count;
+			esp = thread->registers.esp;
+		}
+		current().leave_critical();
+
+		return esp;
+	}
+
 	__noreturn void Processor::enter_thread_context(thread_t &thread)
 	{
 		uint32_t esp0 = (uint32_t)thread.registers.frame + sizeof(interrupt_frame_t);
@@ -349,6 +372,7 @@ namespace Kernel::CPU
 			esp0 -= 8;
 
 		update_tss(esp0);
+		m_page_fault_tss.cr3 = thread.registers.cr3;
 
 		uintptr_t old_cr3 = get_page_directory();
 
@@ -381,6 +405,7 @@ namespace Kernel::CPU
 	__noreturn void Processor::initial_enter_thread_context(thread_t thread)
 	{
 		update_tss(thread.kernel_stack);
+		m_page_fault_tss.cr3 = thread.registers.cr3;
 
 		asm volatile(
 		    "movl %[ds], %%eax\n"
@@ -450,6 +475,7 @@ namespace Kernel::CPU
 	{
 		cli(); // NOTE: gets set again by registers.eflags through iret
 		update_tss(thread->kernel_stack);
+		m_page_fault_tss.cr3 = registers.cr3;
 
 		asm volatile(
 		    "movl %[ds], %%eax\n"
@@ -515,6 +541,25 @@ namespace Kernel::CPU
 		thread.registers.cr3 = get_page_directory();
 		thread.registers.eip = frame->eip;
 		thread.registers.frame = frame;
+	}
+
+	class HaltMessage final : public CPU::ProcessorMessage
+	{
+	public:
+		void handle() override
+		{
+			CPU::Processor::current().enter_critical();
+
+			for (;;)
+				CPU::Processor::halt();
+		}
+	};
+
+	static HaltMessage s_halt_message = HaltMessage();
+
+	void halt_aps()
+	{
+		Processor::current().smp_broadcast(LibK::shared_ptr<CPU::ProcessorMessage>(&s_halt_message), true);
 	}
 
 #define PRINT_REGISTER(name)                                 \

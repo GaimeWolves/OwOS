@@ -12,4 +12,6 @@ namespace Kernel::CPU
 	void set_bsp_initialization_finished();
 
 	void print_registers();
+
+	void halt_aps();
 }

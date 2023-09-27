@@ -20,12 +20,15 @@
 
 namespace Kernel::CPU
 {
+	class PageFaultHandler;
+
 	class Processor
 	{
 	private:
 		friend SyscallDispatcher;
 		friend CoreScheduler;
 		friend GlobalScheduler;
+		friend PageFaultHandler;
 	public:
 		[[nodiscard]] static Processor &current();
 		static void set_core_count(uint32_t core_count);
@@ -96,6 +99,7 @@ namespace Kernel::CPU
 		static void initialize_userspace_thread(thread_t *thread, uintptr_t main_function, Memory::memory_space_t &memory_space);
 		static thread_registers_t create_state_for_exec(uintptr_t main_function, uintptr_t userspace_stack_ptr, Memory::memory_space_t &memory_space);
 		static uintptr_t thread_push_userspace_data(thread_t *thread, const char *data, size_t count);
+		static uintptr_t thread_align_userspace_stack(thread_t *thread, uintptr_t alignment);
 
 		template <typename T>
 		static uintptr_t thread_push_userspace_data(thread_t *thread, T data)
@@ -252,6 +256,9 @@ namespace Kernel::CPU
 		CPU::gdt_entry_t m_gdt[CPU::GDT_ENTRY_COUNT]{};
 		CPU::gdt_descriptor_t m_gdtr{};
 		CPU::tss_entry_t m_tss{};
+		CPU::tss_entry_t m_abort_tss{};
+		CPU::tss_entry_t m_page_fault_tss{};
+		char *m_page_fault_stack{};
 
 		// TODO: Implement an actual FIFO data structure
 		LibK::SRMWQueue<LibK::shared_ptr<ProcessorMessage>> m_queued_messages{};

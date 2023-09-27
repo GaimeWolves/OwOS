@@ -37,7 +37,9 @@
 	.align 4096
 	bootstrap_page_directory:
 		.skip 4096
-	bootstrap_page_table_1: # Add more tables if necessary
+	bootstrap_page_table_1:
+		.skip 4096
+	bootstrap_page_table_2: # Add more tables if necessary
 		.skip 4096
 
 .section .multiboot.text
@@ -50,7 +52,7 @@
 
 			movl $(bootstrap_page_table_1 - virt_addr), %edi
 			movl $0, %esi
-			movl $1024, %ecx
+			movl $2048, %ecx
 		.loop_map_kernel:
 			cmpl $(_kernel_end - virt_addr), %esi
 			jg .enable_paging
@@ -67,8 +69,12 @@
 		.enable_paging:
 			# Both identity map and map to 0xC0000000 the
 			# PD0 (from 0x0 - 0x3FFFFF) up to as many as needed
-			movl $(bootstrap_page_table_1 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 0
+			movl $(bootstrap_page_table_1 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 0 * 4
 			movl $(bootstrap_page_table_1 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 768 * 4
+
+			# PD1 (from 0x400000 - 0x7FFFFF)
+			movl $(bootstrap_page_table_2 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 1 * 4
+			movl $(bootstrap_page_table_2 - virt_addr + 0x003), bootstrap_page_directory - virt_addr + 769 * 4
 
 			# Point cr3 to bootstrap_page_directory
 			movl $(bootstrap_page_directory - virt_addr), %ecx
@@ -86,7 +92,8 @@
 .section .text
 	_call_entry:
 			# Unmap the identity mapping as it is now unnecessary.
-			movl $0, bootstrap_page_directory + 0
+			movl $0, bootstrap_page_directory + 0 * 4
+			movl $0, bootstrap_page_directory + 1 * 4
 
 			# Reload CR3 to force a TLB flush so the changes take effect.
 			movl %cr3, %ecx

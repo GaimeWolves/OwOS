@@ -69,7 +69,7 @@ namespace Kernel
 			auto end = (uintptr_t)&_kernel_end;
 			uintptr_t size = end - start;
 
-			assert(size <= 0x300000);
+			assert(size <= 0x700000);
 			assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
 			assert(multiboot_info);
 

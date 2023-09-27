@@ -17,5 +17,5 @@ namespace Kernel::CPU
 
 	void init_stacktracing();
 	symbol_t get_symbol_by_address(uintptr_t address);
-	void print_stacktrace();
+	void print_stacktrace(uintptr_t starting_frame = 0);
 }

@@ -73,6 +73,7 @@ namespace Kernel
 
 		const char *envp[] = {
 		    "TERM=xterm",
+		    "PATH=/bin;/usr/bin",
 		    NULL,
 		};
 

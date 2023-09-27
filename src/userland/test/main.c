@@ -16,6 +16,8 @@ int main(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 
 	mvaddstr(10, 10, "Hello ncurses :)");
 
+	mvaddstr(20, 20, "Hi");
+
 	refresh();
 
 	getch();

@@ -2,8 +2,13 @@
 
 #include <arch/i686/Processor.hpp>
 
+extern "C" void isr_0x08_entry();
+extern "C" void isr_0x0E_entry();
+
 namespace Kernel::CPU
 {
+	static char *abort_stack[PAGE_SIZE];
+
 	always_inline static gdt_entry_t create_gdt_selector(uint8_t privilege, bool is_code)
 	{
 		return gdt_entry_t{
@@ -54,6 +59,8 @@ namespace Kernel::CPU
 		m_gdt[3] = create_gdt_selector(3, true);
 		m_gdt[4] = create_gdt_selector(3, false);
 		m_gdt[5] = create_tss((uint32_t)&m_tss, sizeof(tss_entry_t));
+		m_gdt[6] = create_tss((uint32_t)&m_abort_tss, sizeof(tss_entry_t));
+		m_gdt[7] = create_tss((uint32_t)&m_page_fault_tss, sizeof(tss_entry_t));
 
 		m_gdtr.size = sizeof(m_gdt);
 		m_gdtr.offset = (uint32_t)&m_gdt;
@@ -79,6 +86,26 @@ namespace Kernel::CPU
 		    "mov %%ax, %%fs\n"
 		    "mov %%ax, %%gs\n"
 		    : : "a"(0) : );
+
+		memset(&m_abort_tss, 0, sizeof(tss_entry_t));
+		m_abort_tss.cs = 0x08;
+		m_abort_tss.ss = 0x10;
+		m_abort_tss.ss0 = 0x10;
+		m_abort_tss.ds = 0x08;
+		m_abort_tss.es = 0x08;
+		m_abort_tss.fs = 0x08;
+		m_abort_tss.gs = 0x08;
+		m_abort_tss.esp = reinterpret_cast<uint32_t>(abort_stack + PAGE_SIZE - sizeof(uintptr_t));
+		m_abort_tss.ebp = m_abort_tss.esp;
+		m_abort_tss.eflags = Processor::eflags();
+		m_abort_tss.eip = reinterpret_cast<uint32_t>(isr_0x08_entry);
+		m_abort_tss.cr3 = Processor::get_page_directory();
+		m_abort_tss.iopb = sizeof(tss_entry_t);
+
+		memcpy(&m_page_fault_tss, &m_abort_tss, sizeof(tss_entry_t));
+		m_page_fault_tss.esp = reinterpret_cast<uint32_t>(m_page_fault_stack + PAGE_SIZE - sizeof(uintptr_t));
+		m_page_fault_tss.eip = reinterpret_cast<uint32_t>(isr_0x0E_entry);
+		m_page_fault_tss.ebp = m_page_fault_tss.esp;
 	}
 
 	void Processor::update_tss(uint32_t esp0)

@@ -1,0 +1,6 @@
+**/*
+
+!**/patches
+!**/package.sh
+!i686-owos-pkg-config
+!.gitignore

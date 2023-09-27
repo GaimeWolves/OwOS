@@ -9,6 +9,7 @@
 #include <interrupts/SharedIRQHandler.hpp>
 #include <interrupts/UnhandledInterruptHandler.hpp>
 #include <syscall/SyscallDispatcher.hpp>
+#include <arch/stack_tracing.hpp>
 
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
@@ -25,8 +26,15 @@
 		m_handlers[(i)] = nullptr;                                               \
 	}
 
+#define INIT_TASK(i)                                                             \
+	{                                                                            \
+		m_idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TASK_GATE); \
+		m_handlers[(i)] = nullptr;                                               \
+	}
+
 namespace Kernel::CPU
 {
+
 	class PageFaultHandler final : public Interrupts::InterruptHandler
 	{
 	public:
@@ -39,12 +47,18 @@ namespace Kernel::CPU
 
 		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
+			halt_aps();
+
 			uintptr_t address = Processor::cr2();
 
 			// TODO: Actually handle page faults
-			log("MEM", "Got page fault at address %p executing %p", address, reg.eip);
-			log("MEM", "With error code %i", reg.error_code);
-			panic();
+			critical_empty_logger();
+			critical_printf("CRITICAL ERROR: Got page fault at address %p executing %p\n", address, Processor::current().m_tss.eip);
+			critical_printf("CRITICAL ERROR: With error code %i\n", reg.error_code);
+
+			print_stacktrace(Processor::current().m_tss.ebp);
+
+			Processor::halt();
 		}
 
 		void eoi() override {}
@@ -87,13 +101,17 @@ namespace Kernel::CPU
 	{
 		static_assert(sizeof(size_t) == sizeof(uint32_t));
 		size_t address = (size_t)entry;
+		uint16_t segment = 0x08;
 
-		// We don't implement TSS currently
-		assert(type != IDTEntryType::TASK_GATE);
+		if (type == IDTEntryType::TASK_GATE)
+		{
+			address = 0;
+			segment = entry == isr_0x08_entry ? 0x30 : 0x38;
+		}
 
 		return idt_entry_t{
 		    .offset_low = (uint16_t)(address & 0xFFFF),
-		    .segment = 0x08,
+		    .segment = segment,
 		    .type = (uint8_t)type,
 		    .privilege = 0,
 		    .present = 1,
@@ -131,6 +149,16 @@ namespace Kernel::CPU
 
 	extern "C" void common_interrupt_handler(interrupt_frame_t *regs)
 	{
+		if (regs->isr_number == 0x08)
+		{
+			halt_aps();
+
+			critical_empty_logger();
+			critical_printf("CRITICAL ERROR: Double fault\n");
+
+			Processor::halt();
+		}
+
 		Processor &core = Processor::current();
 		if (regs->isr_number != 0x80)
 			core.increment_irq_counter();
@@ -156,6 +184,7 @@ namespace Kernel::CPU
 		if (regs->isr_number != 0x80)
 			core.decrement_irq_counter();
 
+		asm("cli");
 		handler->eoi();
 		exit();
 	}
@@ -177,13 +206,13 @@ namespace Kernel::CPU
 		INIT_INTERRUPT(0x05);
 		INIT_INTERRUPT(0x06);
 		INIT_INTERRUPT(0x07);
-		INIT_INTERRUPT(0x08);
+		INIT_TASK(0x08);
 		INIT_INTERRUPT(0x09);
 		INIT_INTERRUPT(0x0A);
 		INIT_INTERRUPT(0x0B);
 		INIT_INTERRUPT(0x0C);
 		INIT_INTERRUPT(0x0D);
-		INIT_INTERRUPT(0x0E);
+		INIT_TASK(0x0E);
 		INIT_INTERRUPT(0x0F);
 		INIT_INTERRUPT(0x10);
 		INIT_INTERRUPT(0x11);

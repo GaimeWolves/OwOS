@@ -29,6 +29,7 @@ namespace Kernel::LibK
 
 		~vector()
 		{
+			// TODO: Call destructors
 			if (m_array)
 			{
 				kfree(m_array);
