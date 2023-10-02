@@ -3,6 +3,7 @@
 #include <arch/Processor.hpp>
 #include <filesystem/VirtualFileSystem.hpp>
 #include <filesystem/File.hpp>
+#include <elf/elf.hpp>
 
 namespace Kernel
 {
@@ -16,6 +17,12 @@ namespace Kernel
 
 		if (!file)
 			return -ENOENT;
+
+		if (file->is_directory())
+			return -EACCES;
+
+		if (!ELF::is_executable(file))
+			return -ENOEXEC;
 
 		LibK::vector<const char *> argv_copy;
 		LibK::vector<const char *> envp_copy;

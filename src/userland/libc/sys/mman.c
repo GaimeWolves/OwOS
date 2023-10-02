@@ -6,7 +6,7 @@
 
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off)
 {
-	TRACE("mmap(%p, %lu, %d, %d, %d, %lu)\n", addr, len, prot, flags, fildes, off);
+	TRACE("mmap(%p, %lu, %d, %d, %d, %lu)\r\n", addr, len, prot, flags, fildes, off);
 
 	uintptr_t ret = syscall(__SC_mmap, addr, len, prot, flags, fildes, off);
 
@@ -18,7 +18,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off)
 
 int munmap(void *addr, size_t len)
 {
-	TRACE("munmao(%p, %lu)\n", addr, len);
+	TRACE("munmao(%p, %lu)\r\n", addr, len);
 
 	return syscall(__SC_munmap, addr, len);
 }

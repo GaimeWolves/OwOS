@@ -6,25 +6,13 @@
 
 #define NOT_IMPLEMENTED() unimplemented_control_sequence(__PRETTY_FUNCTION__)
 
-#define CHECK_HAS_ARGS()    \
-	if (arguments.empty()) \
-	{                         \
-		reset_sequence();     \
-		break;                \
-	}
-
-#define CHECK_ARG_COUNT(n)    \
-	if (arguments.size() < n) \
-	{                         \
-		reset_sequence();     \
-		break;                \
-	}
+#define ENSURE_ARG_COUNT(n) arguments.resize(n, 0)
 
 namespace Kernel
 {
 	static void unimplemented_control_sequence(const char *name)
 	{
-		log("Terminal", "Unimplemented control sequence: %s\n", name);
+		log("Terminal", "Unimplemented control sequence at %s", name);
 	}
 
 	void Terminal::echo(char ch)
@@ -78,10 +66,15 @@ namespace Kernel
 			advance();
 			m_console->set_cursor_at(m_cursor_row, m_cursor_column);
 		}
+		else
+		{
+			log("Terminal", "Ignoring %c 0x%x", ch, ch);
+		}
 	}
 
 	void Terminal::reset_sequence()
 	{
+		log("Terminal", "Escape sequence: %s", m_current_escape_sequence.c_str());
 		m_current_escape_sequence = "";
 		m_sequence_state = SequenceState::None;
 	}
@@ -90,8 +83,11 @@ namespace Kernel
 	{
 		switch (ch)
 		{
+		case 'M':
+			RI();
+			break;
 		case 'N':
-			CSI();
+			SS2();
 			break;
 		case 'O':
 			SS3();
@@ -101,7 +97,7 @@ namespace Kernel
 			break;
 		case '[':
 			CSI();
-			break;
+			return;
 		case '\\':
 			ST();
 			break;
@@ -118,9 +114,11 @@ namespace Kernel
 			APC();
 			break;
 		default:
-			reset_sequence();
+			NOT_IMPLEMENTED();
 			break;
 		}
+
+		reset_sequence();
 	}
 
 	void Terminal::read_csi_sequence(char ch)
@@ -146,70 +144,75 @@ namespace Kernel
 		switch (ch)
 		{
 		case 'A':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CUU(arguments[0]);
 			break;
 		case 'B':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CUD(arguments[0]);
 			break;
 		case 'C':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CUF(arguments[0]);
 			break;
 		case 'D':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CUB(arguments[0]);
 			break;
 		case 'E':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CNL(arguments[0]);
 			break;
 		case 'F':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CPL(arguments[0]);
 			break;
 		case 'G':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			CHA(arguments[0]);
 			break;
 		case 'H':
-			CHECK_ARG_COUNT(2)
+			ENSURE_ARG_COUNT(2);
 			CUP(arguments[0], arguments[1]);
 			break;
 		case 'J':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			ED(arguments[0]);
 			break;
 		case 'K':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			EL(arguments[0]);
 			break;
 		case 'S':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			SU(arguments[0]);
 			break;
 		case 'T':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			SD(arguments[0]);
 			break;
+		case 'd':
+			ENSURE_ARG_COUNT(1);
+			VPA(arguments[0]);
+			break;
 		case 'f':
-			CHECK_ARG_COUNT(2)
+			ENSURE_ARG_COUNT(2);
 			HVP(arguments[0], arguments[1]);
 			break;
 		case 'm':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			SGR(arguments[0]);
 			break;
 		case 'i':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			AUX(arguments[0]);
 			break;
 		case 'n':
-			CHECK_HAS_ARGS()
+			ENSURE_ARG_COUNT(1);
 			DSR(arguments[0]);
 			break;
 		default:
+			NOT_IMPLEMENTED();
 			break;
 		}
 
@@ -287,7 +290,11 @@ namespace Kernel
 
 	void Terminal::BS()
 	{
-		NOT_IMPLEMENTED();
+		if (m_cursor_column > 0)
+		{
+			m_cursor_column--;
+			m_console->set_cursor_at(m_cursor_row, m_cursor_column);
+		}
 	}
 
 	void Terminal::CR()
@@ -321,6 +328,17 @@ namespace Kernel
 	{
 		m_sequence_state = SequenceState::FeSequence;
 		m_csi_state = CSIState::CSISequenceParams;
+	}
+
+	void Terminal::RI()
+	{
+		if (m_cursor_row == 0)
+			m_console->scroll_down();
+		else
+		{
+			m_cursor_row--;
+			m_console->set_cursor_at(m_cursor_row, m_cursor_column);
+		}
 	}
 
 	void Terminal::SS2()
@@ -412,6 +430,13 @@ namespace Kernel
 
 	void Terminal::CUP(int row, int column)
 	{
+		// TODO: Move 1-to-0 indexing switch from this layer to the console layer
+		if (row > 0)
+			row--;
+
+		if (column > 0)
+			column--;
+
 		m_cursor_row = row;
 		m_cursor_column = column;
 		m_console->set_cursor_at(m_cursor_row, m_cursor_column);
@@ -430,20 +455,36 @@ namespace Kernel
 
 	void Terminal::EL(int type)
 	{
-		(void)type;
-		NOT_IMPLEMENTED();
+		if (type < 0 || type > 2)
+			return;
+
+		size_t from_column = type == 0 ? m_cursor_column : 0;
+		size_t to_column = type == 1 ? m_cursor_column : m_console->get_width() - 1;
+
+		m_console->clear(m_cursor_row, from_column, m_cursor_row, to_column);
 	}
 
 	void Terminal::SU(int n)
 	{
-		(void)n;
-		NOT_IMPLEMENTED();
+		while(n--)
+			m_console->scroll_up();
 	}
 
 	void Terminal::SD(int n)
 	{
-		(void)n;
-		NOT_IMPLEMENTED();
+		// TODO: More elaborate scroll functions
+		while (n--)
+			m_console->scroll_down();
+	}
+
+	void Terminal::VPA(int row)
+	{
+		// TODO: Move 1-to-0 indexing switch from this layer to the console layer
+		if (row > 0)
+			row--;
+
+		m_cursor_row = row;
+		m_console->set_cursor_at(m_cursor_row, m_cursor_column);
 	}
 
 	void Terminal::HVP(int row, int column)
@@ -455,9 +496,11 @@ namespace Kernel
 
 	void Terminal::SGR(int type)
 	{
-		if (type < 30 || type == 38 || type > 49 || type == 48)
+		if (type == 0)
 		{
-			NOT_IMPLEMENTED();
+			// TODO: Implement more attributes
+			m_console->set_fg_color(ANSIColor::BrightWhite);
+			m_console->set_bg_color(ANSIColor::Black);
 			return;
 		}
 
@@ -469,19 +512,35 @@ namespace Kernel
 
 		if (type >= 40 && type < 48)
 		{
-			m_console->set_bg_color((ANSIColor)(type - 30));
+			m_console->set_bg_color((ANSIColor)(type - 40));
 			return;
 		}
 
-		if (type == 39) {
+		if (type == 39)
+		{
 			m_console->set_fg_color(ANSIColor::BrightWhite);
 			return;
 		}
 
-		if (type == 49) {
+		if (type == 49)
+		{
 			m_console->set_bg_color(ANSIColor::Black);
 			return;
 		}
+
+		if (type >= 90 && type < 98)
+		{
+			m_console->set_fg_color((ANSIColor)((int)ANSIColor::BrightBlack + type - 90));
+			return;
+		}
+
+		if (type >= 100 && type < 108)
+		{
+			m_console->set_bg_color((ANSIColor)((int)ANSIColor::BrightBlack + type - 90));
+			return;
+		}
+
+		NOT_IMPLEMENTED();
 	}
 
 	void Terminal::AUX(int type)

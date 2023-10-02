@@ -22,4 +22,6 @@ namespace Kernel
 	uintptr_t syscall$exec(const char *path, const char *argv[], const char *envp[]);
 	uintptr_t syscall$fork();
 	uintptr_t syscall$waitpid(pid_t pid, int *stat_loc, int options);
+	uintptr_t syscall$getcwd(char *buf, size_t size);
+	uintptr_t syscall$chdir(char *path);
 }

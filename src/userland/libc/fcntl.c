@@ -8,7 +8,7 @@
 
 int open(const char *path, int oflag, ...)
 {
-	TRACE("open(%s, %lu)\n", path, oflag);
+	TRACE("open(%s, %lu)\r\n", path, oflag);
 
 	va_list ap;
 	va_start(ap, oflag);

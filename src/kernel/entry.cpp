@@ -71,8 +71,16 @@ namespace Kernel
 		    NULL,
 		};
 
+		char lines_env[10] = { 0 };
+		char columns_env[12] = { 0 };
+
+		ksprintf(lines_env, "LINES=%d", FramebufferConsole::instance().get_height());
+		ksprintf(columns_env, "COLUMNS=%d", FramebufferConsole::instance().get_width());
+
 		const char *envp[] = {
 		    "TERM=xterm",
+		    lines_env,
+		    columns_env,
 		    "PATH=/bin;/usr/bin",
 		    NULL,
 		};

@@ -183,7 +183,6 @@ namespace Kernel
 		while (bytes > 0)
 		{
 			uint32_t block = block_iterator.get();
-			log("%d", block);
 
 			m_filesystem->read(block, 1, region.phys_address);
 			region.phys_address += m_filesystem->m_block_size;

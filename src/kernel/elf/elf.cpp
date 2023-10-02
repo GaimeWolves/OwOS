@@ -190,4 +190,20 @@ namespace Kernel::ELF
 
 		return thread;
 	}
+
+	bool is_executable(File *file)
+	{
+		if (file->size() < sizeof(elf32_ehdr_t))
+			return false;
+
+		auto region = Memory::VirtualMemoryManager::instance().allocate_region(sizeof(elf32_ehdr_t));
+		file->read(0, sizeof(elf32_ehdr_t), region);
+		auto header = (elf32_ehdr_t *)region.virt_address;
+
+		bool valid = hasSignature(header) && (header->e_type == ET_DYN || header->e_type == ET_REL || header->e_type == ET_EXEC);
+
+		Memory::VirtualMemoryManager::instance().free(region);
+
+		return valid;
+	}
 }

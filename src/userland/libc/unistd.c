@@ -14,14 +14,14 @@ int opterr, optind, optopt;
 
 int close(int filedes)
 {
-	TRACE("close(%d)\n", filedes);
+	TRACE("close(%d)\r\n", filedes);
 	return syscall(__SC_close, filedes);
 }
 
 void _exit(int status)
 {
 	(void)status;
-	TRACE("_exit(%d)\n", status);
+	TRACE("_exit(%d)\r\n", status);
 
 	for(;;)
 		;
@@ -37,6 +37,13 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	return syscall(__SC_exec, path, argv, envp);
 }
 
+int execvp(const char *path, char *const argv[])
+{
+	// TODO: PATH variable search
+
+	return execv(path, argv);
+}
+
 pid_t fork(void)
 {
 	return syscall(__SC_fork);
@@ -44,7 +51,11 @@ pid_t fork(void)
 
 ssize_t read(int fd, void *buf, size_t count)
 {
-	return syscall(__SC_read, fd, buf, count);
+	ssize_t ret = syscall(__SC_read, fd, buf, count);
+
+	TRACE("read(%d, %p, %zu) -> %zd\r\n", fd, buf, count, ret);
+
+	return ret;
 }
 
 ssize_t write(int fd, const void *buf, size_t count)
@@ -55,7 +66,7 @@ ssize_t write(int fd, const void *buf, size_t count)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
 int access(const char *path, int amode)
 {
-	TRACE("access(%s, %d)\n", path, amode);
+	TRACE("access(%s, %d)\r\n", path, amode);
 
 	(void)amode;
 	puts("access() not working properly! R_OK, W_OK, X_OK always allowed!");
@@ -71,32 +82,38 @@ int access(const char *path, int amode)
 
 int chdir(const char *path)
 {
-	TRACE("chdir(%s)\n", path);
+	TRACE("chdir(%s)\r\n", path);
 
-	(void)path;
-	puts("chdir() not implemented");
-	abort();
+	return syscall(__SC_chdir, path);
 }
 
 int unlink(const char *path)
 {
-	TRACE("unlink(%s)\n", path);
+	TRACE("unlink(%s)\r\n", path);
 	(void)path;
 	puts("unlink() not implemented");
 	abort();
 }
 
+char *getcwd(char *buf, size_t size)
+{
+	TRACE("getcwd(%.*s)\r\n", PATH_MAX, buf);
+
+	uintptr_t ret = syscall(__SC_getcwd, buf, size);
+
+	return ret == -1UL ? NULL : (char *)ret;
+}
+
 char *getwd(char buf[PATH_MAX])
 {
-	TRACE("buf(%.*s)\n", PATH_MAX, buf);
-	(void)buf;
-	puts("getwd() not implemented");
-	abort();
+	TRACE("getwd(%.*s)\r\n", PATH_MAX, buf);
+
+	return getcwd(buf, PATH_MAX);
 }
 
 int dup(int fildes)
 {
-	TRACE("dup(%d)\n", fildes);
+	TRACE("dup(%d)\r\n", fildes);
 	(void)fildes;
 	puts("dup() not implemented");
 	abort();
@@ -104,7 +121,7 @@ int dup(int fildes)
 
 int getopt(int argc, char * const argv[], const char *optstring)
 {
-	TRACE("getopt(%d, %p, %s)\n", argc, argv, optstring);
+	TRACE("getopt(%d, %p, %s)\r\n", argc, argv, optstring);
 	(void)argc;
 	(void)argv;
 	(void)optstring;
@@ -114,7 +131,7 @@ int getopt(int argc, char * const argv[], const char *optstring)
 
 int isatty(int fildes)
 {
-	TRACE("isatty(%d)\n", fildes);
+	TRACE("isatty(%d)\r\n", fildes);
 	puts("isatty() not fully implemented!");
 
 	return fildes >= 0 && fildes <= STDERR_FILENO;
@@ -122,7 +139,7 @@ int isatty(int fildes)
 
 unsigned sleep(unsigned seconds)
 {
-	TRACE("sleep(%u)\n", seconds);
+	TRACE("sleep(%u)\r\n", seconds);
 	(void)seconds;
 	puts("sleep() not implemented");
 	abort();

@@ -35,6 +35,9 @@ namespace Kernel
 
 		vfs_node_t *current_file = &m_root_node;
 
+		if (*current_offset == '\0')
+			return current_file->file;
+
 		while(*current_offset)
 		{
 			if (strcmp(current_offset, ".") == 0)

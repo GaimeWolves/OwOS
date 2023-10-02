@@ -18,7 +18,7 @@ const char * const error_string[] = {
 
 void *memcpy(void *__restrict s1, const void *__restrict s2, size_t n)
 {
-	TRACE("memcpy(%p, %p, %lu)\n", s1, s2, n);
+	TRACE("memcpy(%p, %p, %lu)\r\n", s1, s2, n);
 	char* dp = s1;
 	const char* sp = s2;
 
@@ -30,7 +30,7 @@ void *memcpy(void *__restrict s1, const void *__restrict s2, size_t n)
 
 void *memmove(void *dest, const void *src, size_t count)
 {
-	TRACE("memmove(%p, %p, %lu)\n", dest, src, count);
+	TRACE("memmove(%p, %p, %lu)\r\n", dest, src, count);
 	const char* sp = src;
 	char* dp = dest;
 
@@ -50,7 +50,7 @@ void *memmove(void *dest, const void *src, size_t count)
 
 void *memset(void *dest, int ch, size_t count)
 {
-	TRACE("memset(%p, %c, %lu)\n", dest, ch, count);
+	TRACE("memset(%p, %c, %lu)\r\n", dest, ch, count);
 	char *p = (char *)dest;
 	while (count--)
 		*p++ = (char)ch;
@@ -60,7 +60,7 @@ void *memset(void *dest, int ch, size_t count)
 
 int memcmp(const void *s1, const void *s2, size_t n)
 {
-	TRACE("memcmp(%p, %p, %lu)\n", s1, s2, n);
+	TRACE("memcmp(%p, %p, %lu)\r\n", s1, s2, n);
 	(void)s1;
 	(void)s2;
 	(void)n;
@@ -70,7 +70,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
 
 void *memchr(const void *s, int c, size_t n)
 {
-	TRACE("memchr(%p, %c, %lu)\n", s, c, n);
+	TRACE("memchr(%p, %c, %lu)\r\n", s, c, n);
 	char *ptr = (char *)s;
 
 	while (n-- > 0)
@@ -86,7 +86,7 @@ void *memchr(const void *s, int c, size_t n)
 
 char *strcat(char *__restrict s1, const char *__restrict s2)
 {
-	TRACE("strcat(%s, %s)\n", s1, s2);
+	TRACE("strcat(%s, %s)\r\n", s1, s2);
 	size_t offset = strlen(s1);
 	memcpy(&s1[offset], s2, strlen(s2) + 1);
 	return s1;
@@ -94,7 +94,7 @@ char *strcat(char *__restrict s1, const char *__restrict s2)
 
 char *strncat(char *restrict s1, const char *restrict s2, size_t n)
 {
-	TRACE("strncat(%s, %s, %c)\n", s1, s2, n);
+	TRACE("strncat(%s, %s, %c)\r\n", s1, s2, n);
 	(void)s1;
 	(void)s2;
 	(void)n;
@@ -105,7 +105,7 @@ char *strncat(char *restrict s1, const char *restrict s2, size_t n)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/strchr.html
 char *strchr(const char *s, int c)
 {
-	TRACE("strchr(%s, %c)\n", s, c);
+	TRACE("strchr(%s, %c)\r\n", s, c);
 	if (!s)
 		return NULL;
 
@@ -127,7 +127,7 @@ char *strchr(const char *s, int c)
 
 int strcmp(const char *s1, const char *s2)
 {
-	TRACE("strcmp(%s, %s)\n", s1, s2);
+	TRACE("strcmp(%s, %s)\r\n", s1, s2);
 	unsigned char c1, c2;
 
 	do
@@ -144,7 +144,7 @@ int strcmp(const char *s1, const char *s2)
 
 int strncmp(const char *s1, const char *s2, size_t n)
 {
-	TRACE("strncmp(%s, %s, %lu)\n", s1, s2, n);
+	TRACE("strncmp(%s, %s, %lu)\r\n", s1, s2, n);
 	unsigned char c1, c2;
 
 	while (n-- > 0)
@@ -161,7 +161,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
 
 char *strcpy(char *__restrict dest, const char *__restrict src)
 {
-	TRACE("strcpy(%s, %s)\n", dest, src);
+	TRACE("strcpy(%s, %s)\r\n", dest, src);
 	char* buf = dest;
 
 	if (!src)
@@ -194,7 +194,7 @@ size_t strlen(const char *s)
 
 char *strncpy(char *__restrict dest, const char *__restrict src, size_t count)
 {
-	TRACE("strncmp(%s, %s, %lu)\n", dest, src, count);
+	TRACE("strncmp(%s, %s, %lu)\r\n", dest, src, count);
 	char* buf = dest;
 	size_t i;
 
@@ -209,7 +209,7 @@ char *strncpy(char *__restrict dest, const char *__restrict src, size_t count)
 
 char *strstr(const char *s1, const char *s2)
 {
-	TRACE("strstr(%s, %s)\n", s1, s2);
+	TRACE("strstr(%s, %s)\r\n", s1, s2);
 
 	char *str = (char *)s1;
 
@@ -246,7 +246,7 @@ char *strstr(const char *s1, const char *s2)
 
 char *strtok(char *restrict s, const char *restrict sep)
 {
-	TRACE("strtok(%s, %s)\n", s, sep);
+	TRACE("strtok(%s, %s)\r\n", s, sep);
 
 	static char *state = NULL;
 
@@ -256,25 +256,23 @@ char *strtok(char *restrict s, const char *restrict sep)
 	if (s)
 		state = s;
 
-	while (strchr(sep, *state))
-		state++;
-
 	if (*state == '\0')
 		return NULL;
 
-	char *next_delim = state;
-	while (*next_delim != '\0' && strchr(sep, *next_delim) == NULL)
-		next_delim++;
-
-	*next_delim = '\0';
 	char *ret = state;
-	state = next_delim + 1;
+
+	while (!strchr(sep, *state))
+		state++;
+
+	if (*state != '\0')
+		*state++ = '\0';
+
 	return ret;
 }
 
 char *strpbrk(const char *s1, const char *s2)
 {
-	TRACE("strpbrk(%s, %s)\n", s1, s2);
+	TRACE("strpbrk(%s, %s)\r\n", s1, s2);
 	(void)s1;
 	(void)s2;
 	puts("strpbrk() not implemented");
@@ -283,7 +281,7 @@ char *strpbrk(const char *s1, const char *s2)
 
 size_t strspn(const char *s1, const char *s2)
 {
-	TRACE("strspn(%s, %s)\n", s1, s2);
+	TRACE("strspn(%s, %s)\r\n", s1, s2);
 
 	(void)s1;
 	(void)s2;
@@ -311,7 +309,7 @@ char *strdup(const char *s)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/strrchr.html
 char *strrchr(const char *s, int c)
 {
-	TRACE("strrchr(%s, %c)\n", s, c);
+	TRACE("strrchr(%s, %c)\r\n", s, c);
 
 	if (!s)
 		return NULL;
@@ -337,7 +335,7 @@ char *strrchr(const char *s, int c)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/strerror.html
 char *strerror(int errnum)
 {
-	TRACE("strerror(%d)\n", errnum);
+	TRACE("strerror(%d)\r\n", errnum);
 	// NOTE: const cast allowed because of specification:
 	// The application shall not modify the string returned.
 	return (char *)error_string[errnum];

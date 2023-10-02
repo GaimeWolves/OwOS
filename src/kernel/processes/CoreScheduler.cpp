@@ -81,6 +81,9 @@ namespace Kernel
 				}
 				break;
 			case ThreadState::Terminated:
+				if (next == core.m_current_thread)
+					break;
+
 				kfree(reinterpret_cast<void *>(next->kernel_stack));
 				core.m_running_threads.erase(core.m_running_threads.begin() + core.m_current_thread_index);
 
@@ -97,7 +100,7 @@ namespace Kernel
 			default:
 				break;
 			}
-		} while (core.m_current_thread_index != start);
+		} while (core.m_current_thread_index != start && core.m_running_threads.size() > 1);
 
 		return core.m_idle_thread;
 	}

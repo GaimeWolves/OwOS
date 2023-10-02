@@ -55,8 +55,9 @@ namespace Kernel
 		}
 
 		size_t read = LibK::min(m_input_char_buffer.size(), bytes);
+		size_t counter = read;
 
-		while (read--)
+		while (counter--)
 			*data++ = m_input_char_buffer.pop();
 
 		return read;

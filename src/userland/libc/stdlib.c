@@ -12,7 +12,7 @@
 
 void abort(void)
 {
-	TRACE("abort()\n", "");
+	TRACE("abort()\r\n", "");
 
 	for (;;)
 		;
@@ -20,7 +20,7 @@ void abort(void)
 
 int atexit(void (*func)(void))
 {
-	TRACE("atexit(%p)\n", func);
+	TRACE("atexit(%p)\r\n", func);
 	(void)func;
 	puts("atexit() not implemented");
 	abort();
@@ -28,7 +28,7 @@ int atexit(void (*func)(void))
 
 int atoi(const char *str)
 {
-	TRACE("atoi(%p)\n", str);
+	TRACE("atoi(%p)\r\n", str);
 	(void)str;
 	puts("atoi() not implemented");
 	abort();
@@ -36,7 +36,7 @@ int atoi(const char *str)
 
 void *calloc(size_t nelem, size_t elsize)
 {
-	TRACE("calloc(%lu, %lu)\n", nelem, elsize);
+	TRACE("calloc(%lu, %lu)\r\n", nelem, elsize);
 
 	void *ptr = malloc(nelem * elsize);
 
@@ -50,7 +50,7 @@ void *calloc(size_t nelem, size_t elsize)
 
 void exit(int status)
 {
-	TRACE("exit(%d)\n", status);
+	TRACE("exit(%d)\r\n", status);
 
 	// TODO: atexit functions and flushing open streams
 
@@ -64,7 +64,7 @@ void exit(int status)
 
 int system(const char *command)
 {
-	TRACE("system(%s)\n", command);
+	TRACE("system(%s)\r\n", command);
 
 	(void)command;
 	puts("system() not implemented");
@@ -73,13 +73,13 @@ int system(const char *command)
 
 long strtol(const char *str, char **str_end, int base)
 {
-	TRACE("strtol(%s, %p, %d)\n", str, str_end, base);
+	TRACE("strtol(%s, %p, %d)\r\n", str, str_end, base);
 	return (long)strtoll(str, str_end, base);
 }
 
 long long strtoll(const char *str, char **str_end, int base)
 {
-	TRACE("strtoll(%s, %p, %d)\n", str, str_end, base);
+	TRACE("strtoll(%s, %p, %d)\r\n", str, str_end, base);
 
 	while(isspace(str[0]))
 		str++;
@@ -96,13 +96,13 @@ long long strtoll(const char *str, char **str_end, int base)
 
 unsigned long strtoul(const char *str, char **str_end, int base)
 {
-	TRACE("strtoul(%s, %p, %d)\n", str, str_end, base);
+	TRACE("strtoul(%s, %p, %d)\r\n", str, str_end, base);
 	return (unsigned long)strtoull(str, str_end, base);
 }
 
 unsigned long long strtoull(const char *str, char **str_end, int base)
 {
-	TRACE("strtoull(%s, %p, %d)\n", str, str_end, base);
+	TRACE("strtoull(%s, %p, %d)\r\n", str, str_end, base);
 
 	if (base < 0 || base == 1 || base > 36)
 		return 0;
@@ -166,7 +166,7 @@ unsigned long long strtoull(const char *str, char **str_end, int base)
 
 char *getenv(const char *name)
 {
-	TRACE("getenv(%s)\n", name);
+	TRACE("getenv(%s)\r\n", name);
 
 	if (!name)
 		return NULL;
@@ -187,7 +187,7 @@ char *getenv(const char *name)
 
 int setenv(const char *envname, const char *envval, int overwrite)
 {
-	TRACE("setenv(%s, %s, %d)\n", envname, envval, overwrite);
+	TRACE("setenv(%s, %s, %d)\r\n", envname, envval, overwrite);
 
 	(void)envname;
 	(void)envval;
@@ -198,7 +198,7 @@ int setenv(const char *envname, const char *envval, int overwrite)
 
 int putenv(char *string)
 {
-	TRACE("putenv(%s)\n", string);
+	TRACE("putenv(%s)\r\n", string);
 
 	(void)string;
 	puts("setenv() not implemented");
@@ -207,7 +207,7 @@ int putenv(char *string)
 
 void qsort(void *base, size_t nel, size_t width, int (*compar)(const void *, const void *))
 {
-	TRACE("qsort(%p, %lu, %lu, %p)\n", base, nel, width, compar);
+	TRACE("qsort(%p, %lu, %lu, %p)\r\n", base, nel, width, compar);
 
 	(void)base;
 	(void)nel;

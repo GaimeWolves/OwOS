@@ -53,6 +53,9 @@ namespace Kernel
 		Process *fork();
 		void adopt(Process *process);
 
+		[[nodiscard]] const LibK::string &get_cwd() const { return m_cwd; }
+		void set_cwd(const char *path) { m_cwd = path; }
+
 	private:
 		explicit Process(Process *other);
 
@@ -65,5 +68,6 @@ namespace Kernel
 		Process *m_parent{nullptr};
 		LibK::vector<Process *> m_children{};
 		ProcessState m_state{ProcessState::Running};
+		LibK::string m_cwd{"/"};
 	};
 }

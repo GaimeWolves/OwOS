@@ -49,7 +49,7 @@ namespace Kernel
 		void on_cursor_tick();
 
 		uint32_t m_fg_color{0x00FFFFFF}, m_bg_color{0};
-		size_t m_cursor_row{1}, m_cursor_column{1};
+		size_t m_cursor_row{0}, m_cursor_column{0};
 		bool m_cursor_on{true};
 		bool m_cursor_tick_scheduled{false};
 		cell_t *m_cells{nullptr};

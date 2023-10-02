@@ -95,6 +95,16 @@ namespace Kernel
 
 	void FramebufferConsole::clear(size_t from_row, size_t from_column, size_t to_row, size_t to_column)
 	{
+		if (from_row == to_row)
+		{
+			for (size_t col = from_column; col <= to_column; col++)
+			{
+				put_char_at(from_row, col, ' ');
+			}
+
+			return;
+		}
+
 		if (from_column != 0)
 		{
 			for (size_t col = from_column; col < get_width(); col++)
@@ -107,9 +117,9 @@ namespace Kernel
 
 		if (to_column != get_width() - 1)
 		{
-			for (size_t col = 0; col < to_column; col++)
+			for (size_t col = 0; col <= to_column; col++)
 			{
-				put_char_at(to_row - 1, col, ' ');
+				put_char_at(to_row, col, ' ');
 			}
 
 			to_row--;

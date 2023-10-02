@@ -16,7 +16,9 @@
 	S(exec)               \
 	S(fork)               \
 	S(exit)               \
-	S(waitpid)
+	S(waitpid)            \
+	S(chdir)              \
+	S(getcwd)
 
 typedef enum Syscall
 {

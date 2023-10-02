@@ -13,7 +13,7 @@ __attribute__((noreturn)) void __assertion_failed(const char *condition, const c
 	// assert() shall write information about the particular call that failed on stderr
 	puts("ASSERTION FAILED");
 	puts(condition);
-	fprintf(stderr, "%s:%d: %s: Assertion '%s' failed.\n", file, line, function, condition);
+	fprintf(stderr, "%s:%d: %s: Assertion '%s' failed.\r\n", file, line, function, condition);
 
 	// and shall call abort().
 	abort();

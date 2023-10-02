@@ -40,14 +40,14 @@ void __stdio_init()
 
 int fclose(FILE *stream)
 {
-	TRACE("fclose(%p)\n", stream);
+	TRACE("fclose(%p)\r\n", stream);
 
 	return close(stream->fd);
 }
 
 int fflush(FILE *stream)
 {
-	TRACE("fflush(%p)\n", stream);
+	TRACE("fflush(%p)\r\n", stream);
 	(void)stream;
 	puts("fflush() not fully implemented, as no buffering is done at the moment");
 	return 0;
@@ -55,14 +55,14 @@ int fflush(FILE *stream)
 
 int fileno(FILE *stream)
 {
-	TRACE("fileno(%p)\n", stream);
+	TRACE("fileno(%p)\r\n", stream);
 
 	return stream->fd;
 }
 
 int feof(FILE *stream)
 {
-	TRACE("feof(%p)\n", stream);
+	TRACE("feof(%p)\r\n", stream);
 
 	(void)stream;
 	puts("feof() not implemented");
@@ -71,7 +71,7 @@ int feof(FILE *stream)
 
 int ferror(FILE *stream)
 {
-	TRACE("ferror(%p)\n", stream);
+	TRACE("ferror(%p)\r\n", stream);
 
 	(void)stream;
 	puts("ferror() not implemented");
@@ -80,7 +80,7 @@ int ferror(FILE *stream)
 
 void clearerr(FILE *stream)
 {
-	TRACE("clearerr(%p)\n", stream);
+	TRACE("clearerr(%p)\r\n", stream);
 
 	(void)stream;
 	puts("clearerr() not implemented");
@@ -89,7 +89,7 @@ void clearerr(FILE *stream)
 
 FILE *fopen(const char *__restrict pathname, const char *__restrict mode)
 {
-	TRACE("fopen(%s, %s)\n", pathname, mode);
+	TRACE("fopen(%s, %s)\r\n", pathname, mode);
 
 	(void)mode;
 
@@ -103,7 +103,7 @@ FILE *fopen(const char *__restrict pathname, const char *__restrict mode)
 
 FILE *fdopen(int fildes, const char *mode)
 {
-	TRACE("fdopen(%d, %s)\n", fildes, mode);
+	TRACE("fdopen(%d, %s)\r\n", fildes, mode);
 
 	(void)mode;
 
@@ -115,7 +115,7 @@ FILE *fdopen(int fildes, const char *mode)
 
 FILE *freopen(const char *restrict pathname, const char *restrict mode, FILE *restrict stream)
 {
-	TRACE("freopen(%s, %s, %p)\n", pathname, mode, stream);
+	TRACE("freopen(%s, %s, %p)\r\n", pathname, mode, stream);
 
 	(void)pathname;
 	(void)mode;
@@ -126,7 +126,7 @@ FILE *freopen(const char *restrict pathname, const char *restrict mode, FILE *re
 
 int fputc(int c, FILE *file)
 {
-	// TRACE("fputc(%c, %p)\n", c, file);
+	// TRACE("fputc(%c, %p)\r\n", c, file);
 
 	unsigned char ch = c;
 	ssize_t ret = write(file->fd, &ch, 1);
@@ -139,7 +139,7 @@ int fputc(int c, FILE *file)
 
 int fputs(const char *restrict s, FILE *restrict stream)
 {
-	TRACE("fputs(%s, %p)\n", s, stream);
+	TRACE("fputs(%s, %p)\r\n", s, stream);
 
 	(void)s;
 	(void)stream;
@@ -149,7 +149,7 @@ int fputs(const char *restrict s, FILE *restrict stream)
 
 int fgetc(FILE *stream)
 {
-	TRACE("fgetc(%p)\n", stream);
+	TRACE("fgetc(%p)\r\n", stream);
 
 	int ch = 0;
 	ssize_t ret = read(stream->fd, &ch, 1);
@@ -162,7 +162,7 @@ int fgetc(FILE *stream)
 
 char *fgets(char *restrict s, int n, FILE *restrict stream)
 {
-	TRACE("fgets(%s, %d, %p)\n", s, n, stream);
+	TRACE("fgets(%s, %d, %p)\r\n", s, n, stream);
 
 	(void)s;
 	(void)n;
@@ -174,7 +174,7 @@ char *fgets(char *restrict s, int n, FILE *restrict stream)
 // https://pubs.opengroup.org/onlinepubs/9699919799/functions/fread.html
 size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream)
 {
-	TRACE("fread(%p, %lu, %lu, %p)\n", ptr, size, nitems, stream);
+	TRACE("fread(%p, %lu, %lu, %p)\r\n", ptr, size, nitems, stream);
 
 	if (!ptr || !stream)
 		return 0;
@@ -190,7 +190,7 @@ size_t fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict stre
 
 int fseek(FILE *stream, long offset, int whence)
 {
-	TRACE("fseek(%p, %ld, %d)\n", stream, offset, whence);
+	TRACE("fseek(%p, %ld, %d)\r\n", stream, offset, whence);
 
 	(void)stream;
 	(void)offset;
@@ -201,7 +201,7 @@ int fseek(FILE *stream, long offset, int whence)
 
 void rewind(FILE *stream)
 {
-	TRACE("rewind(%p)\n", stream);
+	TRACE("rewind(%p)\r\n", stream);
 
 	(void)stream;
 	puts("rewind() not implemented");
@@ -210,7 +210,7 @@ void rewind(FILE *stream)
 
 long ftell(FILE *stream)
 {
-	TRACE("ftell(%p)\n", stream);
+	TRACE("ftell(%p)\r\n", stream);
 
 	(void)stream;
 	puts("ftell() not implemented");
@@ -219,7 +219,7 @@ long ftell(FILE *stream)
 
 size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream)
 {
-	TRACE("fwrite(%p, %lu, %lu, %p)\n", ptr, size, nitems, stream);
+	TRACE("fwrite(%p, %lu, %lu, %p)\r\n", ptr, size, nitems, stream);
 
 	size_t num = 0;
 	const char *data = ptr;
@@ -266,9 +266,9 @@ int puts(const char *s)
 void perror(const char *s)
 {
 	if (s && *s)
-		fprintf(stderr, "%s: %s\n", s, strerror(errno));
+		fprintf(stderr, "%s: %s\r\n", s, strerror(errno));
 	else
-		fprintf(stderr, "%s\n", strerror(errno));
+		fprintf(stderr, "%s\r\n", strerror(errno));
 }
 
 int printf(const char *__restrict fmt, ...)
@@ -297,7 +297,7 @@ int fprintf(FILE *__restrict file, const char *__restrict fmt, ...)
 
 int sprintf(char *restrict s, const char *restrict format, ...)
 {
-	TRACE("sprintf(%p, %s)\n", s, format);
+	TRACE("sprintf(%p, %s)\r\n", s, format);
 
 	va_list ap;
 	va_start(ap, format);
@@ -323,7 +323,7 @@ int snprintf(char *restrict s, size_t n, const char *restrict format, ...)
 
 int vfprintf(FILE *__restrict file, const char *__restrict fmt, va_list ap)
 {
-	TRACE("vfprintf(%p, %s, %p)\n", file, fmt, ap);
+	TRACE("vfprintf(%p, %s, %p)\r\n", file, fmt, ap);
 
 	printf_conv_t conversion = { 0 };
 
@@ -349,7 +349,7 @@ int vsprintf(char *restrict s, const char *restrict format, va_list ap)
 
 int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list ap)
 {
-	TRACE("vsnprintf(%p, %lu, %s, %p)\n", s, n, format, ap);
+	TRACE("vsnprintf(%p, %lu, %s, %p)\r\n", s, n, format, ap);
 
 	printf_conv_t conversion = { 0 };
 
@@ -365,7 +365,7 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list a
 
 int sscanf(const char *restrict s, const char *restrict format, ...)
 {
-	TRACE("sscanf(%s, %s)\n", s, format);
+	TRACE("sscanf(%s, %s)\r\n", s, format);
 
 	(void)s;
 	(void)format;
@@ -375,7 +375,7 @@ int sscanf(const char *restrict s, const char *restrict format, ...)
 
 char *tmpnam(char *s)
 {
-	TRACE("tmpnam(%s)\n", s);
+	TRACE("tmpnam(%s)\r\n", s);
 
 	(void)s;
 	puts("tmpnam() not implemented");

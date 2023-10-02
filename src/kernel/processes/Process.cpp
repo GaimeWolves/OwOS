@@ -204,6 +204,7 @@ namespace Kernel
 #endif
 
 		m_pid = ++s_pid_counter;
+		m_cwd = LibK::string(other->m_cwd.c_str());
 		m_memory_space = Memory::VirtualMemoryManager::copy_current_memory_space();
 		m_parent = other;
 

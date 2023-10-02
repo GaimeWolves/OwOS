@@ -28,9 +28,11 @@ namespace Kernel::LibK
 		{
 			assert(!empty());
 
+			queue_lock.lock();
 			auto *node = head.next;
 			node->next->prev = &head;
 			head.next = node->next;
+			queue_lock.unlock();
 
 			T data = LibK::move(node->data);
 			delete node;

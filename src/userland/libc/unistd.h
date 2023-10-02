@@ -15,6 +15,9 @@ __LIBC_HEADER_BEGIN
 	extern char *optarg;
 	extern int opterr, optind, optopt;
 
+    int access(const char *path, int amode);
+    int chdir(const char *path);
+
     void _exit(int status);
 
 	int close(int);
@@ -25,8 +28,8 @@ __LIBC_HEADER_BEGIN
 
     pid_t fork(void);
 
-    int access(const char *path, int amode);
-    int chdir(const char *path);
+    char *getcwd(char *buf, size_t size);
+
     int unlink(const char *path);
 
     __attribute__((deprecated)) char *getwd(char buf[PATH_MAX]);

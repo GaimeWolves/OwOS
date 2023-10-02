@@ -7,7 +7,7 @@
 
 char *setlocale(int category, const char *locale)
 {
-	TRACE("setlocale(%d, %s)\n", category, (locale ? locale : "(nil)"));
+	TRACE("setlocale(%d, %s)\r\n", category, (locale ? locale : "(nil)"));
 
 	(void)category;
 	(void)locale;

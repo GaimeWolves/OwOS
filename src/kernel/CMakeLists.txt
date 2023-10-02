@@ -164,6 +164,8 @@ set(KERNEL_SOURCES
     storage/GPT.cpp
     storage/PartitionDevice.cpp
     storage/StorageDevice.cpp
+    syscall/chdir.cpp
+    syscall/getcwd.cpp
     syscall/close.cpp
     syscall/ioctl.cpp
     syscall/mmap.cpp

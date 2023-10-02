@@ -7,7 +7,7 @@
 
 int ioctl(int fd, unsigned long request, ...)
 {
-	TRACE("ioctl(%d, %lu)\n", fd, request);
+	TRACE("ioctl(%d, %lu)\r\n", fd, request);
 
 	va_list ap;
 	va_start(ap, request);

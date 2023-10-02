@@ -53,6 +53,7 @@ namespace Kernel
 		void ESC();
 
 		// C1 control codes
+		void RI();
 		void SS2();
 		void SS3();
 		void DCS();
@@ -76,6 +77,7 @@ namespace Kernel
 		void EL(int type);
 		void SU(int n);
 		void SD(int n);
+		void VPA(int row);
 		void HVP(int row, int column);
 		void SGR(int type);
 		void AUX(int type);
