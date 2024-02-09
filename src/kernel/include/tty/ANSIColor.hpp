@@ -24,9 +24,9 @@ namespace Kernel
 		BrightWhite = 15,
 	};
 
-	inline uint32_t ANSIColorToRGBA(ANSIColor color)
+	inline constexpr uint32_t ANSIColorToRGBA(ANSIColor color)
 	{
-		static const uint32_t color_lut[] = {
+		constexpr uint32_t color_lut[] = {
 			0x00000000,
 			0x00AA0000,
 			0x0000AA00,

@@ -65,49 +65,35 @@ namespace Kernel::LibK
 
 		void insert(T value)
 		{
-			node_t *current = m_tree;
-			node_t *parent = nullptr;
-
-			while (current)
-			{
-				parent = current;
-
-				if (value == current->value)
-				{
-					current->value = value;
-					return;
-				}
-
-				if (value < current->value)
-					current = current->left;
-				else if (value > current->value)
-					current = current->right;
-			}
-
-			current = new node_t{
-				.value = value,
+			auto *node = new node_t{
+			    .value = value,
 			    .height = 1,
-			    .parent = parent,
-				.left = nullptr,
-				.right = nullptr,
+			    .parent = nullptr,
+			    .left = nullptr,
+			    .right = nullptr,
 			};
 
-			if (parent)
-			{
-				if (value < parent->value)
-					parent->left = current;
-				else
-					parent->right = current;
-			}
-			else
-			{
-				m_tree = current;
-			}
-
-			rebalance(current);
+			insert(node);
 		}
 
-		bool remove(T value)
+
+		template <class ...Args>
+		T *emplace(Args &&...args)
+		{
+			auto *node = new node_t{
+			    .value = T(forward<Args>(args)...),
+			    .height = 1,
+			    .parent = nullptr,
+			    .left = nullptr,
+			    .right = nullptr,
+			};
+
+			insert(node);
+
+			return &node->value;
+		}
+
+		bool remove(const T &value)
 		{
 			return remove(find_node(value));
 		}
@@ -148,6 +134,18 @@ namespace Kernel::LibK
 			return node ? &node->value : nullptr;
 		}
 
+		const T *find(const T &key) const
+		{
+			node_t *node = find_node(key);
+			return node ? &node->value : nullptr;
+		}
+
+		T *find(const T &key)
+		{
+			node_t *node = find_node(key);
+			return node ? &node->value : nullptr;
+		}
+
 	private:
 		static void delete_subtree(node_t *tree)
 		{
@@ -182,6 +180,41 @@ namespace Kernel::LibK
 			return tree;
 		}
 
+		void insert(node_t *node)
+		{
+			node_t *current = m_tree;
+			node_t *parent = nullptr;
+
+			while (current)
+			{
+				parent = current;
+
+				if (node->value < current->value)
+					current = current->left;
+				else if (current->value < node->value)
+					current = current->right;
+				else
+					assert(false);
+			}
+
+			current = node;
+			current->parent = parent;
+
+			if (parent)
+			{
+				if (current->value < parent->value)
+					parent->left = current;
+				else
+					parent->right = current;
+			}
+			else
+			{
+				m_tree = current;
+			}
+
+			rebalance(current);
+		}
+
 		bool remove(node_t *node)
 		{
 			if (!node)
@@ -204,13 +237,30 @@ namespace Kernel::LibK
 				else
 				{
 					node->right = successor->right;
-					if (successor->right)
-						successor->right->parent = node;
 				}
 
-				node->value = successor->value;
-				node = successor->parent;
-				delete successor;
+				node_t *new_node = successor->parent == node ? successor : successor->parent;
+
+				successor->left = node->left;
+				node->left->parent = successor;
+
+				successor->right = node->right;
+				if (node->right)
+					node->right->parent = successor;
+
+				successor->parent = node->parent;
+
+				if (node->parent->left == node)
+				{
+					node->parent->left = successor;
+				}
+				else
+				{
+					node->parent->right = successor;
+				}
+
+				delete node;
+				node = new_node;
 			}
 			else
 			{
@@ -245,7 +295,7 @@ namespace Kernel::LibK
 			return true;
 		}
 
-		node_t *find_node(T value) const
+		node_t *find_node(const T &value) const
 		{
 			node_t *current = m_tree;
 

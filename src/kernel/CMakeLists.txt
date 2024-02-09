@@ -63,7 +63,6 @@ set(KERNEL_INCLUDES
     include/devices/KeyCode.hpp
     include/devices/PS2KeyboardDevice.hpp
     include/devices/SerialDevice.hpp
-    include/devices/StdioDevice.hpp
     include/elf/definitions.hpp
     include/elf/elf.hpp
     include/filesystem/definitions.hpp
@@ -122,7 +121,8 @@ set(KERNEL_INCLUDES
     include/vga/textmode.hpp
     include/tty/Terminal.hpp
     include/tty/ANSIColor.hpp
-    include/tty/VirtualConsole.hpp)
+    include/tty/VirtualConsole.hpp
+    include/filesystem/FileSystemCache.hpp)
 
 set(KERNEL_SOURCES
     arch/Processor.cpp
@@ -132,7 +132,6 @@ set(KERNEL_SOURCES
     devices/KeyboardDevice.cpp
     devices/PS2KeyboardDevice.cpp
     devices/SerialDevice.cpp
-    devices/StdioDevice.cpp
     early_entry.cpp
     elf/elf.cpp
     entry.cpp
@@ -166,6 +165,7 @@ set(KERNEL_SOURCES
     storage/StorageDevice.cpp
     syscall/chdir.cpp
     syscall/getcwd.cpp
+    syscall/getdents.cpp
     syscall/close.cpp
     syscall/ioctl.cpp
     syscall/mmap.cpp
@@ -192,7 +192,8 @@ set(KERNEL_SOURCES
     syscall/fork.cpp
     syscall/waitpid.cpp
     crt/ssp.cpp
-    crt/ubsan.cpp)
+    crt/ubsan.cpp
+    filesystem/FileSystemCache.cpp)
 
 set(SOURCES
     ${KERNEL_INCLUDES}

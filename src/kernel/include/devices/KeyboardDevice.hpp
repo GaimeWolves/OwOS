@@ -4,8 +4,9 @@
 
 #include <libk/CircularBuffer.hpp>
 
-#include <devices/CharacterDevice.hpp>
+#include <devices/KeyCode.hpp>
 #include <arch/spinlock.hpp>
+#include <devices/CharacterDevice.hpp>
 #include <tty/definitions.hpp>
 
 namespace Kernel
@@ -24,6 +25,7 @@ namespace Kernel
 
 	typedef struct key_event_t
 	{
+		KeyCode key;
 		uint32_t scancode;
 		uint8_t modifiers;
 		char code_point;
@@ -43,8 +45,8 @@ namespace Kernel
 		    , m_buffer(16)
 		{}
 
-		size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) override;
-		size_t write(size_t, size_t, Memory::memory_region_t) override { return 0; };
+		size_t read(size_t offset, size_t bytes, char *buffer) override;
+		size_t write(size_t, size_t, char *) override { return 0; };
 
 		LibK::StringView name() override { return LibK::StringView(m_name); };
 

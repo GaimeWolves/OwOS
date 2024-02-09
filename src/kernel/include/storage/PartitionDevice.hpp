@@ -17,11 +17,11 @@ namespace Kernel
 
 		PartitionDevice(StorageDevice *device, size_t offset, size_t length);
 
-		size_t read(size_t, size_t, Memory::memory_region_t) override { return 0; };
-		size_t write(size_t, size_t, Memory::memory_region_t) override { return 0; };
+		size_t read(size_t, size_t, char *) override { return 0; };
+		size_t write(size_t, size_t, char *) override { return 0; };
 
-		size_t read_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
-		size_t write_blocks(size_t block, size_t count, const Memory::memory_region_t &region) override;
+		size_t read_blocks(size_t block, size_t count, char *buffer) override;
+		size_t write_blocks(size_t block, size_t count, char *buffer) override;
 
 		[[nodiscard]] size_t size() override { return m_length; }
 

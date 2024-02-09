@@ -1,6 +1,8 @@
 #include <filesystem/VirtualFileSystem.hpp>
 
 #include <filesystem/Ext2FileSystem.hpp>
+#include <arch/Processor.hpp>
+#include <memory/VirtualMemoryManager.hpp>
 
 namespace Kernel
 {
@@ -10,6 +12,8 @@ namespace Kernel
 		m_root_fs->mount();
 
 		m_root_node.file = m_root_fs;
+		m_root_node.parent = nullptr;
+		m_root_fs->set_vfs_node(&m_root_node);
 
 		return true;
 	}
@@ -24,93 +28,202 @@ namespace Kernel
 		return false;
 	}
 
-	File *VirtualFileSystem::find_by_path(const LibK::string &path)
+	File *VirtualFileSystem::find_by_path(const LibK::string &path_str, const LibK::string &cwd)
 	{
-		auto current_offset = path.c_str();
+		LibK::string path = LibK::string(path_str.c_str());
 
-		// TODO: Relative paths using process CWD
-		if (*current_offset++ != '/') {
-			return nullptr;
-		}
+		prepare_path(path, cwd);
+		normalize_path(path);
 
 		vfs_node_t *current_file = &m_root_node;
 
-		if (*current_offset == '\0')
-			return current_file->file;
-
-		while(*current_offset)
+		while(!path.empty())
 		{
-			if (strcmp(current_offset, ".") == 0)
+			if (path[0] == '/')
 			{
-				current_offset++;
+				if (!current_file->file->is_type(FileType::Directory))
+					return nullptr;
 
-				if (*current_offset == '/')
-					current_offset++;
-				else
-					return current_file->file;
-
+				path.erase(path.begin());
 				continue;
 			}
 
-			if (strcmp(current_offset, "..") == 0)
+			if (strncmp(path.c_str(), ".", 1) == 0 && (path.c_str()[1] == '\0' || path.c_str()[1] == '/'))
 			{
-				if (current_file->parent)
+				path.erase(path.begin());
+				continue;
+			}
+
+			if (strncmp(path.c_str(), "..", 2) == 0 && (path.c_str()[2] == '\0' || path.c_str()[2] == '/'))
+			{
+				path.erase(path.begin(), path.begin() + 2);
+
+				if (current_file != &m_root_node)
 					current_file = current_file->parent;
 
-				current_offset += 2;
-
-				if (*current_offset == '/')
-					current_offset++;
-				else
-					return current_file->file;
-
 				continue;
 			}
 
-			if (current_file->file->is_directory() && current_file->children.empty())
+			// current path entry has to be searched in directory
+
+			assert(current_file->file->is_type(FileType::Directory));
+
+			if (current_file->children.empty())
+				read_directory(current_file);
+
+			bool found = false;
+
+			for (auto node : current_file->children)
 			{
-				auto directory = current_file->file->read_directory();
-				current_file->children = LibK::vector<vfs_node_t *>();
-				current_file->children.ensure_capacity(directory.size());
-				for (auto *file : directory)
+				const char *entry_name = node->file->name().c_str();
+				size_t name_size = node->file->name().size();
+				if (strncmp(path.c_str(), entry_name, name_size) == 0 && (path.size() == name_size || path[name_size] == '/'))
 				{
-					auto node = new vfs_node_t;
-					node->file = file;
-					node->parent = current_file;
-					current_file->children.push_back(node);
-				}
-			}
-
-			auto next_delim = strchr(current_offset, '/');
-
-			if (next_delim)
-			{
-				size_t len = (uintptr_t) next_delim - (uintptr_t) current_offset;
-
-				for (auto node : current_file->children)
-				{
-					if (strncmp(node->file->name().c_str(), current_offset, len) == 0)
+					if (node->file->is_type(FileType::SoftLink))
 					{
-						current_file = node;
-						break;
+						// TODO: this is very wasteful with memory
+						// TODO: employ maximum recursion depth with ELOOP
+						handle_softlink(node, path);
+						LibK::string new_cwd = get_full_path(node->parent->file);
+						new_cwd += '/';
+						return find_by_path(path, new_cwd);
 					}
-				}
 
-				current_offset += len + 1;
+					current_file = node;
+					path.erase(path.begin(), path.begin() + (int)name_size);
+
+					found = true;
+
+					break;
+				}
 			}
-			else
-			{
-				for (auto node : current_file->children)
-				{
-					if (strcmp(node->file->name().c_str(), current_offset) == 0)
-						return node->file;
-				}
 
+			if (!found)
 				return nullptr;
-			}
 		}
 
-		return nullptr;
+		return current_file->file;
+	}
+
+	LibK::string VirtualFileSystem::get_full_path(File *file)
+	{
+		if (!file)
+			return "";
+
+		LibK::string path;
+		LibK::stack<vfs_node_t *> path_entry_stack;
+
+		vfs_node_t *current = file->m_vfs_node;
+		do
+		{
+			path_entry_stack.push(current);
+			current = current->parent;
+		} while (current);
+
+		do
+		{
+			if (path_entry_stack.top() != &m_root_node)
+			{
+				path += '/';
+				path += path_entry_stack.top()->file->name().c_str();
+			}
+
+			path_entry_stack.pop();
+		} while (!path_entry_stack.empty());
+
+		if (path.empty())
+			path += '/';
+
+		return path;
+	}
+
+	LibK::vector<File *> VirtualFileSystem::get_children(File *file)
+	{
+		if (!file->is_type(FileType::Directory))
+			return {};
+
+		vfs_node_t *node = file->m_vfs_node;
+
+		if (node->children.empty())
+			read_directory(node);
+
+		LibK::vector<File *> children;
+		for (auto &child : node->children) {
+			children.push_back(child->file);
+		}
+
+		return children;
+	}
+
+	void VirtualFileSystem::read_directory(vfs_node_t *node)
+	{
+		// TODO: think about changes in directory
+		assert(node->children.empty());
+
+		auto directory = node->file->read_directory();
+		node->children = LibK::vector<vfs_node_t *>();
+		node->children.ensure_capacity(directory.size());
+		for (auto *file : directory)
+		{
+			auto child = new vfs_node_t;
+			child->file = file;
+			child->parent = node;
+			file->set_vfs_node(child);
+			node->children.push_back(child);
+		}
+	}
+
+	void VirtualFileSystem::prepare_path(LibK::string &path, const LibK::string &cwd)
+	{
+		if (path.empty())
+		{
+			path += '/';
+			return;
+		}
+
+		if (path[0] != '/')
+		{
+			path.insert(path.begin(), cwd);
+		}
+	}
+
+	void VirtualFileSystem::normalize_path(LibK::string &path)
+	{
+		assert(!path.empty() && path[0] == '/');
+
+		size_t index = 0;
+
+		while (index < path.size())
+		{
+			while (index < path.size() && path[index] != '/')
+				index++;
+
+			if (index == path.size())
+				break;
+
+			assert(path[index] == '/');
+
+			size_t last_slash = index;
+
+			while (last_slash + 1 < path.size() && path[last_slash + 1] == '/')
+				last_slash++;
+
+			path.erase(path.begin() + (int)index, path.begin() + (int)last_slash);
+			index++;
+		}
+	}
+
+	void VirtualFileSystem::handle_softlink(vfs_node_t *softlink, LibK::string &path)
+	{
+		assert(softlink->file->is_type(FileType::SoftLink));
+
+		char *prefix = static_cast<char *>(kmalloc(softlink->file->size()));
+		softlink->file->read(0, softlink->file->size(), prefix);
+
+		path.erase(path.begin(), path.begin() + (int)softlink->file->name().size());
+		path.insert(path.begin(), prefix);
+
+		kfree(prefix);
 	}
 
 	FileSystem *VirtualFileSystem::initialize_filesystem_on(BlockDevice &device)

@@ -17,26 +17,20 @@ namespace Kernel
 
 	static void putc(const char ch, bool critical)
 	{
-		Kernel::Memory::memory_region_t tmp;
-		tmp.virt_address = (uintptr_t)&ch;
-
 		if (critical)
-			VirtualConsole::get_current().write(0, 1, tmp);
+			VirtualConsole::get_current().write(0, 1, const_cast<char *>(&ch));
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
-			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, tmp);
+			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, const_cast<char *>(&ch));
 	}
 
 	static void puts(const char *str, bool critical)
 	{
-		Kernel::Memory::memory_region_t tmp;
-		tmp.virt_address = (uintptr_t)str;
-
 		if (critical)
-			VirtualConsole::get_current().write(0, strlen(str), tmp);
+			VirtualConsole::get_current().write(0, strlen(str), const_cast<char *>(str));
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
-			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), tmp);
+			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), const_cast<char *>(str));
 
 		putc('\n', critical);
 	}

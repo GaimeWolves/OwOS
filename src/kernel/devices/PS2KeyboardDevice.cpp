@@ -117,6 +117,174 @@ namespace Kernel
 	    Key_Super,
 	    Key_None,
 	    Key_Menu,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	};
+
+
+	// TODO: Fill with correct data (for now only cursor keys)
+	KeyCode default_e0_scancode_map[] = {
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_Up,
+	    Key_None,
+	    Key_None,
+	    Key_Left,
+	    Key_None,
+	    Key_Right,
+	    Key_None,
+	    Key_None,
+	    Key_Down,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
+	    Key_None,
 	};
 
 	void PS2KeyboardDevice::parse_modifiers(bool released, KeyCode key)
@@ -166,30 +334,28 @@ namespace Kernel
 			return;
 		}
 
-		// TODO: Map e0 scancodes
-		if (m_e0_prefix)
-		{
-			m_e0_prefix = false;
-			return;
-		}
-
 		bool released = scancode & 0x80;
 		scancode &= 0x7f;
 
-		KeyCode key = default_scancode_map[scancode];
+		KeyCode key = m_e0_prefix ? default_e0_scancode_map[scancode] : default_scancode_map[scancode];
+
+		if (key == Key_None)
+			return;
+
 		parse_modifiers(released, key);
+
+		m_e0_prefix = false;
 
 		uint8_t modifiers = m_modifiers;
 
 		if (!released)
 			modifiers |= KeyModifiers::Pressed;
 
-		log("KEYBOARD", "0x%.2x  0x%.2x  0x%.2x", modifiers, scancode, key);
-
 		bool shifted = 	modifiers & KeyModifiers::Shift || modifiers & KeyModifiers::CapsLock;
 		char code_point = shifted ? default_keycode_map_shifted[key] : default_keycode_map[key];
 
 		key_event_t event {
+		    .key = key,
 		    .scancode = scancode,
 		    .modifiers = modifiers,
 		    .code_point = code_point

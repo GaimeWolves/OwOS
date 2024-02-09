@@ -5,23 +5,23 @@
 #include <stdio.h>
 #include <termios.h>
 
-#include <curses.h>
-
 int main(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 {
-	initscr();
-	cbreak();
-	noecho();
-	clear();
+	FILE *file = fopen("test.txt", "w+");
 
-	mvaddstr(10, 10, "Hello ncurses :)");
+	size_t size = 4096 * 32;
+	static char buffer[4096 * 32];
 
-	mvaddstr(20, 20, "Hi");
+	for (size_t i = 0; i < size; i++)
+		buffer[i] = (char)('0' + i % 10);
 
-	refresh();
+	for (size_t i = 0; i < 1100 / 32; i++)
+	{
+		write(fileno(file), buffer, size);
+	}
 
-	getch();
-	endwin();
+	fflush(file);
+	fclose(file);
 
 	return 0;
 }

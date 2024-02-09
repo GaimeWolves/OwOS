@@ -18,7 +18,8 @@
 	S(exit)               \
 	S(waitpid)            \
 	S(chdir)              \
-	S(getcwd)
+	S(getcwd)             \
+	S(getdents)
 
 typedef enum Syscall
 {

@@ -11,13 +11,6 @@ namespace Kernel
 {
 	class VirtualFileSystem
 	{
-		typedef struct __vfs_node_t
-		{
-			File *file;
-			LibK::vector<__vfs_node_t *> children; // TODO: Replace with HashMap maybe?
-			__vfs_node_t *parent;
-		} vfs_node_t;
-
 	public:
 		static VirtualFileSystem &instance()
 		{
@@ -37,13 +30,23 @@ namespace Kernel
 		FileSystem *mount(BlockDevice &device, File &mount_point);
 		bool unmount(FileSystem *fileSystem);
 
-		File *find_by_path(const LibK::string &path);
+		File *find_by_path(const LibK::string &path_str, const LibK::string &cwd = "");
+
+		LibK::string get_full_path(File *file);
+		LibK::vector<File *> get_children(File *file);
 
 	private:
 		VirtualFileSystem() = default;
 		~VirtualFileSystem() = default;
 
+		// path traversal
+		void prepare_path(LibK::string &path, const LibK::string &cwd);
+		void normalize_path(LibK::string &path);
+		void handle_softlink(vfs_node_t *softlink, LibK::string &path);
+
 		FileSystem *initialize_filesystem_on(BlockDevice &device);
+
+		void read_directory(vfs_node_t *node);
 
 		FileSystem *m_root_fs{nullptr};
 		vfs_node_t m_root_node{};

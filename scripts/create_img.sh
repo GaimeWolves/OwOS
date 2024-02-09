@@ -40,7 +40,7 @@ if [ ! -e "$BIN_DIR"/img ]; then
     dev=$(sudo losetup --find --partscan --show "$BIN_DIR"/img)
     has_loopdevice=1
 
-    sudo mke2fs "${dev}"p2
+    sudo mke2fs -b 4096 "${dev}"p2
 fi
 
 mkdir -p "$BIN_DIR"/mnt

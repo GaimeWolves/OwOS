@@ -19,8 +19,10 @@ namespace Kernel
 		size_t seek(size_t offset);
 
 		// TODO: maybe use a ring buffer for reads? Or think of something else
-		size_t read(size_t count, Memory::memory_region_t region);
-		size_t write(size_t count, Memory::memory_region_t region);
+		size_t read(size_t count, char *buffer);
+		size_t write(size_t count, char *buffer);
+
+		size_t read_directory(size_t count, char *buffer);
 
 		File &file() { return *m_file; }
 

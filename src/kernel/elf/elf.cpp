@@ -92,7 +92,7 @@ namespace Kernel::ELF
 
 		s_loader_file = VirtualFileSystem::instance().find_by_path("/lib/ld-owos.so");
 		auto region = Memory::VirtualMemoryManager::instance().allocate_region(s_loader_file->size());
-		s_loader_file->read(0, s_loader_file->size(), region);
+		s_loader_file->read(0, s_loader_file->size(), reinterpret_cast<char *>(region.virt_address));
 		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
 
 		assert(hasSignature(header)); // TODO: Error handling
@@ -139,7 +139,7 @@ namespace Kernel::ELF
 	thread_t *load(Process *parent_process, File *file, const char **argv, const char **envp, bool is_exec_syscall)
 	{
 		auto region = Memory::VirtualMemoryManager::instance().allocate_region(file->size());
-		file->read(0, file->size(), region);
+		file->read(0, file->size(), reinterpret_cast<char *>(region.virt_address));
 		auto header = static_cast<elf32_ehdr_t *>((void *)region.virt_address);
 
 		assert(hasSignature(header)); // TODO: Error handling
@@ -197,7 +197,7 @@ namespace Kernel::ELF
 			return false;
 
 		auto region = Memory::VirtualMemoryManager::instance().allocate_region(sizeof(elf32_ehdr_t));
-		file->read(0, sizeof(elf32_ehdr_t), region);
+		file->read(0, sizeof(elf32_ehdr_t), reinterpret_cast<char *>(region.virt_address));
 		auto header = (elf32_ehdr_t *)region.virt_address;
 
 		bool valid = hasSignature(header) && (header->e_type == ET_DYN || header->e_type == ET_REL || header->e_type == ET_EXEC);

@@ -28,6 +28,7 @@ char file_path[PATH_MAX];
 
 bool is_running = true;
 
+struct termios new_tty_state;
 struct termios original_tty_state;
 
 void print_error()
@@ -85,20 +86,19 @@ const builtin_t builtins[] = {
 
 void setup_tty()
 {
-	struct termios state;
-	tcgetattr(STDIN_FILENO, &state);
+	tcgetattr(STDIN_FILENO, &new_tty_state);
 
-	original_tty_state = state;
+	original_tty_state = new_tty_state;
 
 	// non-canonical mode; blocking single character read; convert NL to CRNL
-	state.c_iflag = 0;
-	state.c_oflag = ONLCR | OPOST;
-	state.c_lflag = 0;
-	state.c_cflag = CS8 | B19200;
-	state.c_cc[VMIN] = 1;
-	state.c_cc[VTIME] = 0;
+	new_tty_state.c_iflag = 0;
+	new_tty_state.c_oflag = ONLCR | OPOST;
+	new_tty_state.c_lflag = 0;
+	new_tty_state.c_cflag = CS8 | B19200;
+	new_tty_state.c_cc[VMIN] = 1;
+	new_tty_state.c_cc[VTIME] = 0;
 
-	tcsetattr(STDIN_FILENO, TCSANOW, &state);
+	tcsetattr(STDIN_FILENO, TCSANOW, &new_tty_state);
 
 	printf("\e[H\e[m\e[2J");
 }
@@ -177,13 +177,17 @@ void read_loop()
 			break;
 		}
 
-		if (current_ch == 0x7f && input_buffer_index > 0)
+		if (current_ch == 0x7f)
 		{
-			// TODO: xterm backspace doesn't wrap afaik. so we should really manipulate the cursor with CSI sequences instead of backspace.
-			printf("\b \b");
-			memmove(input_buffer + input_buffer_index - 1, input_buffer + input_buffer_index, input_buffer_length - input_buffer_index + 1);
-			input_buffer_index--;
-			input_buffer_length--;
+			if (input_buffer_index > 0)
+			{
+				// TODO: xterm backspace doesn't wrap afaik. so we should really manipulate the cursor with CSI sequences instead of backspace.
+				printf("\b \b");
+				memmove(input_buffer + input_buffer_index - 1, input_buffer + input_buffer_index, input_buffer_length - input_buffer_index + 1);
+				input_buffer_index--;
+				input_buffer_length--;
+			}
+
 			continue;
 		}
 
@@ -262,7 +266,9 @@ bool check_builtin()
 	{
 		if (strcmp(builtins[i].name, command) == 0)
 		{
+			tcsetattr(STDIN_FILENO, TCSANOW, &original_tty_state);
 			builtins[i].function();
+			tcsetattr(STDIN_FILENO, TCSANOW, &new_tty_state);
 			return true;
 		}
 	}
@@ -319,11 +325,14 @@ void execute_command()
 	if (file_path[0] == '\0')
 		return;
 
+	tcsetattr(STDIN_FILENO, TCSANOW, &original_tty_state);
+
 	pid_t pid = fork();
 
 	if (pid == -1)
 	{
 		print_error();
+		tcsetattr(STDIN_FILENO, TCSANOW, &new_tty_state);
 		return;
 	}
 
@@ -339,6 +348,8 @@ void execute_command()
 	{
 		ret = waitpid(pid, NULL, 0);
 	} while (ret == -1 && errno == EINTR);
+
+	tcsetattr(STDIN_FILENO, TCSANOW, &new_tty_state);
 }
 
 int main(int argc __attribute__((unused)), char **argv __attribute__((unused)))

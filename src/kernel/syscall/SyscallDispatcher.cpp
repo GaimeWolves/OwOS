@@ -4,7 +4,6 @@
 
 #include <syscall/syscalls.hpp>
 
-// TODO: Replace when out libc is mature enough
 #include "../../userland/libc/sys/arch/i386/syscall.h"
 
 #include <arch/Processor.hpp>

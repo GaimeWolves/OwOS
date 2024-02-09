@@ -11,6 +11,7 @@ extern "C"
 	int strncmp(const char *lhs, const char *rhs, size_t count);
 	char *strchr(char *str, int character);
 	char *strcpy(char *__restrict, const char *__restrict);
+	char *strncpy(char *__restrict, const char *__restrict, size_t);
 
 	unsigned long strtoul(const char *str, char **str_end, int base);
 

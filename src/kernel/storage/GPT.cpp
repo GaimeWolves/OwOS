@@ -43,17 +43,20 @@ namespace Kernel::GPT
 	bool try_parse(StorageDevice &device)
 	{
 		auto header_region = Memory::VirtualMemoryManager::instance().allocate_region(device.block_size());
-		device.read_blocks(1, 1, header_region);
+		device.read_blocks(1, 1, reinterpret_cast<char *>(header_region.virt_address));
 		auto header = reinterpret_cast<partition_table_header_t *>(header_region.virt_address);
 
 		if (strncmp(header->signature, SIGNATURE, 8) != 0)
+		{
+			Memory::VirtualMemoryManager::instance().free(header_region);
 			return false;
+		}
 
 		size_t table_size = LibK::round_up_to_multiple(header->partition_entry_count * header->partition_entry_size, device.block_size());
 		size_t block_count = table_size / device.block_size();
 
 		auto table_region = Memory::VirtualMemoryManager::instance().allocate_region(table_size);
-		device.read_blocks(header->partition_array_lba, block_count, table_region);
+		device.read_blocks(header->partition_array_lba, block_count, reinterpret_cast<char *>(table_region.virt_address));
 		auto partition_table = reinterpret_cast<char *>(table_region.virt_address);
 
 		for (size_t i = 0; i < header->partition_entry_count; i++)
@@ -66,6 +69,9 @@ namespace Kernel::GPT
 
 			device.add_partition(partition_entry.start_lba, partition_entry.end_lba - partition_entry.start_lba);
 		}
+
+		Memory::VirtualMemoryManager::instance().free(header_region);
+		Memory::VirtualMemoryManager::instance().free(table_region);
 
 		return true;
 	}

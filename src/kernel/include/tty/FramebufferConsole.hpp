@@ -6,12 +6,6 @@ namespace Kernel
 {
 	class FramebufferConsole final : public Console
 	{
-		typedef struct cell_t
-		{
-			char ch;
-			uint32_t fg_color;
-			uint32_t bg_color;
-		} cell_t;
 	public:
 		static FramebufferConsole &instance()
 		{
@@ -29,7 +23,14 @@ namespace Kernel
 		virtual void scroll_up() override;
 		virtual void scroll_down() override;
 
-		virtual void put_char_at(size_t row, size_t column, char ch) override;
+		virtual void write_char(size_t row, size_t column, char ch) override;
+		virtual void write_line(size_t row, char *buffer) override;
+		virtual void write_region(size_t from_row, size_t from_column, size_t to_row, size_t to_column, char *buf) override;
+
+		virtual void write_char(size_t row, size_t column, cell_t ch) override;
+		virtual void write_line(size_t row, cell_t *buf) override;
+		virtual void write_region(size_t from_row, size_t from_column, size_t to_row, size_t to_column, cell_t *buf) override;
+
 		virtual void clear(size_t from_row, size_t from_column, size_t to_row, size_t to_column) override;
 		virtual void clear() override;
 
@@ -45,7 +46,9 @@ namespace Kernel
 		FramebufferConsole();
 
 		void draw_cell(cell_t cell, size_t row, size_t column);
+		void invalidate(size_t from_row, size_t from_column, size_t to_row, size_t to_column);
 
+		void draw_cursor();
 		void on_cursor_tick();
 
 		uint32_t m_fg_color{0x00FFFFFF}, m_bg_color{0};
@@ -53,5 +56,6 @@ namespace Kernel
 		bool m_cursor_on{true};
 		bool m_cursor_tick_scheduled{false};
 		cell_t *m_cells{nullptr};
+		bool m_show_cursor{false};
 	};
 }

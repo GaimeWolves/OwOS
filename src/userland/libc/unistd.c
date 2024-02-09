@@ -18,12 +18,16 @@ int close(int filedes)
 	return syscall(__SC_close, filedes);
 }
 
-void _exit(int status)
+_Noreturn void _exit(int status)
 {
 	(void)status;
 	TRACE("_exit(%d)\r\n", status);
 
-	for(;;)
+	syscall(__SC_exit, status);
+
+	perror("exit syscall returned!");
+
+	for (;;)
 		;
 }
 

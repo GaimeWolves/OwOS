@@ -1,6 +1,8 @@
 #pragma once
 
 #include <filesystem/FileSystem.hpp>
+#include <filesystem/FileSystemCache.hpp>
+#include <locking/Mutex.hpp>
 #include <devices/BlockDevice.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 
@@ -102,41 +104,41 @@ namespace Kernel
 	public:
 		explicit Ext2File(Ext2FileSystem *file_system, uint32_t inode_number, char *name)
 		    : m_filesystem(file_system)
-		    , m_inode_number(inode_number)
 		    , m_name(name)
 		{
+			set_inode_number(inode_number);
 		}
 
 		Ext2File(Ext2FileSystem *file_system, uint32_t inode_number, char *name, FileType type)
 		    : m_filesystem(file_system)
-		    , m_inode_number(inode_number)
 		    , m_name(name)
 			, m_type(type)
 		{
+			set_inode_number(inode_number);
 		}
 
 		Ext2File(Ext2FileSystem *file_system, uint32_t inode_number, char *name, Ext2::inode_t metadata)
 		    : m_filesystem(file_system)
 		    , m_inode_metadata_cached(true)
 		    , m_inode_metadata(metadata)
-		    , m_inode_number(inode_number)
 		    , m_size((uint64_t)metadata.size_low | ((uint64_t)metadata.size_high << 32))
 		    , m_name(name)
 			, m_type(from_inode_type(metadata.permission_type.type))
 		{
+			set_inode_number(inode_number);
 		}
 
 		// Basic file operations
-		size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) override;
-		size_t write(size_t offset, size_t bytes, Memory::memory_region_t region) override;
+		size_t read(size_t offset, size_t bytes, char *buffer) override;
+		size_t write(size_t offset, size_t bytes, char *buffer) override;
 		bool remove() override;
 		bool rename(const LibK::string &new_file_name) override;
+		bool is_type(FileType type) override { return m_type == type; };
 
 		// Directory operations
 		LibK::vector<File *> read_directory() override;
 		File *find_file(const LibK::string &file_name) override;
 		File *make_file(const LibK::string &file_name) override;
-		bool is_directory() override { return m_type == FileType::Directory; }
 
 		LibK::StringView name() override { return LibK::StringView(m_name); };
 
@@ -153,9 +155,10 @@ namespace Kernel
 		Ext2FileSystem *m_filesystem{nullptr};
 		bool m_inode_metadata_cached{false};
 		Ext2::inode_t m_inode_metadata{};
-		uint32_t m_inode_number{0};
 		uint64_t m_size{0};
 		LibK::string m_name{};
+
+		Locking::Mutex m_lock{};
 
 		FileType m_type{};
 	};
@@ -278,39 +281,49 @@ namespace Kernel
 		bool unmount() override;
 
 		// Basic file operations
-		size_t read(size_t, size_t, Memory::memory_region_t) override { return 0; };
-		size_t write(size_t, size_t, Memory::memory_region_t) override { return 0; };
+		size_t read(size_t, size_t, char *) override { return 0; };
+		size_t write(size_t, size_t, char *) override { return 0; };
 		bool remove() override { return false; };
 		bool rename(const LibK::string &) override { return false; };
+		bool is_type(FileType type) override { return type == FileType::Directory; };
 
 		// Directory operations
 		LibK::vector<File *> read_directory() override;
 		File *find_file(const LibK::string &file_name) override;
 		File *make_file(const LibK::string &file_name) override;
-		bool is_directory() override { return true; };
 
 		LibK::StringView name() override { return {}; };
 
-		size_t read(size_t block, size_t count, uintptr_t buffer);
+		size_t read_blocks(size_t block, size_t count, char *buffer);
+		size_t write_blocks(size_t block, size_t count, char *buffer);
+
+		fs_block_t *read_block(size_t block);
+
+		block_group_descriptor_t *get_block_group_descriptor(size_t index);
+		void sync_block_group_descriptor(size_t index);
+
+		LibK::vector<size_t> allocate_blocks(size_t count);
 
 		[[nodiscard]] size_t size() override { return 0; }
 
 	private:
 		Ext2::inode_t read_inode_metadata(uint32_t inode_number);
+		void write_inode_metadata(uint32_t inode_number, const Ext2::inode_t &inode);
 		LibK::vector<File *> read_directory(const Ext2::inode_t &inode);
 
 		static FileType from_directory_entry_type(DirectoryEntryType type);
 
-		[[nodiscard]] bool can_open_for_read() const override { return false; };
-		[[nodiscard]] bool can_open_for_write() const override { return false; };
+		[[nodiscard]] bool can_open_for_read() const override { return true; };
+		[[nodiscard]] bool can_open_for_write() const override { return true; };
 
 		BlockDevice *m_device{nullptr};
 		FileContext m_file{};
 
 		superblock_t *m_superblock{nullptr};
-		block_group_descriptor_t *m_bgd_table{nullptr};
-		Memory::memory_region_t m_superblock_region{};
-		Memory::memory_region_t m_bgd_table_region{};
+		Locking::Mutex m_superblock_lock{};
+		fs_block_t *m_superblock_block{nullptr};
+		LibK::vector<fs_block_t *> m_bgd_table_blocks{};
+		LibK::vector<Locking::Mutex *> m_block_group_locks{};
 
 		uint32_t m_sectors_per_block{};
 		uint32_t m_block_size{};

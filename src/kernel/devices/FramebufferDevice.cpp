@@ -42,22 +42,28 @@ namespace Kernel
 		memset(m_framebuffer, 0, m_size);
 	}
 
-	size_t FramebufferDevice::read(size_t offset, size_t bytes, Memory::memory_region_t region)
+	size_t FramebufferDevice::read(size_t offset, size_t bytes, char *buffer)
 	{
+		if (!is_initialized())
+			return 0;
+
 		if (offset >= m_size || bytes > m_size || offset + bytes > m_size)
 			return 0;
 
-		memcpy(region.virt_region().pointer(), m_framebuffer + offset, bytes);
+		memcpy(buffer, m_framebuffer + offset, bytes);
 
 		return bytes;
 	}
 
-	size_t FramebufferDevice::write(size_t offset, size_t bytes, Memory::memory_region_t region)
+	size_t FramebufferDevice::write(size_t offset, size_t bytes, char *buffer)
 	{
+		if (!is_initialized())
+			return 0;
+
 		if (offset >= m_size || bytes > m_size || offset + bytes > m_size)
 			return 0;
 
-		memcpy(m_framebuffer + offset, region.virt_region().pointer(), bytes);
+		memcpy(m_framebuffer + offset, buffer, bytes);
 
 		return bytes;
 	}
@@ -94,11 +100,17 @@ namespace Kernel
 
 	void FramebufferDevice::blit_screen()
 	{
+		if (!is_initialized())
+			return;
+
 		memcpy(m_framebuffer, m_offscreen_buffer + m_offset, m_size);
 	}
 
 	void FramebufferDevice::blit(uint32_t *data, bool direct, size_t x, size_t y, size_t width, size_t height)
 	{
+		if (!is_initialized())
+			return;
+
 		size_t offset = (y * m_width + x) * sizeof(uint32_t);
 		auto *offscreen_position = reinterpret_cast<uint32_t *>(m_offscreen_buffer + m_offset + offset);
 		auto *screen_position = reinterpret_cast<uint32_t *>(m_framebuffer + offset);
@@ -111,6 +123,9 @@ namespace Kernel
 
 	void FramebufferDevice::blit_character(uint8_t *data, bool direct, size_t x, size_t y, size_t width, size_t height, size_t stride, uint32_t fg_color, uint32_t bg_color)
 	{
+		if (!is_initialized())
+			return;
+
 		size_t offset = (y * m_width + x) * sizeof(uint32_t);
 		auto *offscreen_position = reinterpret_cast<uint32_t *>(m_offscreen_buffer + m_offset + offset);
 		auto *screen_position = reinterpret_cast<uint32_t *>(m_framebuffer + offset);
@@ -123,6 +138,9 @@ namespace Kernel
 
 	void FramebufferDevice::clear_screen(bool direct, size_t from_x, size_t from_y, size_t to_x, size_t to_y, uint32_t color)
 	{
+		if (!is_initialized())
+			return;
+
 		size_t start = (from_y * m_width + from_x) * sizeof(uint32_t);
 		size_t end = (to_y * m_width + to_x) * sizeof(uint32_t);
 
@@ -134,6 +152,9 @@ namespace Kernel
 
 	void FramebufferDevice::scroll_vertical(int amount)
 	{
+		if (!is_initialized())
+			return;
+
 		if (!amount)
 			return;
 

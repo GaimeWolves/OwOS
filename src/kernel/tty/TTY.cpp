@@ -6,15 +6,15 @@
 
 namespace Kernel
 {
-	size_t TTY::read(size_t, size_t bytes, Memory::memory_region_t region)
+	size_t TTY::read(size_t, size_t bytes, char *buffer)
 	{
 		if (m_termios.c_lflag & ICANON)
-			return canonical_read(bytes, region);
+			return canonical_read(bytes, buffer);
 		else
-			return non_canonical_read(bytes, region);
+			return non_canonical_read(bytes, buffer);
 	}
 
-	size_t TTY::canonical_read(size_t bytes, Memory::memory_region_t region)
+	size_t TTY::canonical_read(size_t bytes, char *buffer)
 	{
 		if (m_current_read_line.empty())
 		{
@@ -24,8 +24,6 @@ namespace Kernel
 			m_current_read_line = m_input_line_buffer.get();
 		}
 
-		char *data = reinterpret_cast<char *>(region.virt_region().pointer());
-
 		size_t read = 0;
 
 		while (bytes--)
@@ -33,7 +31,7 @@ namespace Kernel
 			if (m_current_read_line.empty())
 				break;
 
-			*data++ = m_current_read_line.front();
+			*buffer++ = m_current_read_line.front();
 			m_current_read_line.erase(m_current_read_line.begin());
 			read++;
 		}
@@ -41,11 +39,9 @@ namespace Kernel
 		return read;
 	}
 
-	size_t TTY::non_canonical_read(size_t bytes, Memory::memory_region_t region)
+	size_t TTY::non_canonical_read(size_t bytes, char *buffer)
 	{
 		cc_t min = m_termios.c_cc[VMIN];
-
-		char *data = reinterpret_cast<char *>(region.virt_region().pointer());
 
 		if (min > 0)
 		{
@@ -58,19 +54,17 @@ namespace Kernel
 		size_t counter = read;
 
 		while (counter--)
-			*data++ = m_input_char_buffer.pop();
+			*buffer++ = m_input_char_buffer.pop();
 
 		return read;
 	}
 
-	size_t TTY::write(size_t, size_t bytes, Memory::memory_region_t region)
+	size_t TTY::write(size_t, size_t bytes, char *buffer)
 	{
 		size_t written = bytes;
 
-		char *data = reinterpret_cast<char *>(region.virt_region().pointer());
-
 		while(bytes--)
-			process_echo(*data++);
+			process_echo(*buffer++);
 
 		return written;
 	}

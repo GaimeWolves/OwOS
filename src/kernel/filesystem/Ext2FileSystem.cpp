@@ -3,57 +3,62 @@
 #include "logging/logger.hpp"
 #include <libk/kcstdio.hpp>
 
-#define EXT2_SIGNATURE 0xef53
+#include <filesystem/FileSystemCache.hpp>
 
+#define EXT2_SIGNATURE 0xef53
+#define EXT2_SUPERBLOCK_OFFSET 1024
+
+// TODO: Rewrite this to only use the FS cache to access blocks
 namespace Kernel
 {
 	class Ext2BlockIterator
 	{
 	public:
-		Ext2BlockIterator(uint64_t offset, const Ext2::inode_t &metadata, uint32_t block_size, Ext2FileSystem &filesystem)
-		    : m_current_pointer(get_starting_block(offset, block_size, block_size / sizeof (uint32_t)))
+		Ext2BlockIterator(uint64_t offset, Ext2::inode_t &metadata, uint32_t block_size, Ext2FileSystem *filesystem, BlockDevice *device)
+		    : m_current_pointer(get_starting_block(offset, block_size, block_size / sizeof(uint32_t)))
 		    , m_inode_metadata(metadata)
-			, m_block_size(block_size)
-			, m_filesystem(filesystem)
+		    , m_block_size(block_size)
+		    , m_filesystem(filesystem)
+		    , m_device(device)
 		{
-			m_triple_region = Memory::VirtualMemoryManager::instance().allocate_region(m_block_size);
-			m_double_region = Memory::VirtualMemoryManager::instance().allocate_region(m_block_size);
-			m_single_region = Memory::VirtualMemoryManager::instance().allocate_region(m_block_size);
-
-			m_triple_array = reinterpret_cast<uint32_t *>(m_triple_region.virt_address);
-			m_double_array = reinterpret_cast<uint32_t *>(m_double_region.virt_address);
-			m_single_array = reinterpret_cast<uint32_t *>(m_single_region.virt_address);
-
+			// TODO: Add get/release to File maybe?
 			if (m_current_pointer.triply_indirect_block)
 			{
-				m_filesystem.read(m_inode_metadata.triply_indirect_ptr, 1, m_triple_region.phys_address);
-				m_filesystem.read(m_triple_array[m_current_pointer.doubly_indirect_block], 1, m_double_region.phys_address);
-				m_filesystem.read(m_double_array[m_current_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata.triply_indirect_ptr);
+				m_double_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block]);
+				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block]);
 				return;
 			}
 
 			if (m_current_pointer.doubly_indirect_block)
 			{
-				m_filesystem.read(m_inode_metadata.doubly_indirect_ptr, 1, m_double_region.phys_address);
-				m_filesystem.read(m_double_array[m_current_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				m_double_block = FileSystemCache::acquire(m_device, m_inode_metadata.doubly_indirect_ptr);
+				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block]);
 				return;
 			}
 
 			if (m_current_pointer.singly_indirect_block)
-				m_filesystem.read(m_inode_metadata.singly_indirect_ptr, 1, m_single_region.phys_address);
+			{
+				m_single_block = FileSystemCache::acquire(m_device, m_inode_metadata.singly_indirect_ptr);
+			}
 		}
 
 		~Ext2BlockIterator()
 		{
-			Memory::VirtualMemoryManager::instance().free(m_triple_region);
-			Memory::VirtualMemoryManager::instance().free(m_double_region);
-			Memory::VirtualMemoryManager::instance().free(m_single_region);
+			if (m_triple_block)
+				FileSystemCache::release(m_triple_block);
+
+			if (m_double_block)
+				FileSystemCache::release(m_double_block);
+
+			if (m_single_block)
+				FileSystemCache::release(m_single_block);
 		}
 
 		uint32_t get()
 		{
 			if (m_current_pointer.triply_indirect_block | m_current_pointer.doubly_indirect_block | m_current_pointer.singly_indirect_block)
-				return m_single_array[m_current_pointer.direct_block];
+				return ((uint32_t *)m_single_block->data())[m_current_pointer.direct_block];
 
 			return m_inode_metadata.direct_ptr[m_current_pointer.direct_block];
 		}
@@ -64,25 +69,122 @@ namespace Kernel
 
 			if (m_current_pointer.triply_indirect_block != next_pointer.triply_indirect_block)
 			{
-				m_filesystem.read(m_inode_metadata.triply_indirect_ptr, 1, m_triple_region.phys_address);
-				m_filesystem.read(m_triple_array[next_pointer.doubly_indirect_block], 1, m_double_region.phys_address);
-				m_filesystem.read(m_double_array[next_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				assert(!m_triple_block);
+
+				FileSystemCache::release(m_single_block);
+				FileSystemCache::release(m_double_block);
+				m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata.triply_indirect_ptr);
+				m_double_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_triple_block->data())[next_pointer.doubly_indirect_block]);
+				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[next_pointer.singly_indirect_block]);
 				m_current_pointer = next_pointer;
 				return;
 			}
 
 			if (m_current_pointer.doubly_indirect_block != next_pointer.doubly_indirect_block)
 			{
-				m_filesystem.read(m_inode_metadata.doubly_indirect_ptr, 1, m_double_region.phys_address);
-				m_filesystem.read(m_double_array[next_pointer.singly_indirect_block], 1, m_single_region.phys_address);
+				FileSystemCache::release(m_single_block);
+
+				if (m_double_block)
+					FileSystemCache::release(m_double_block);
+
+				m_double_block = FileSystemCache::acquire(m_device, m_inode_metadata.doubly_indirect_ptr);
+				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[next_pointer.singly_indirect_block]);
 				m_current_pointer = next_pointer;
 				return;
 			}
 
 			if (m_current_pointer.singly_indirect_block != next_pointer.singly_indirect_block)
-				m_filesystem.read(m_inode_metadata.singly_indirect_ptr, 1, m_single_region.phys_address);
+			{
+				if (m_single_block)
+					FileSystemCache::release(m_single_block);
+
+				m_single_block = FileSystemCache::acquire(m_device, m_inode_metadata.singly_indirect_ptr);
+			}
 
 			m_current_pointer = next_pointer;
+		}
+
+		// TODO: This is kinda ugly
+		void append_blocks(const LibK::vector<size_t> &blocks)
+		{
+			for (auto block : blocks)
+			{
+				auto next_pointer = next_block(m_current_pointer, m_block_size / sizeof(uint32_t));
+
+				Kernel::log("DEBUG", "putting block %d at %d - %d - %d - %d", block, next_pointer.triply_indirect_block, next_pointer.doubly_indirect_block, next_pointer.singly_indirect_block, next_pointer.direct_block);
+
+				if (m_current_pointer.triply_indirect_block != next_pointer.triply_indirect_block)
+				{
+					m_current_pointer = next_pointer;
+
+					assert(!m_triple_block);
+
+					LibK::vector<size_t> indirect_blocks = m_filesystem->allocate_blocks(3);
+					assert(!indirect_blocks.empty());
+					m_inode_metadata.triply_indirect_ptr = indirect_blocks[0];
+
+					FileSystemCache::release(m_single_block);
+					FileSystemCache::release(m_double_block);
+					m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata.triply_indirect_ptr);
+
+					((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block] = indirect_blocks[1];
+					m_double_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block]);
+
+					((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block] = indirect_blocks[2];
+					m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block]);
+				}
+				else if (m_current_pointer.doubly_indirect_block != next_pointer.doubly_indirect_block)
+				{
+					m_current_pointer = next_pointer;
+
+					FileSystemCache::release(m_single_block);
+
+					if (m_double_block)
+						FileSystemCache::release(m_double_block);
+
+					LibK::vector<size_t> indirect_blocks = m_filesystem->allocate_blocks(2);
+					assert(!indirect_blocks.empty());
+
+					if (m_current_pointer.triply_indirect_block)
+						((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block] = indirect_blocks[0];
+					else
+						m_inode_metadata.doubly_indirect_ptr = indirect_blocks[0];
+
+					m_double_block = FileSystemCache::acquire(m_device, indirect_blocks[0]);
+
+					((uint32_t *)m_double_block->data())[0] = indirect_blocks[1];
+					m_single_block = FileSystemCache::acquire(m_device, indirect_blocks[1]);
+				}
+				else if (m_current_pointer.singly_indirect_block != next_pointer.singly_indirect_block)
+				{
+					m_current_pointer = next_pointer;
+
+					if (m_single_block)
+						FileSystemCache::release(m_single_block);
+
+					LibK::vector<size_t> indirect_blocks = m_filesystem->allocate_blocks(1);
+					assert(!indirect_blocks.empty());
+
+					if (m_current_pointer.triply_indirect_block || m_current_pointer.doubly_indirect_block)
+						((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block] = indirect_blocks[0];
+					else
+						m_inode_metadata.singly_indirect_ptr = indirect_blocks[0];
+					m_single_block = FileSystemCache::acquire(m_device, indirect_blocks[0]);
+				}
+				else
+				{
+					m_current_pointer = next_pointer;
+				}
+
+				if (m_current_pointer.triply_indirect_block || m_current_pointer.doubly_indirect_block || m_current_pointer.singly_indirect_block)
+					((uint32_t *)m_single_block->data())[m_current_pointer.direct_block] = block;
+				else
+					m_inode_metadata.direct_ptr[m_current_pointer.direct_block] = block;
+
+				fs_block_t *fs_block = FileSystemCache::acquire(m_device, block);
+				memset(fs_block->data(), 0, m_block_size);
+				FileSystemCache::release(fs_block);
+			}
 		}
 
 	private:
@@ -91,22 +193,21 @@ namespace Kernel
 			size_t block_number = offset / block_size;
 
 			if (block_number < 12)
-				return { block_number, 0, 0, 0 };
+				return {block_number, 0, 0, 0};
 
 			block_number -= 12;
 
 			if (block_number < inodes_per_block)
-				return { block_number, 1, 0, 0};
+				return {block_number, 1, 0, 0};
 
 			block_number -= inodes_per_block;
 
 			if (block_number / inodes_per_block < inodes_per_block)
-				return { block_number % inodes_per_block, block_number / inodes_per_block, 1, 0};
+				return {block_number % inodes_per_block, block_number / inodes_per_block, 1, 0};
 
 			block_number -= inodes_per_block * inodes_per_block;
 
-			return { block_number % inodes_per_block, (block_number / inodes_per_block) % inodes_per_block, block_number / (inodes_per_block * inodes_per_block), 1};
-
+			return {block_number % inodes_per_block, (block_number / inodes_per_block) % inodes_per_block, block_number / (inodes_per_block * inodes_per_block), 1};
 		}
 
 		static Ext2::block_pointer_t next_block(Ext2::block_pointer_t block_pointer, size_t inodes_per_block)
@@ -114,7 +215,7 @@ namespace Kernel
 			block_pointer.direct_block++;
 
 			if (!block_pointer.triply_indirect_block && !block_pointer.doubly_indirect_block && !block_pointer.singly_indirect_block && block_pointer.direct_block < 12)
-			    return block_pointer;
+				return block_pointer;
 
 			if ((block_pointer.triply_indirect_block || block_pointer.doubly_indirect_block || block_pointer.singly_indirect_block) && block_pointer.direct_block < inodes_per_block)
 				return block_pointer;
@@ -151,46 +252,50 @@ namespace Kernel
 			assert(block_pointer.triply_indirect_block < 2);
 
 			return block_pointer;
-
 		}
 
 		Ext2::block_pointer_t m_current_pointer;
-		const Ext2::inode_t &m_inode_metadata;
+		Ext2::inode_t &m_inode_metadata;
 		uint32_t m_block_size;
-		Ext2FileSystem &m_filesystem;
+		Ext2FileSystem *m_filesystem;
+		BlockDevice *m_device;
 
-		Memory::memory_region_t m_triple_region{};
-		Memory::memory_region_t m_double_region{};
-		Memory::memory_region_t m_single_region{};
-
-		uint32_t *m_triple_array{nullptr};
-		uint32_t *m_double_array{nullptr};
-		uint32_t *m_single_array{nullptr};
+		fs_block_t *m_triple_block{nullptr};
+		fs_block_t *m_double_block{nullptr};
+		fs_block_t *m_single_block{nullptr};
 	};
 
-	size_t Ext2File::read(size_t offset, size_t bytes, Memory::memory_region_t region)
+	size_t Ext2File::read(size_t offset, size_t bytes, char *buffer)
 	{
 		if (!m_inode_metadata_cached)
 			read_and_parse_metadata();
 
+		if (!is_type(FileType::RegularFile))
+			return 0;
+
 		if (offset + bytes > m_size)
 			bytes = m_size - offset;
 
-		auto block_iterator = Ext2BlockIterator(offset, m_inode_metadata, m_filesystem->m_block_size, *m_filesystem);
+		auto block_iterator = Ext2BlockIterator(offset, m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
 
-		size_t read_bytes = bytes;
+		size_t offset_in_block = offset % m_filesystem->m_block_size;
+
+		size_t read_bytes = 0;
 
 		while (bytes > 0)
 		{
 			uint32_t block = block_iterator.get();
 
-			m_filesystem->read(block, 1, region.phys_address);
-			region.phys_address += m_filesystem->m_block_size;
+			size_t to_read = LibK::min(m_filesystem->m_block_size, bytes);
 
-			if (bytes > m_filesystem->m_block_size)
-				bytes -= m_filesystem->m_block_size;
-			else
-				bytes = 0;
+			fs_block_t *fs_block = FileSystemCache::acquire(m_filesystem->m_device, block);
+			memcpy(buffer, fs_block->data() + offset_in_block, to_read);
+			FileSystemCache::release(fs_block);
+
+			bytes -= to_read;
+			read_bytes += to_read;
+			buffer += to_read;
+			offset_in_block = 0;
 
 			block_iterator.next();
 		}
@@ -198,9 +303,67 @@ namespace Kernel
 		return read_bytes;
 	}
 
-	size_t Ext2File::write(size_t, size_t, Memory::memory_region_t)
+	size_t Ext2File::write(size_t offset, size_t bytes, char *buffer)
 	{
-		assert(false);
+		if (!m_inode_metadata_cached)
+			read_and_parse_metadata();
+
+		if (!is_type(FileType::RegularFile))
+			return 0;
+
+		if (offset + bytes > m_size)
+		{
+			m_lock.lock();
+			uint64_t new_size = offset + bytes;
+			auto new_block_count = LibK::ceil_div<uint64_t>(new_size, m_filesystem->m_block_size);
+			auto old_block_count = LibK::ceil_div<uint64_t>(m_size, m_filesystem->m_block_size);
+			uint64_t blocks_to_allocate = new_block_count - old_block_count;
+
+			if (blocks_to_allocate)
+			{
+				LibK::vector<size_t> blocks = m_filesystem->allocate_blocks(blocks_to_allocate);
+
+				if (blocks.empty())
+					return 0;
+
+				// TODO: size() == 0 case
+				auto block_iterator = Ext2BlockIterator(size() - 1, m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
+				block_iterator.append_blocks(blocks);
+			}
+
+			m_size = new_size;
+			m_inode_metadata.size_low = m_size & 0xFFFFFFFF;
+			m_inode_metadata.size_high = m_size >> 32;
+
+			m_filesystem->write_inode_metadata(inode_number(), m_inode_metadata);
+			m_lock.unlock();
+		}
+
+		auto block_iterator = Ext2BlockIterator(offset, m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
+
+		size_t offset_in_block = offset % m_filesystem->m_block_size;
+
+		size_t written_bytes = 0;
+
+		while (bytes > 0)
+		{
+			uint32_t block = block_iterator.get();
+
+			size_t to_write = LibK::min(m_filesystem->m_block_size, bytes);
+
+			fs_block_t *fs_block = FileSystemCache::acquire(m_filesystem->m_device, block);
+			memcpy(fs_block->data() + offset_in_block, buffer, to_write);
+			FileSystemCache::release(fs_block);
+
+			bytes -= to_write;
+			written_bytes += to_write;
+			buffer += to_write;
+			offset_in_block = 0;
+
+			block_iterator.next();
+		}
+
+		return written_bytes;
 	}
 
 	bool Ext2File::remove()
@@ -218,7 +381,7 @@ namespace Kernel
 		if (!m_inode_metadata_cached)
 			read_and_parse_metadata();
 
-		if (!is_directory())
+		if (!is_type(FileType::Directory))
 			return {};
 
 		return m_filesystem->read_directory(m_inode_metadata);
@@ -226,7 +389,7 @@ namespace Kernel
 
 	File *Ext2File::find_file(const LibK::string &)
 	{
-		if (!is_directory())
+		if (!is_type(FileType::Directory))
 			return nullptr;
 
 		assert(false);
@@ -234,7 +397,7 @@ namespace Kernel
 
 	File *Ext2File::make_file(const LibK::string &)
 	{
-		if (!is_directory())
+		if (!is_type(FileType::Directory))
 			return nullptr;
 
 		assert(false);
@@ -270,37 +433,48 @@ namespace Kernel
 
 	void Ext2File::read_and_parse_metadata()
 	{
-		m_inode_metadata = m_filesystem->read_inode_metadata(m_inode_number);
+		m_lock.lock();
+		m_inode_metadata = m_filesystem->read_inode_metadata(inode_number());
 		m_inode_metadata_cached = true;
 
-		m_size = (uint64_t) m_inode_metadata.size_low | ((uint64_t) m_inode_metadata.size_high << 32);
+		m_size = (uint64_t)m_inode_metadata.size_low | ((uint64_t)m_inode_metadata.size_high << 32);
 		m_type = from_inode_type(m_inode_metadata.permission_type.type);
+		m_lock.unlock();
 	}
 
 	bool Ext2FileSystem::mount()
 	{
 		m_file = m_device->open(0);
 
-		m_superblock_region = Memory::VirtualMemoryManager::instance().allocate_region(sizeof (superblock_t));
-		m_device->read_blocks(2, LibK::round_up_to_multiple<size_t>(sizeof (superblock_t), m_device->block_size()) / m_device->block_size(), m_superblock_region);
-		m_superblock = reinterpret_cast<superblock_t *>(m_superblock_region.virt_address);
+		m_superblock_block = FileSystemCache::acquire(m_device, 0);
+		m_superblock = (superblock_t *)(m_superblock_block->data() + EXT2_SUPERBLOCK_OFFSET);
 
 		if (m_superblock->signature != EXT2_SIGNATURE)
 		{
-			Memory::VirtualMemoryManager::instance().free(m_superblock_region);
+			FileSystemCache::release(m_superblock_block);
 			m_device->close(m_file);
 			return false;
 		}
 
 		m_block_size = 1024 << m_superblock->block_size;
+
+		// TODO: Handle filesystems with smaller/larger block sizes
+		assert(m_block_size == PAGE_SIZE);
+
 		m_sectors_per_block = m_block_size / m_device->block_size();
 		m_number_of_block_groups = LibK::ceil_div(m_superblock->block_count, m_superblock->blocks_per_block_group);
+		size_t block_descriptor_table_size = LibK::ceil_div(m_number_of_block_groups * sizeof(block_group_descriptor_t), m_device->block_size());
 
-		size_t block_descriptor_table_size = LibK::ceil_div(m_number_of_block_groups * sizeof (block_group_descriptor_t), m_device->block_size());
-		size_t bg_table_offset = (m_block_size == 1024 ? 2 : 1) * m_sectors_per_block;
-		m_bgd_table_region = Memory::VirtualMemoryManager::instance().allocate_region(block_descriptor_table_size * m_device->block_size());
-		m_device->read_blocks(bg_table_offset, block_descriptor_table_size, m_bgd_table_region);
-		m_bgd_table = reinterpret_cast<block_group_descriptor_t *>(m_bgd_table_region.virt_address);
+		for (size_t i = 0; i < block_descriptor_table_size; i++)
+		{
+			// We assume m_block_size == PAGE_SIZE, so the BGD starts at block two
+			m_bgd_table_blocks.push_back(FileSystemCache::acquire(m_device, 1 + i));
+		}
+
+		for (size_t i = 0; i < m_number_of_block_groups; i++)
+		{
+			m_block_group_locks.push_back(new Locking::Mutex);
+		}
 
 		root_inode = read_inode_metadata(2);
 
@@ -333,18 +507,38 @@ namespace Kernel
 		uint32_t index = (inode - 1) % m_superblock->inodes_per_block_group;
 		uint32_t block_in_table = (index * m_superblock->inode_size) / m_block_size;
 		uint32_t offset_in_block = (index * m_superblock->inode_size) % m_block_size;
-		uint32_t block_to_read = m_bgd_table[block_group].inode_table_start_block + block_in_table;
+		block_group_descriptor_t *bgd = get_block_group_descriptor(block_group);
+		uint32_t block_to_read = bgd->inode_table_start_block + block_in_table;
 
-		auto region = Memory::VirtualMemoryManager::instance().allocate_region(m_block_size);
-		m_device->read_blocks(block_to_read * m_sectors_per_block, m_sectors_per_block, region);
-		auto *inode_ptr = reinterpret_cast<Ext2::inode_t *>(region.virt_address + offset_in_block);
+		fs_block_t *table_block = FileSystemCache::acquire(m_device, block_to_read);
+
+		auto *inode_ptr = reinterpret_cast<Ext2::inode_t *>(table_block->data() + offset_in_block);
 
 		Ext2::inode_t inode_data;
-		memcpy(&inode_data, inode_ptr, sizeof (Ext2::inode_t));
+		memcpy(&inode_data, inode_ptr, sizeof(Ext2::inode_t));
 
-		Memory::VirtualMemoryManager::instance().free(region);
+		FileSystemCache::release(table_block);
 
 		return inode_data;
+	}
+
+	void Ext2FileSystem::write_inode_metadata(uint32_t inode_number, const Ext2::inode_t &inode)
+	{
+		uint32_t block_group = (inode_number - 1) / m_superblock->inodes_per_block_group;
+		m_block_group_locks[block_group]->lock();
+
+		uint32_t index = (inode_number - 1) % m_superblock->inodes_per_block_group;
+		uint32_t block_in_table = (index * m_superblock->inode_size) / m_block_size;
+		uint32_t offset_in_block = (index * m_superblock->inode_size) % m_block_size;
+		block_group_descriptor_t *bgd = get_block_group_descriptor(block_group);
+		uint32_t block_to_read = bgd->inode_table_start_block + block_in_table;
+
+		fs_block_t *table_block = FileSystemCache::acquire(m_device, block_to_read);
+		auto *inode_ptr = reinterpret_cast<Ext2::inode_t *>(table_block->data() + offset_in_block);
+
+		memcpy(inode_ptr, &inode, sizeof(Ext2::inode_t));
+		FileSystemCache::sync(table_block);
+		FileSystemCache::release(table_block);
 	}
 
 	LibK::vector<File *> Ext2FileSystem::read_directory(const Ext2::inode_t &inode)
@@ -354,50 +548,215 @@ namespace Kernel
 		if (inode.permission_type.type != Ext2::InodeType::Directory)
 			return files;
 
-		auto blocks_used = LibK::ceil_div(inode.size_low, m_block_size);
-
-		// TODO: Extend API to accept physical addresses instead of regions
-		auto region = Memory::VirtualMemoryManager::instance().allocate_region(blocks_used * m_block_size);
-		auto directory_entry = reinterpret_cast<directory_entry_t *>(region.virt_address);
-
-		auto block_iterator = Ext2BlockIterator(0, inode, m_block_size, *this);
-
-		for (size_t i = 0; i < blocks_used; i++)
-		{
-			uint32_t block = block_iterator.get();
-
-			read(block, 1, region.phys_address);
-			region.phys_address += m_block_size;
-
-			block_iterator.next();
-		}
-
 		char *name = static_cast<char *>(kmalloc(UINT8_MAX + 1));
 
-		while (directory_entry->inode != 0)
+		size_t offset = 0;
+		size_t offset_in_block = 0;
+		auto block_iterator = Ext2BlockIterator(0, const_cast<Ext2::inode_t &>(inode), m_block_size, this, m_device);
+		fs_block_t *current_block = FileSystemCache::acquire(m_device, block_iterator.get());
+		auto *directory_entry = reinterpret_cast<directory_entry_t *>(current_block->data());
+
+		while (true)
 		{
-			memcpy(name, directory_entry->name, directory_entry->name_length_low);
-			name[directory_entry->name_length_low] = '\0';
+			if (directory_entry->inode != 0)
+			{
+				memcpy(name, directory_entry->name, directory_entry->name_length_low);
+				name[directory_entry->name_length_low] = '\0';
 
-			if (m_superblock->directory_types)
-				files.push_back(new Ext2File(this, directory_entry->inode, name, from_directory_entry_type(directory_entry->type_indicator)));
-			else
-				files.push_back(new Ext2File(this, directory_entry->inode, name));
+				if (m_superblock->directory_types)
+					files.push_back(new Ext2File(this, directory_entry->inode, name, from_directory_entry_type(directory_entry->type_indicator)));
+				else
+					files.push_back(new Ext2File(this, directory_entry->inode, name));
+			}
 
-			directory_entry = reinterpret_cast<directory_entry_t *>((uintptr_t)directory_entry + directory_entry->size);
+			offset += directory_entry->size;
+			offset_in_block += directory_entry->size;
+
+			if (offset >= inode.size_low)
+				break;
+
+			if (offset_in_block > m_block_size)
+			{
+				while (offset_in_block > m_block_size)
+					block_iterator.next();
+
+				offset_in_block %= m_block_size;
+
+				FileSystemCache::release(current_block);
+				current_block = FileSystemCache::acquire(m_device, block_iterator.get());
+			}
+
+			directory_entry = reinterpret_cast<directory_entry_t *>(current_block->data() + offset_in_block);
 		}
 
 		kfree(name);
-		Memory::VirtualMemoryManager::instance().free(region);
+		FileSystemCache::release(current_block);
 
 		return files;
 	}
 
-	size_t Ext2FileSystem::read(size_t block, size_t count, uintptr_t buffer)
+	size_t Ext2FileSystem::read_blocks(size_t block, size_t count, char *buffer)
 	{
-		Memory::memory_region_t tmp;
-		tmp.phys_address = buffer;
-		return m_device->read_blocks(block * m_sectors_per_block, count * m_sectors_per_block, tmp);
+		size_t read = 0;
+
+		for (size_t i = 0; i < count; i++)
+		{
+			fs_block_t *fs_block = FileSystemCache::acquire(m_device, block + i);
+			memcpy(buffer + i * m_block_size, fs_block->data(), m_block_size);
+			FileSystemCache::release(fs_block);
+			read += m_block_size;
+		}
+
+		return read;
+	}
+
+	size_t Ext2FileSystem::write_blocks(size_t block, size_t count, char *buffer)
+	{
+		size_t written = 0;
+
+		for (size_t i = 0; i < count; i++)
+		{
+			fs_block_t *fs_block = FileSystemCache::acquire(m_device, block + i);
+			memcpy(fs_block->data(), buffer + i * m_block_size, m_block_size);
+			FileSystemCache::release(fs_block);
+			written += m_block_size;
+		}
+
+		return written;
+	}
+
+	fs_block_t *Ext2FileSystem::read_block(size_t block)
+	{
+		return FileSystemCache::acquire(m_device, block);
+	}
+
+	Ext2FileSystem::block_group_descriptor_t *Ext2FileSystem::get_block_group_descriptor(size_t index)
+	{
+		size_t offset = index * sizeof(block_group_descriptor_t);
+		size_t block = offset / m_block_size;
+		size_t offset_in_block = offset % m_block_size;
+
+		return (block_group_descriptor_t *)(m_bgd_table_blocks[block]->data() + offset_in_block);
+	}
+
+	void Ext2FileSystem::sync_block_group_descriptor(size_t index)
+	{
+		size_t offset = index * sizeof(block_group_descriptor_t);
+		size_t block = offset / m_block_size;
+		FileSystemCache::sync(m_bgd_table_blocks[block]);
+	}
+
+	// ######################################################
+	// TODO: Move this into dedicated bitmap helper file
+	constexpr size_t bits_per_size_t = sizeof(size_t) * CHAR_BIT;
+
+	static size_t get_size_t(const uint8_t *bitmap, size_t index)
+	{
+		return ((size_t *)bitmap)[index];
+	}
+
+	static bool get_bit(const uint8_t *bitmap, size_t bit)
+	{
+		return bitmap[bit / CHAR_BIT] & (1 << (bit % CHAR_BIT));
+	}
+
+	static void set_bit(uint8_t *bitmap, size_t bit)
+	{
+		bitmap[bit / CHAR_BIT] |= (1 << (bit % CHAR_BIT));
+	}
+
+	[[maybe_unused]] static void clear_bit(uint8_t *bitmap, size_t bit)
+	{
+		bitmap[bit / CHAR_BIT] &= ~(1 << (bit % CHAR_BIT));
+	}
+	// ######################################################
+
+	LibK::vector<size_t> Ext2FileSystem::allocate_blocks(size_t count)
+	{
+		LibK::vector<size_t> blocks;
+
+		m_superblock_lock.lock();
+
+		if (m_superblock->unallocated_blocks < count)
+		{
+			m_superblock_lock.unlock();
+			return blocks;
+		}
+
+		m_superblock->unallocated_blocks -= count;
+		FileSystemCache::sync(m_superblock_block);
+
+		m_superblock_lock.unlock();
+
+		for (size_t block_group = 0; block_group < m_number_of_block_groups; block_group++)
+		{
+			if (count == 0)
+				break;
+
+			m_block_group_locks[block_group]->lock();
+
+			block_group_descriptor_t *block_group_descriptor = get_block_group_descriptor(block_group);
+
+			size_t allocated_blocks = LibK::min(count, block_group_descriptor->unallocated_blocks);
+
+			if (allocated_blocks == 0)
+			{
+				m_block_group_locks[block_group]->unlock();
+				continue;
+			}
+
+			block_group_descriptor->unallocated_blocks -= allocated_blocks;
+			count -= allocated_blocks;
+
+			size_t current_table_block = 0;
+			size_t current_bit_offset = 0;
+			fs_block_t *block_table = FileSystemCache::acquire(m_device, block_group_descriptor->block_usage_bitmap_block + current_table_block);
+			auto *bitmap = reinterpret_cast<uint8_t *>(block_table->data());
+			const size_t blocks_per_block = m_block_size * CHAR_BIT;
+			const size_t blocks_in_group = block_group == m_number_of_block_groups - 1 ? m_superblock->block_count % m_superblock->blocks_per_block_group : m_superblock->blocks_per_block_group;
+
+			for (size_t block = 0; block < blocks_in_group; block++)
+			{
+				if (current_bit_offset % bits_per_size_t == 0 && get_size_t(bitmap, current_bit_offset / bits_per_size_t) == SIZE_MAX)
+				{
+					// Optimize by skipping fully allocated groups of blocks
+					current_bit_offset += bits_per_size_t;
+					block += bits_per_size_t - 1;
+				}
+				else
+				{
+					if (!get_bit(bitmap, current_bit_offset))
+					{
+						set_bit(bitmap, current_bit_offset);
+						blocks.push_back(block_group * m_superblock->blocks_per_block_group + block);
+						allocated_blocks--;
+
+						if (allocated_blocks == 0)
+							break;
+					}
+
+					current_bit_offset++;
+				}
+
+				if (current_bit_offset == blocks_per_block)
+				{
+					current_bit_offset = 0;
+					current_table_block++;
+					FileSystemCache::sync(block_table);
+					FileSystemCache::release(block_table);
+					block_table = FileSystemCache::acquire(m_device, block_group_descriptor->block_usage_bitmap_block + current_table_block);
+					bitmap = reinterpret_cast<uint8_t *>(block_table->data());
+				}
+			}
+
+			FileSystemCache::sync(block_table);
+			FileSystemCache::release(block_table);
+			sync_block_group_descriptor(block_group);
+
+			m_block_group_locks[block_group]->unlock();
+		}
+
+		return blocks;
 	}
 
 	FileType Ext2FileSystem::from_directory_entry_type(DirectoryEntryType type)

@@ -141,10 +141,7 @@ int fputs(const char *restrict s, FILE *restrict stream)
 {
 	TRACE("fputs(%s, %p)\r\n", s, stream);
 
-	(void)s;
-	(void)stream;
-	puts("fputs() not implemented");
-	abort();
+	return write(fileno(stream), s, strlen(s) + 1);
 }
 
 int fgetc(FILE *stream)
@@ -254,7 +251,13 @@ int puts(const char *s)
 	if (ret < 0)
 		return EOF;
 
-	unsigned char ch = '\n';
+	unsigned char ch = '\r';
+	ret = write(STDOUT_FILENO, &ch, 1);
+
+	if (ret < 0)
+		return EOF;
+
+	ch = '\n';
 	ret = write(STDOUT_FILENO, &ch, 1);
 
 	if (ret < 0)

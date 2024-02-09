@@ -18,7 +18,7 @@ __LIBC_HEADER_BEGIN
     int access(const char *path, int amode);
     int chdir(const char *path);
 
-    void _exit(int status);
+    _Noreturn void _exit(int status);
 
 	int close(int);
 

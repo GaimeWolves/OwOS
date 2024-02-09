@@ -13,8 +13,8 @@ namespace Kernel
 		{
 		}
 
-		virtual size_t read_blocks(size_t block, size_t count, const Memory::memory_region_t &region) = 0;
-		virtual size_t write_blocks(size_t block, size_t count, const Memory::memory_region_t &region) = 0;
+		virtual size_t read_blocks(size_t block, size_t count, char *buffer) = 0;
+		virtual size_t write_blocks(size_t block, size_t count, char *buffer) = 0;
 
 		[[nodiscard]] virtual size_t block_size() const = 0;
 	};

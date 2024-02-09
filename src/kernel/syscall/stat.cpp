@@ -20,7 +20,7 @@ namespace Kernel
 			if (!path)
 				return -ENOENT;
 
-			file = VirtualFileSystem::instance().find_by_path(path);
+			file = VirtualFileSystem::instance().find_by_path(path, process->get_cwd());
 			break;
 		case __SC_stat_TYPE_FSTAT:
 			assert(process);
@@ -36,7 +36,7 @@ namespace Kernel
 		memset(buf, 0, sizeof(struct stat));
 		buf->st_size = file->size();
 
-		if (file->is_directory())
+		if (file->is_type(FileType::Directory))
 			buf->st_mode = S_IFDIR;
 		else
 			buf->st_mode = S_IFREG;

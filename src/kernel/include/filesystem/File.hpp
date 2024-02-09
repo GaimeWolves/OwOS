@@ -52,16 +52,16 @@ namespace Kernel
 		// Basic file operations
 		virtual FileContext open(int options);
 		virtual bool close(FileContext &context);
-		virtual size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) = 0;
-		virtual size_t write(size_t offset, size_t bytes, Memory::memory_region_t region) = 0;
+		virtual size_t read(size_t offset, size_t bytes, char *buffer) = 0;
+		virtual size_t write(size_t offset, size_t bytes, char *buffer) = 0;
 		virtual bool remove() = 0;
 		virtual bool rename(const LibK::string &new_file_name) = 0;
+		virtual bool is_type(FileType type) = 0;
 
 		// Directory operations
 		virtual LibK::vector<File *> read_directory() = 0;
 		virtual File *find_file(const LibK::string &file_name) = 0;
 		virtual File *make_file(const LibK::string &file_name) = 0;
-		virtual bool is_directory() = 0;
 
 		virtual LibK::ErrorOr<void> ioctl(uint32_t, uintptr_t) { return ENOTTY; };
 
@@ -71,6 +71,8 @@ namespace Kernel
 
 		void lock() { m_mutex->lock(); }
 		void unlock() { m_mutex->unlock(); }
+
+		[[nodiscard]] size_t inode_number() const { return m_inode_number; }
 
 	protected:
 		File()
@@ -86,12 +88,20 @@ namespace Kernel
 		[[nodiscard]] virtual bool can_open_for_read() const = 0;
 		[[nodiscard]] virtual bool can_open_for_write() const = 0;
 
-		size_t open_read_contexts() const { return m_open_read_contexts; }
-		size_t open_write_contexts() const { return m_open_write_contexts; }
+		[[nodiscard]] size_t open_read_contexts() const { return m_open_read_contexts; }
+		[[nodiscard]] size_t open_write_contexts() const { return m_open_write_contexts; }
+
+		void set_inode_number(size_t inode_number) { m_inode_number = inode_number; }
 
 	private:
+		void set_vfs_node(vfs_node_t *node) { m_vfs_node = node; }
+
+		vfs_node_t *m_vfs_node{nullptr};
+
 		size_t m_open_read_contexts{0};
 		size_t m_open_write_contexts{0};
+
+		size_t m_inode_number{0};
 
 		Locking::Mutex *m_mutex{};
 	};

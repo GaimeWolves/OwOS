@@ -71,8 +71,8 @@ namespace Kernel
 
 		[[nodiscard]] size_t size() override { return 0; }
 
-		size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) override;
-		size_t write(size_t offset, size_t bytes, Memory::memory_region_t region) override;
+		size_t read(size_t offset, size_t bytes, char *buffer) override;
+		size_t write(size_t offset, size_t bytes, char *buffer) override;
 
 		[[nodiscard]] bool is_faulty() const { return m_is_faulty; }
 

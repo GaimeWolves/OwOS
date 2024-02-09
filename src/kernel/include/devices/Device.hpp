@@ -18,11 +18,11 @@ namespace Kernel
 		bool close(FileContext &context __unused) override { return false; }
 		bool remove() override { return false; }
 		bool rename(const LibK::string &new_file_name __unused) override { return false; }
+		bool is_type(FileType type) override { return type == FileType::Device; };
 
 		LibK::vector<File *> read_directory() override { return {}; }
 		File *find_file(const LibK::string &file_name __unused) override { return nullptr; }
 		File *make_file(const LibK::string &file_name __unused) override { return nullptr; }
-		bool is_directory() override { return false; }
 
 	private:
 		size_t m_major_number;

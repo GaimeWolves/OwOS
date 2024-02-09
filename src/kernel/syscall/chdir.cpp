@@ -14,33 +14,17 @@ namespace Kernel
 		if (!path || path[0] == '\0')
 			return -ENOENT;
 
-		// TODO: Move check for absolute/relative path somewhere logical
-		// TODO: Handle . and .. correctly inside VFS
-
-		LibK::string full_path;
-
-		if (path[0] != '/')
-		{
-			for (auto ch : process->get_cwd())
-				full_path += ch;
-
-			char ch = *(full_path.end() - 1);
-			if (ch != '/')
-				full_path += '/';
-		}
-
-		size_t len = strlen(path);
-		for (size_t i = 0; i < len; i++)
-			full_path += path[i];
-
-		File *file = VirtualFileSystem::instance().find_by_path(full_path);
+		File *file = VirtualFileSystem::instance().find_by_path(path, process->get_cwd());
 
 		if (!file)
 			return -ENOENT;
 
-		if (!file->is_directory())
+		if (!file->is_type(FileType::Directory))
 			return -ENOTDIR;
 
+		LibK::string full_path = VirtualFileSystem::instance().get_full_path(file);
+		if (full_path[full_path.size() - 1] != '/')
+			full_path += '/';
 		process->set_cwd(full_path.c_str());
 
 		return -ESUCCESS;

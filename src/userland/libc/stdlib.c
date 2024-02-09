@@ -14,6 +14,10 @@ void abort(void)
 {
 	TRACE("abort()\r\n", "");
 
+	syscall(__SC_exit, 1);
+
+	perror("exit syscall returned!");
+
 	for (;;)
 		;
 }

@@ -13,12 +13,12 @@ namespace Kernel
 		auto process = core.get_current_thread()->parent_process;
 		assert(process);
 
-		File *file = VirtualFileSystem::instance().find_by_path(path);
+		File *file = VirtualFileSystem::instance().find_by_path(path, process->get_cwd());
 
 		if (!file)
 			return -ENOENT;
 
-		if (file->is_directory())
+		if (!file->is_type(FileType::RegularFile))
 			return -EACCES;
 
 		if (!ELF::is_executable(file))

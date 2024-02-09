@@ -66,6 +66,22 @@ namespace Kernel::LibK
 
 		const charT *c_str() const { return this->data(); }
 
+		basic_string &operator+=(const basic_string &str)
+		{
+			for (charT ch : str)
+				this->push_back(ch);
+
+			return *this;
+		}
+
+		basic_string &operator+=(const charT *str)
+		{
+			while (*str)
+				this->push_back(*str++);
+
+			return *this;
+		}
+
 		basic_string &operator+=(charT c)
 		{
 			this->push_back(c);
@@ -175,6 +191,34 @@ namespace Kernel::LibK
 			return iterator{*this, position.m_index};
 		}
 
+		iterator insert(const_iterator position, const basic_string &str)
+		{
+			ensure_capacity(m_size + str.size());
+			memmove(&m_array[position.m_index + str.size()], &m_array[position.m_index], (m_size - position.m_index) * sizeof(charT));
+
+			for (size_t i = 0; i < str.size(); i++)
+				m_array[position.m_index + i] = str[i];
+
+			m_size += str.size();
+			return iterator{*this, position.m_index};
+		}
+
+		iterator insert(const_iterator position, const charT *str)
+		{
+			size_t n = strlen(str);
+
+			ensure_capacity(m_size + n);
+			memmove(&m_array[position.m_index + n], &m_array[position.m_index], (m_size - position.m_index) * sizeof(charT));
+
+			for (size_t i = 0; i < n; i++)
+				m_array[position.m_index + i] = str[i];
+
+			m_size += n;
+			return iterator{*this, position.m_index};
+		}
+
+		iterator insert(iterator position, const basic_string &str) { return insert(const_iterator{*this, position.m_index}, str); }
+		iterator insert(iterator position, const charT *str) { return insert(const_iterator{*this, position.m_index}, str); }
 		iterator insert(iterator position, const charT &val) { return insert(const_iterator{*this, position.m_index}, val); }
 		iterator insert(iterator position, size_t n, const charT &val) { return insert(const_iterator{*this, position.m_index}, n, val); }
 
@@ -183,10 +227,22 @@ namespace Kernel::LibK
 			assert(position.m_index >= 0 && position.m_index < m_size - 1);
 
 			m_array[position.m_index] = 0;
-			memmove(&m_array[position.m_index], &m_array[position.m_index + 1], (m_size - position.m_index - 1) * sizeof(charT));
+			memmove(&m_array[position.m_index], &m_array[position.m_index + 1], (m_size - position.m_index) * sizeof(charT));
 			m_size--;
 
 			return position;
+		}
+
+		iterator erase(iterator first, iterator last)
+		{
+			if (first >= last)
+				return last;
+
+			size_t num = last - first;
+			memmove(&m_array[first.m_index], &m_array[last.m_index], (m_size - last.m_index) * sizeof(charT));
+			m_size -= num;
+
+			return first;
 		}
 
 	private:

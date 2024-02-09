@@ -87,7 +87,7 @@ namespace Kernel::LibK
 
 		difference_type operator-(normal_iterator rhs) const
 		{
-			return normal_iterator{m_container, m_index - rhs.m_index};
+			return (difference_type)m_index - (difference_type)rhs.m_index;
 		}
 
 		reference operator*() const { return m_container.at(m_index); }

@@ -5,7 +5,7 @@
 
 namespace Kernel
 {
-	size_t KeyboardDevice::read(size_t, size_t bytes, Memory::memory_region_t region)
+	size_t KeyboardDevice::read(size_t, size_t bytes, char *buffer)
 	{
 		size_t read = 0;
 		while (read < bytes)
@@ -19,7 +19,7 @@ namespace Kernel
 			m_lock.lock();
 			key_event_t event = m_buffer.pop();
 			m_lock.unlock();
-			memcpy(region.virt_region().pointer(), &event, sizeof(key_event_t));
+			memcpy(buffer, &event, sizeof(key_event_t));
 			read += sizeof(key_event_t);
 		}
 

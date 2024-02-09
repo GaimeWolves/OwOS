@@ -15,12 +15,15 @@ namespace Kernel
 		auto process = CPU::Processor::current().get_current_thread()->parent_process;
 		assert(process);
 
-		auto *file = VirtualFileSystem::instance().find_by_path(path);
+		auto *file = VirtualFileSystem::instance().find_by_path(path, process->get_cwd());
 
 		if (!file)
 			return -ENOENT;
 
 		auto context = file->open(O_RDWR);
+
+		if (context.is_null())
+			return -EACCES;
 
 		int fd = process->add_file(LibK::move(context));
 

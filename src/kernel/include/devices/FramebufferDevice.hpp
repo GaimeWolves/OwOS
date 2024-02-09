@@ -32,8 +32,8 @@ namespace Kernel
 
 		[[nodiscard]] size_t size() override { return 0; }
 
-		size_t read(size_t offset, size_t bytes, Memory::memory_region_t region) override;
-		size_t write(size_t offset, size_t bytes, Memory::memory_region_t region) override;
+		size_t read(size_t offset, size_t bytes, char *buffer) override;
+		size_t write(size_t offset, size_t bytes, char *buffer) override;
 
 		void blit(uint32_t *data, bool direct, size_t x, size_t y, size_t width, size_t height);
 		void blit_character(uint8_t *data, bool direct, size_t x, size_t y, size_t width, size_t height, size_t stride, uint32_t fg_color, uint32_t bg_color);

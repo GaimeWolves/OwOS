@@ -23,10 +23,6 @@ namespace Kernel
 		CPU::Processor &core = CPU::Processor::current();
 
 		thread_t *current_thread = core.m_current_thread;
-
-		if (current_thread && current_thread->has_started)
-			core.update_thread_context(*current_thread);
-
 		thread_t *next_thread = pick_next();
 
 		//if (next_thread == &core.m_idle_thread && (current_thread != &core.m_idle_thread || !current_thread->has_started))
@@ -40,6 +36,9 @@ namespace Kernel
 
 		if (current_thread != next_thread || !next_thread->has_started)
 		{
+			if (current_thread && current_thread->has_started)
+				core.update_thread_context(*current_thread);
+
 			bool has_started = next_thread->has_started;
 			next_thread->has_started = true;
 			core.enter_critical();

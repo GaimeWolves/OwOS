@@ -24,4 +24,5 @@ namespace Kernel
 	uintptr_t syscall$waitpid(pid_t pid, int *stat_loc, int options);
 	uintptr_t syscall$getcwd(char *buf, size_t size);
 	uintptr_t syscall$chdir(char *path);
+	uintptr_t syscall$getdents(int fd, void *buffer, size_t count);
 }

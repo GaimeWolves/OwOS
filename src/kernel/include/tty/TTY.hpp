@@ -18,8 +18,8 @@ namespace Kernel
 	class TTY : public CharacterDevice
 	{
 	public:
-		size_t read(size_t, size_t bytes, Memory::memory_region_t region) override;
-		size_t write(size_t, size_t bytes, Memory::memory_region_t region) override;
+		size_t read(size_t, size_t bytes, char *buffer) override;
+		size_t write(size_t, size_t bytes, char *buffer) override;
 
 		LibK::ErrorOr<void> ioctl(uint32_t request, uintptr_t arg) override;
 
@@ -44,8 +44,8 @@ namespace Kernel
 		void emit(char ch);
 
 	private:
-		size_t canonical_read(size_t bytes, Memory::memory_region_t region);
-		size_t non_canonical_read(size_t bytes, Memory::memory_region_t region);
+		size_t canonical_read(size_t bytes, char *buffer);
+		size_t non_canonical_read(size_t bytes, char *buffer);
 
 		void canonical_input(char ch);
 		void non_canonical_input(char ch);

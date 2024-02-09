@@ -238,3 +238,17 @@ char *strcpy(char *__restrict dest, const char *__restrict src)
 
 	return buf;
 }
+
+char *strncpy(char *__restrict dest, const char *__restrict src, size_t count)
+{
+	char* buf = dest;
+	size_t i;
+
+	for (i = 0; i < count && src[i]; i++)
+		dest[i] = src[i];
+
+	for (; i < count; i++)
+		dest[i] = '\0';
+
+	return buf;
+}

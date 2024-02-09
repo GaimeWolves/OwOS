@@ -365,13 +365,12 @@ namespace Kernel::CPU
 
 	__noreturn void Processor::enter_thread_context(thread_t &thread)
 	{
-		uint32_t esp0 = (uint32_t)thread.registers.frame + sizeof(interrupt_frame_t);
+		if (thread.registers.cs != 0x08)
+		{
+			uint32_t esp0 = (uint32_t)thread.registers.frame + sizeof(interrupt_frame_t);
+			update_tss(esp0);
+		}
 
-		// Adjust in case we are not entering ring 3
-		if (thread.registers.cs == 0x10)
-			esp0 -= 8;
-
-		update_tss(esp0);
 		m_page_fault_tss.cr3 = thread.registers.cr3;
 
 		uintptr_t old_cr3 = get_page_directory();

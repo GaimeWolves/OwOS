@@ -11,13 +11,9 @@ namespace Kernel
 		auto process = CPU::Processor::current().get_current_thread()->parent_process;
 		assert(process);
 		auto &file = process->get_file_by_index(fd);
-		Memory::memory_region_t region;
-		region.virt_address = reinterpret_cast<uintptr_t>(buf);
-		region.phys_address = Memory::Arch::as_physical(region.virt_address);
-		region.size = count;
 
 		file.file().lock();
-		uintptr_t read = file.read(count, region);
+		uintptr_t read = file.read(count, static_cast<char *>(buf));
 		file.file().unlock();
 
 		return read;

@@ -50,7 +50,6 @@ namespace Kernel::Time
 	void PIT::handle_interrupt(const CPU::interrupt_frame_t &regs __unused)
 	{
 		// TODO: investigate missed PIT interrupts
-		log("DEBUG", "PIT called");
 		m_handle_callback(*this);
 	}
 } // namespace Kernel::Time

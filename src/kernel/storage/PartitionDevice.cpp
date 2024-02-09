@@ -12,20 +12,20 @@ namespace Kernel
 	{
 	}
 
-	size_t PartitionDevice::read_blocks(size_t block, size_t count, const Memory::memory_region_t &region)
+	size_t PartitionDevice::read_blocks(size_t block, size_t count, char *buffer)
 	{
 		if (block + count >= m_offset + m_length)
 			return 0;
 
-		return m_storage_device->read_blocks(m_offset + block, count, region);
+		return m_storage_device->read_blocks(m_offset + block, count, buffer);
 	}
 
-	size_t PartitionDevice::write_blocks(size_t block, size_t count, const Memory::memory_region_t &region)
+	size_t PartitionDevice::write_blocks(size_t block, size_t count, char *buffer)
 	{
 		if (block + count >= m_offset + m_length)
 			return 0;
 
-		return m_storage_device->write_blocks(m_offset + block, count, region);
+		return m_storage_device->write_blocks(m_offset + block, count, buffer);
 	}
 
 	size_t PartitionDevice::block_size() const { return m_storage_device->block_size(); }

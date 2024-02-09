@@ -11,7 +11,7 @@ typedef int blkcnt_t;
 typedef int blksize_t;
 typedef int dev_t;
 typedef int gid_t;
-typedef int ino_t;
+typedef size_t ino_t;
 typedef unsigned mode_t;
 typedef int nlink_t;
 typedef size_t off_t;

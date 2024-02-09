@@ -19,11 +19,7 @@ extern "C"
 			Textmode::putc(ch);
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
-		{
-			Kernel::Memory::memory_region_t tmp;
-			tmp.virt_address = (uintptr_t)&ch;
-			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, tmp);
-		}
+			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, 1, const_cast<char *>(&ch));
 	}
 
 	void kputs(const char *str)
@@ -32,11 +28,7 @@ extern "C"
 			Textmode::puts(str);
 
 		if (!Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).is_faulty())
-		{
-			Kernel::Memory::memory_region_t tmp;
-			tmp.virt_address = (uintptr_t)str;
-			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), tmp);
-		}
+			Kernel::SerialDevice::get(Kernel::SerialDevice::COM1).write(0, strlen(str), const_cast<char *>(str));
 	}
 
 	void kvprintf(const char *fmt, va_list ap)

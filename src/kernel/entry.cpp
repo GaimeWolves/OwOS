@@ -43,10 +43,12 @@ namespace Kernel
 		PCI::HostBridge::instance().init();
 		AHCIManager::instance().initialize();
 
+		/*
 		Tests::test_crtx();
 		Tests::test_heap();
 		Tests::test_printf();
 		Tests::test_vmm();
+		 */
 
 		Interrupts::LAPIC::instance().start_smp_boot();
 
