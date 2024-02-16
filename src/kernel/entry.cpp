@@ -68,6 +68,8 @@ namespace Kernel
 		init->add_file(VirtualConsole::get_current().open(O_WRONLY));
 		init->add_file(VirtualConsole::get_current().open(O_WRONLY));
 
+		VirtualConsole::get_current().set_controlling_process(init);
+
 		const char *argv[] = {
 		    "/bin/init",
 		    NULL,

@@ -11,36 +11,45 @@
 // TODO: Rewrite this to only use the FS cache to access blocks
 namespace Kernel
 {
+
+	Ext2::__block_pointer_t Ext2::__block_pointer_t::from_linear_index(uint32_t index, uint32_t inodes_per_block)
+	{
+		if (index < 12)
+			return { index, 0, 0, 0 };
+
+		index -= 12;
+
+		if (index < inodes_per_block)
+			return { index, 1, 0, 0 };
+
+		index -= inodes_per_block;
+
+		if (index < inodes_per_block * inodes_per_block)
+			return {index % inodes_per_block, index / inodes_per_block, 1, 0 };
+
+		index -= inodes_per_block * inodes_per_block;
+		return {
+		    index % inodes_per_block,
+		    (index / inodes_per_block) % inodes_per_block,
+		    index / (inodes_per_block * inodes_per_block),
+		    1
+		};
+	}
+
 	class Ext2BlockIterator
 	{
 	public:
-		Ext2BlockIterator(uint64_t offset, Ext2::inode_t &metadata, uint32_t block_size, Ext2FileSystem *filesystem, BlockDevice *device)
-		    : m_current_pointer(get_starting_block(offset, block_size, block_size / sizeof(uint32_t)))
+		Ext2BlockIterator(uint64_t offset, Ext2::inode_t *metadata, uint32_t block_size, Ext2FileSystem *filesystem, BlockDevice *device)
+		    : m_current_block_index(offset / block_size)
 		    , m_inode_metadata(metadata)
-		    , m_block_size(block_size)
+		    , m_inodes_per_block(block_size / sizeof(uint32_t))
 		    , m_filesystem(filesystem)
 		    , m_device(device)
 		{
-			// TODO: Add get/release to File maybe?
-			if (m_current_pointer.triply_indirect_block)
-			{
-				m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata.triply_indirect_ptr);
-				m_double_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block]);
-				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block]);
-				return;
-			}
-
-			if (m_current_pointer.doubly_indirect_block)
-			{
-				m_double_block = FileSystemCache::acquire(m_device, m_inode_metadata.doubly_indirect_ptr);
-				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block]);
-				return;
-			}
-
-			if (m_current_pointer.singly_indirect_block)
-			{
-				m_single_block = FileSystemCache::acquire(m_device, m_inode_metadata.singly_indirect_ptr);
-			}
+			m_current_pointer = { 0, 0, 0, 0 };
+			auto new_pointer = Ext2::block_pointer_t::from_linear_index(m_current_block_index, m_inodes_per_block);
+			update_blocks(new_pointer, false);
+			m_current_pointer = new_pointer;
 		}
 
 		~Ext2BlockIterator()
@@ -55,210 +64,139 @@ namespace Kernel
 				FileSystemCache::release(m_single_block);
 		}
 
+		void set(uint32_t block)
+		{
+			if (m_current_block_index < 12)
+				m_inode_metadata->direct_ptr[m_current_block_index] = block;
+
+			((uint32_t *)m_single_block->data())[m_current_pointer.direct_block] = block;
+		}
+
 		uint32_t get()
 		{
-			if (m_current_pointer.triply_indirect_block | m_current_pointer.doubly_indirect_block | m_current_pointer.singly_indirect_block)
-				return ((uint32_t *)m_single_block->data())[m_current_pointer.direct_block];
+			if (m_current_block_index < 12)
+				return m_inode_metadata->direct_ptr[m_current_block_index];
 
-			return m_inode_metadata.direct_ptr[m_current_pointer.direct_block];
+			return ((uint32_t *)m_single_block->data())[m_current_pointer.direct_block];
 		}
 
-		void next()
-		{
-			auto next_pointer = next_block(m_current_pointer, m_block_size / sizeof(uint32_t));
+		void next() { next(false); }
 
-			if (m_current_pointer.triply_indirect_block != next_pointer.triply_indirect_block)
-			{
-				assert(!m_triple_block);
-
-				FileSystemCache::release(m_single_block);
-				FileSystemCache::release(m_double_block);
-				m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata.triply_indirect_ptr);
-				m_double_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_triple_block->data())[next_pointer.doubly_indirect_block]);
-				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[next_pointer.singly_indirect_block]);
-				m_current_pointer = next_pointer;
-				return;
-			}
-
-			if (m_current_pointer.doubly_indirect_block != next_pointer.doubly_indirect_block)
-			{
-				FileSystemCache::release(m_single_block);
-
-				if (m_double_block)
-					FileSystemCache::release(m_double_block);
-
-				m_double_block = FileSystemCache::acquire(m_device, m_inode_metadata.doubly_indirect_ptr);
-				m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[next_pointer.singly_indirect_block]);
-				m_current_pointer = next_pointer;
-				return;
-			}
-
-			if (m_current_pointer.singly_indirect_block != next_pointer.singly_indirect_block)
-			{
-				if (m_single_block)
-					FileSystemCache::release(m_single_block);
-
-				m_single_block = FileSystemCache::acquire(m_device, m_inode_metadata.singly_indirect_ptr);
-			}
-
-			m_current_pointer = next_pointer;
-		}
-
-		// TODO: This is kinda ugly
 		void append_blocks(const LibK::vector<size_t> &blocks)
 		{
 			for (auto block : blocks)
 			{
-				auto next_pointer = next_block(m_current_pointer, m_block_size / sizeof(uint32_t));
+				next(true);
 
-				Kernel::log("DEBUG", "putting block %d at %d - %d - %d - %d", block, next_pointer.triply_indirect_block, next_pointer.doubly_indirect_block, next_pointer.singly_indirect_block, next_pointer.direct_block);
-
-				if (m_current_pointer.triply_indirect_block != next_pointer.triply_indirect_block)
-				{
-					m_current_pointer = next_pointer;
-
-					assert(!m_triple_block);
-
-					LibK::vector<size_t> indirect_blocks = m_filesystem->allocate_blocks(3);
-					assert(!indirect_blocks.empty());
-					m_inode_metadata.triply_indirect_ptr = indirect_blocks[0];
-
-					FileSystemCache::release(m_single_block);
-					FileSystemCache::release(m_double_block);
-					m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata.triply_indirect_ptr);
-
-					((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block] = indirect_blocks[1];
-					m_double_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block]);
-
-					((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block] = indirect_blocks[2];
-					m_single_block = FileSystemCache::acquire(m_device, ((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block]);
-				}
-				else if (m_current_pointer.doubly_indirect_block != next_pointer.doubly_indirect_block)
-				{
-					m_current_pointer = next_pointer;
-
-					FileSystemCache::release(m_single_block);
-
-					if (m_double_block)
-						FileSystemCache::release(m_double_block);
-
-					LibK::vector<size_t> indirect_blocks = m_filesystem->allocate_blocks(2);
-					assert(!indirect_blocks.empty());
-
-					if (m_current_pointer.triply_indirect_block)
-						((uint32_t *)m_triple_block->data())[m_current_pointer.doubly_indirect_block] = indirect_blocks[0];
-					else
-						m_inode_metadata.doubly_indirect_ptr = indirect_blocks[0];
-
-					m_double_block = FileSystemCache::acquire(m_device, indirect_blocks[0]);
-
-					((uint32_t *)m_double_block->data())[0] = indirect_blocks[1];
-					m_single_block = FileSystemCache::acquire(m_device, indirect_blocks[1]);
-				}
-				else if (m_current_pointer.singly_indirect_block != next_pointer.singly_indirect_block)
-				{
-					m_current_pointer = next_pointer;
-
-					if (m_single_block)
-						FileSystemCache::release(m_single_block);
-
-					LibK::vector<size_t> indirect_blocks = m_filesystem->allocate_blocks(1);
-					assert(!indirect_blocks.empty());
-
-					if (m_current_pointer.triply_indirect_block || m_current_pointer.doubly_indirect_block)
-						((uint32_t *)m_double_block->data())[m_current_pointer.singly_indirect_block] = indirect_blocks[0];
-					else
-						m_inode_metadata.singly_indirect_ptr = indirect_blocks[0];
-					m_single_block = FileSystemCache::acquire(m_device, indirect_blocks[0]);
-				}
-				else
-				{
-					m_current_pointer = next_pointer;
-				}
-
-				if (m_current_pointer.triply_indirect_block || m_current_pointer.doubly_indirect_block || m_current_pointer.singly_indirect_block)
+				if (m_single_block)
 					((uint32_t *)m_single_block->data())[m_current_pointer.direct_block] = block;
 				else
-					m_inode_metadata.direct_ptr[m_current_pointer.direct_block] = block;
-
-				fs_block_t *fs_block = FileSystemCache::acquire(m_device, block);
-				memset(fs_block->data(), 0, m_block_size);
-				FileSystemCache::release(fs_block);
+					m_inode_metadata->direct_ptr[m_current_pointer.direct_block] = block;
 			}
 		}
-
 	private:
-		static Ext2::block_pointer_t get_starting_block(size_t offset, uint32_t block_size, size_t inodes_per_block)
+		void next(bool allocate)
 		{
-			size_t block_number = offset / block_size;
-
-			if (block_number < 12)
-				return {block_number, 0, 0, 0};
-
-			block_number -= 12;
-
-			if (block_number < inodes_per_block)
-				return {block_number, 1, 0, 0};
-
-			block_number -= inodes_per_block;
-
-			if (block_number / inodes_per_block < inodes_per_block)
-				return {block_number % inodes_per_block, block_number / inodes_per_block, 1, 0};
-
-			block_number -= inodes_per_block * inodes_per_block;
-
-			return {block_number % inodes_per_block, (block_number / inodes_per_block) % inodes_per_block, block_number / (inodes_per_block * inodes_per_block), 1};
+			m_current_block_index++;
+			auto new_pointer = Ext2::block_pointer_t::from_linear_index(m_current_block_index, m_inodes_per_block);
+			update_blocks(new_pointer, allocate);
+			m_current_pointer = new_pointer;
 		}
 
-		static Ext2::block_pointer_t next_block(Ext2::block_pointer_t block_pointer, size_t inodes_per_block)
+		void update_blocks(Ext2::block_pointer_t new_pointer, bool allocate)
 		{
-			block_pointer.direct_block++;
+			bool triple_block_invalidated = false;
+			bool double_block_invalidated = false;
+			bool single_block_invalidated = false;
 
-			if (!block_pointer.triply_indirect_block && !block_pointer.doubly_indirect_block && !block_pointer.singly_indirect_block && block_pointer.direct_block < 12)
-				return block_pointer;
+			size_t count = 0;
 
-			if ((block_pointer.triply_indirect_block || block_pointer.doubly_indirect_block || block_pointer.singly_indirect_block) && block_pointer.direct_block < inodes_per_block)
-				return block_pointer;
-
-			block_pointer.direct_block = 0;
-			block_pointer.singly_indirect_block++;
-
-			if (block_pointer.triply_indirect_block == 0 && block_pointer.doubly_indirect_block == 0 && block_pointer.singly_indirect_block == 2)
+			if (new_pointer.triply_indirect_block != m_current_pointer.triply_indirect_block)
 			{
-				block_pointer.singly_indirect_block = 0;
-				block_pointer.doubly_indirect_block++;
-				return block_pointer;
+				triple_block_invalidated = double_block_invalidated = single_block_invalidated = true;
+				count = 3;
+			}
+			else if (new_pointer.doubly_indirect_block != m_current_pointer.doubly_indirect_block)
+			{
+				double_block_invalidated = single_block_invalidated = true;
+				count = 2;
+			}
+			else if (new_pointer.singly_indirect_block != m_current_pointer.singly_indirect_block)
+			{
+				single_block_invalidated = true;
+				count = 1;
 			}
 
-			if (block_pointer.singly_indirect_block < inodes_per_block)
-				return block_pointer;
+			LibK::vector<size_t> new_blocks;
 
-			block_pointer.singly_indirect_block = 0;
-			block_pointer.doubly_indirect_block++;
-
-			if (block_pointer.triply_indirect_block == 0 && block_pointer.doubly_indirect_block == 2)
+			if (allocate)
 			{
-				block_pointer.doubly_indirect_block = 0;
-				block_pointer.triply_indirect_block++;
-				return block_pointer;
+				new_blocks = m_filesystem->allocate_blocks(count);
+				assert(new_blocks.size() == count);
 			}
 
-			if (block_pointer.doubly_indirect_block < inodes_per_block)
-				return block_pointer;
+			if (triple_block_invalidated)
+			{
+				if (m_triple_block)
+					FileSystemCache::release(m_triple_block);
+				m_triple_block = nullptr;
 
-			block_pointer.doubly_indirect_block = 0;
-			block_pointer.triply_indirect_block++;
+				if (allocate)
+					m_inode_metadata->triply_indirect_ptr = new_blocks[2];
 
-			assert(block_pointer.triply_indirect_block < 2);
+				if (new_pointer.triply_indirect_block)
+					m_triple_block = FileSystemCache::acquire(m_device, m_inode_metadata->triply_indirect_ptr);
+			}
 
-			return block_pointer;
+			if (double_block_invalidated)
+			{
+				if (m_double_block)
+					FileSystemCache::release(m_double_block);
+				m_double_block = nullptr;
+
+				if (allocate)
+				{
+					if (m_triple_block)
+						((uint32_t *)m_triple_block->data())[new_pointer.doubly_indirect_block] = new_blocks[1];
+					else
+						m_inode_metadata->doubly_indirect_ptr = new_blocks[1];
+				}
+
+				if (m_triple_block || new_pointer.doubly_indirect_block)
+				{
+					uint32_t block = m_triple_block ? ((uint32_t *)m_triple_block->data())[new_pointer.doubly_indirect_block] : m_inode_metadata->doubly_indirect_ptr;
+					m_double_block = FileSystemCache::acquire(m_device, block);
+				}
+			}
+
+			if (single_block_invalidated)
+			{
+				if (m_single_block)
+					FileSystemCache::release(m_single_block);
+				m_single_block = nullptr;
+
+				if (allocate)
+				{
+					if (m_double_block)
+						((uint32_t *)m_double_block->data())[new_pointer.singly_indirect_block] = new_blocks[0];
+					else
+						m_inode_metadata->singly_indirect_ptr = new_blocks[0];
+				}
+
+				if (m_double_block || new_pointer.singly_indirect_block)
+				{
+					uint32_t block = m_double_block ? ((uint32_t *)m_double_block->data())[new_pointer.singly_indirect_block] : m_inode_metadata->singly_indirect_ptr;
+					m_single_block = FileSystemCache::acquire(m_device, block);
+				}
+			}
 		}
 
-		Ext2::block_pointer_t m_current_pointer;
-		Ext2::inode_t &m_inode_metadata;
-		uint32_t m_block_size;
-		Ext2FileSystem *m_filesystem;
-		BlockDevice *m_device;
+		uint32_t m_current_block_index{0};
+		Ext2::block_pointer_t m_current_pointer{0, 0, 0, 0};
+		Ext2::inode_t *m_inode_metadata{nullptr};
+		uint32_t m_inodes_per_block{0};
+		Ext2FileSystem *m_filesystem{nullptr};
+		BlockDevice *m_device{nullptr};
 
 		fs_block_t *m_triple_block{nullptr};
 		fs_block_t *m_double_block{nullptr};
@@ -276,7 +214,7 @@ namespace Kernel
 		if (offset + bytes > m_size)
 			bytes = m_size - offset;
 
-		auto block_iterator = Ext2BlockIterator(offset, m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
+		auto block_iterator = Ext2BlockIterator(offset, &m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
 
 		size_t offset_in_block = offset % m_filesystem->m_block_size;
 
@@ -326,8 +264,15 @@ namespace Kernel
 				if (blocks.empty())
 					return 0;
 
-				// TODO: size() == 0 case
-				auto block_iterator = Ext2BlockIterator(size() - 1, m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
+				auto block_iterator = Ext2BlockIterator(size() == 0 ? 0 : size() - 1, &m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
+
+				if (size() == 0)
+				{
+					// append_blocks() assumes the file already has blocks, so we set the first block manually
+					block_iterator.set(blocks[0]);
+					blocks.erase(blocks.begin());
+				}
+
 				block_iterator.append_blocks(blocks);
 			}
 
@@ -339,7 +284,7 @@ namespace Kernel
 			m_lock.unlock();
 		}
 
-		auto block_iterator = Ext2BlockIterator(offset, m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
+		auto block_iterator = Ext2BlockIterator(offset, &m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
 
 		size_t offset_in_block = offset % m_filesystem->m_block_size;
 
@@ -353,6 +298,7 @@ namespace Kernel
 
 			fs_block_t *fs_block = FileSystemCache::acquire(m_filesystem->m_device, block);
 			memcpy(fs_block->data() + offset_in_block, buffer, to_write);
+			memset(fs_block->data() + offset_in_block + to_write, 0, m_filesystem->m_block_size - to_write);
 			FileSystemCache::release(fs_block);
 
 			bytes -= to_write;
@@ -552,7 +498,7 @@ namespace Kernel
 
 		size_t offset = 0;
 		size_t offset_in_block = 0;
-		auto block_iterator = Ext2BlockIterator(0, const_cast<Ext2::inode_t &>(inode), m_block_size, this, m_device);
+		auto block_iterator = Ext2BlockIterator(0, const_cast<Ext2::inode_t *>(&inode), m_block_size, this, m_device);
 		fs_block_t *current_block = FileSystemCache::acquire(m_device, block_iterator.get());
 		auto *directory_entry = reinterpret_cast<directory_entry_t *>(current_block->data());
 

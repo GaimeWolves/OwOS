@@ -108,6 +108,13 @@ char *getcwd(char *buf, size_t size)
 	return ret == -1UL ? NULL : (char *)ret;
 }
 
+pid_t getpid(void)
+{
+	TRACE("getpid()\r\n");
+	puts("getpid() not implemented");
+	return 3;
+}
+
 char *getwd(char buf[PATH_MAX])
 {
 	TRACE("getwd(%.*s)\r\n", PATH_MAX, buf);

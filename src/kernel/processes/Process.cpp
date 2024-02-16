@@ -7,15 +7,29 @@
 #include <arch/Processor.hpp>
 #include <elf/elf.hpp>
 #include <logging/logger.hpp>
+#include <tty/VirtualConsole.hpp>
+
+#include "../../userland/libc/signal.h"
 
 namespace Kernel
 {
-	static LibK::atomic_uint32_t s_pid_counter{0};
+	static LibK::atomic<pid_t> s_pid_counter{0};
 
 	Process::Process()
 	{
 		m_pid = ++s_pid_counter;
 		m_memory_space = Memory::VirtualMemoryManager::create_memory_space();
+
+		for (size_t i = 0; i < m_signal_handlers.size(); i++)
+			m_signal_handlers[i] = SIG_DFL;
+
+		uintptr_t signal_trampoline_address;
+		uintptr_t signal_trampoline_size;
+
+		CPU::Processor::get_signal_trampoline(&signal_trampoline_address, &signal_trampoline_size);
+		auto config = Memory::mapping_config_t { .userspace = true };
+		m_signal_trampoline = Memory::VirtualMemoryManager::instance().allocate_region_at(0x1000, signal_trampoline_size, config);
+		memcpy(m_signal_trampoline.virt_region().pointer(), (void *)signal_trampoline_address, signal_trampoline_size);
 	}
 
 	void Process::start_thread(size_t index)
@@ -70,6 +84,14 @@ namespace Kernel
 		//       as threads may still be running on different cores.
 		Memory::VirtualMemoryManager::free_current_userspace();
 
+		uintptr_t signal_trampoline_address;
+		uintptr_t signal_trampoline_size;
+
+		CPU::Processor::get_signal_trampoline(&signal_trampoline_address, &signal_trampoline_size);
+		auto config = Memory::mapping_config_t { .userspace = true };
+		m_signal_trampoline = Memory::VirtualMemoryManager::instance().allocate_region_at(0x1000, signal_trampoline_size, config);
+		memcpy(m_signal_trampoline.virt_region().pointer(), (void *)signal_trampoline_address, signal_trampoline_size);
+
 		assert(ELF::load(this, file, argv, envp, true));
 
 		CPU::interrupt_frame_t *frame = CPU::Processor::current().get_interrupt_frame_stack().top();
@@ -79,7 +101,7 @@ namespace Kernel
 		};
 	}
 
-	void Process::exit(int8_t exit_code)
+	void Process::exit(int8_t exit_code, int8_t exit_signal)
 	{
 		if (m_pid == 1)
 		{
@@ -92,7 +114,11 @@ namespace Kernel
 				CPU::Processor::sleep();
 		}
 
-		m_exit_code = exit_code;
+		m_exit_code = exit_signal ? exit_signal : exit_code;
+		m_exit_signal = exit_signal;
+
+		// TODO: this is a hack
+		VirtualConsole::get_current().set_controlling_process(m_parent);
 
 		// TODO: Only close all files after all threads are stopped
 		for (auto &file : m_opened_files)
@@ -173,15 +199,74 @@ namespace Kernel
 		{
 			*stat_loc = 0;
 			*stat_loc |= zombie->get_exit_code();
+			*stat_loc |= ((int16_t)zombie->get_exit_signal()) << 8;
 		}
 
 		return zombie->get_pid();
+	}
+
+	LibK::ErrorOr<uintptr_t> Process::set_signal_handler(int8_t signal, uintptr_t function)
+	{
+		if (signal < 0 || signal >= (int8_t)m_signal_handlers.size())
+			return EINVAL;
+
+		uintptr_t old_func = m_signal_handlers[signal];
+		m_signal_handlers[signal] = function;
+
+		return old_func;
+	}
+
+	LibK::ErrorOr<void> Process::send_signal(int8_t signal)
+	{
+		if (signal < 0 || signal >= (int8_t)m_signal_handlers.size())
+			return EINVAL;
+
+		if (m_signal_handlers[signal] == SIG_IGN)
+			return ESUCCESS;
+
+		if (m_signal_handlers[signal] == SIG_DFL)
+		{
+			// TODO: default action is always termination
+			exit(signal, signal);
+			return ESUCCESS;
+		}
+
+		// TODO: no handling of signal masks, etc. (i don't know how the signal API works)
+		m_pending_signals.push_back(signal);
+
+		return ESUCCESS;
+	}
+
+	void Process::prepare_next_signal(thread_t *thread)
+	{
+		uintptr_t signal_handler = 0;
+		int8_t signal;
+		while (!m_pending_signals.empty())
+		{
+			signal = m_pending_signals.pop_front();
+			uintptr_t handler = m_signal_handlers[signal];
+
+			if (handler != SIG_DFL && handler != SIG_IGN)
+			{
+				signal_handler = handler;
+				break;
+			}
+		}
+
+		if (!signal_handler)
+			return;
+
+		CPU::Processor::do_sigenter(thread, thread->registers, m_signal_trampoline.virt_address, signal_handler, signal, 0, 0);
 	}
 
 	void Process::adopt(Process *process)
 	{
 		process->m_parent = this;
 		m_children.push_back(process);
+
+		// TODO: this seems like a hack
+		if (process == VirtualConsole::get_current().get_controlling_process())
+			VirtualConsole::get_current().set_controlling_process(this);
 	}
 
 	Process::Process(Process *other)
@@ -207,6 +292,8 @@ namespace Kernel
 		m_cwd = LibK::string(other->m_cwd.c_str());
 		m_memory_space = Memory::VirtualMemoryManager::copy_current_memory_space();
 		m_parent = other;
+		m_signal_handlers = other->m_signal_handlers;
+		m_signal_trampoline = other->m_signal_trampoline;
 
 		thread_copy->parent_process = this;
 
@@ -227,6 +314,11 @@ namespace Kernel
 	{
 		auto *new_process = new Process(this);
 		GlobalScheduler::start_thread(new_process->m_threads[0]);
+
+		// TODO: this seems like a hack
+		if (this == VirtualConsole::get_current().get_controlling_process())
+			VirtualConsole::get_current().set_controlling_process(new_process);
+
 		return new_process;
 	}
 }

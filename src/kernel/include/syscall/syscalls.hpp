@@ -1,10 +1,12 @@
 #pragma once
 
+#include "../../userland/libc/signal.h"
 #include "../../userland/libc/sys/arch/i386/syscall.h"
 #include "../../userland/libc/termios.h"
 
 #include <sys/stat.h>
 
+#include <arch/process.hpp>
 #include <logging/logger.hpp>
 #include <libk/kcstdio.hpp>
 
@@ -25,4 +27,6 @@ namespace Kernel
 	uintptr_t syscall$getcwd(char *buf, size_t size);
 	uintptr_t syscall$chdir(char *path);
 	uintptr_t syscall$getdents(int fd, void *buffer, size_t count);
+	uintptr_t syscall$sigaction(int signal, const struct sigaction *act, struct sigaction *oact);
+	uintptr_t syscall$sigreturn(thread_registers_t *original_regs, CPU::interrupt_frame_t *frame);
 }

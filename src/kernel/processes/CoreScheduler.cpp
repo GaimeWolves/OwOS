@@ -34,25 +34,30 @@ namespace Kernel
 		core.m_current_thread = next_thread;
 		core.m_memory_space = next_thread->parent_process ? &next_thread->parent_process->get_memory_space() : Memory::VirtualMemoryManager::instance().get_kernel_memory_space();
 
+		if (current_thread && current_thread->has_started)
+			core.update_thread_context(*current_thread);
+
 		if (current_thread != next_thread || !next_thread->has_started)
 		{
-			if (current_thread && current_thread->has_started)
-				core.update_thread_context(*current_thread);
-
 			bool has_started = next_thread->has_started;
 			next_thread->has_started = true;
 			core.enter_critical();
-			core.get_exit_function_stack().top() = [next_thread, &core, has_started](){
-				if (has_started)
+			core.get_exit_function_stack().top() = [current_thread, next_thread, &core, has_started](){
+				if (!current_thread)
+					core.initial_enter_thread_context(*next_thread);
+				else if (has_started)
 					core.enter_thread_context(*next_thread);
 				else
-					core.initial_enter_thread_context(*next_thread);
+					core.enter_new_thread_context(*next_thread);
 			};
 			core.leave_critical();
 		}
 
 		if (core.get_irq_counter() <= 1)
 			core.process_deferred_queue();
+
+		if (next_thread->parent_process && next_thread->parent_process->has_pending_signal())
+			next_thread->parent_process->prepare_next_signal(next_thread);
 	}
 
 	thread_t *CoreScheduler::pick_next()
@@ -135,6 +140,13 @@ namespace Kernel
 	{
 		terminate(CPU::Processor::current().get_current_thread());
 		CPU::Processor::sleep();
+	}
+
+	__noreturn void CoreScheduler::yield()
+	{
+		// TODO: implement yielding correctly
+		for (;;)
+			CPU::Processor::sleep();
 	}
 
 	__noreturn void CoreScheduler::idle()

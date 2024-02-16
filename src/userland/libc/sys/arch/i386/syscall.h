@@ -19,7 +19,9 @@
 	S(waitpid)            \
 	S(chdir)              \
 	S(getcwd)             \
-	S(getdents)
+	S(getdents)           \
+	S(sigaction)           \
+	S(sigreturn)
 
 typedef enum Syscall
 {

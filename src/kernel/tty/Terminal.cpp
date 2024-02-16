@@ -288,8 +288,6 @@ namespace Kernel
 		if (!(event.modifiers & Pressed))
 			return result;
 
-		// TODO: handle special keycodes and combinations like Ctrl^C
-
 		switch (event.key)
 		{
 		case Key_Up:

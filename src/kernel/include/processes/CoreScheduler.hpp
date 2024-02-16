@@ -19,6 +19,8 @@ namespace Kernel
 		static void tick();
 
 		static constexpr uint64_t SMALLEST_INTERVAL = 10 * 1000 * 1000;
+
+		__noreturn static void yield();
 	private:
 		__noreturn static void idle();
 

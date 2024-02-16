@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define INPUT_BUFFER_LEN 1024
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -344,12 +345,34 @@ void execute_command()
 	}
 
 	int ret;
+	int stat;
 	do
 	{
-		ret = waitpid(pid, NULL, 0);
+		ret = waitpid(pid, &stat, 0);
 	} while (ret == -1 && errno == EINTR);
 
 	tcsetattr(STDIN_FILENO, TCSANOW, &new_tty_state);
+
+	if (WIFSIGNALED(stat))
+	{
+		int signal = WTERMSIG(stat);
+
+		switch (signal)
+		{
+		case SIGFPE:
+			printf("%s: Arithmetic error\n", file_path);
+			break;
+		case SIGSEGV:
+			printf("%s: Segmentation fault\n", file_path);
+			break;
+		case SIGILL:
+			printf("%s: Illegal instruction\n", file_path);
+			break;
+		default:
+			printf("%s: Terminated by signal %d\n", file_path, signal);
+			break;
+		}
+	}
 }
 
 int main(int argc __attribute__((unused)), char **argv __attribute__((unused)))

@@ -1,9 +1,12 @@
 #pragma once
 
 #include <devices/KeyboardDevice.hpp>
-#include <tty/Terminal.hpp>
-#include <tty/TTY.hpp>
 #include <tty/FramebufferConsole.hpp>
+#include <tty/TTY.hpp>
+#include <tty/Terminal.hpp>
+#include <processes/Process.hpp>
+
+#include "../../userland/libc/signal.h"
 
 namespace Kernel
 {
@@ -38,6 +41,9 @@ namespace Kernel
 
 		LibK::StringView name() override { return LibK::StringView("tty0"); };
 
+		[[nodiscard]] Process *get_controlling_process() const { return m_controlling_process; }
+		void set_controlling_process(Process *process) { m_controlling_process = process; }
+
 	private:
 		VirtualConsole(size_t major, size_t minor)
 		    : TTY(major, minor)
@@ -50,9 +56,22 @@ namespace Kernel
 
 		void handle_key_event(key_event_t event) override
 		{
+			// TODO: handle special keycodes and combinations like Ctrl^C
+
+			if (event.key == Key_C && (event.modifiers & (~CapsLock)) == (Pressed | Control))
+			{
+				if (!m_controlling_process)
+					return;
+
+				m_controlling_process->send_signal(SIGINT);
+				return;
+			}
+
 			LibK::string result = parse_key_event(event);
 			for (auto ch : result)
 				emit(ch);
 		}
+
+		Process *m_controlling_process{nullptr};
 	};
 }

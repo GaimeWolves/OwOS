@@ -11,9 +11,8 @@ namespace Kernel
 		auto process = CPU::Processor::current().get_current_thread()->parent_process;
 		assert(process);
 
-		process->exit(exit_code & 0xFF);
+		process->exit((int8_t)(exit_code & 0xFF), 0);
 
-		for (;;)
-			CPU::Processor::sleep();
+		CoreScheduler::yield();
 	}
 }

@@ -33,7 +33,8 @@ set(LIBK_INCLUDES
     include/libk/printf.hpp
     include/libk/StringView.hpp
     include/libk/ErrorOr.hpp
-    include/libk/kcstdlib.hpp)
+    include/libk/kcstdlib.hpp
+    include/libk/karray.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
@@ -172,6 +173,8 @@ set(KERNEL_SOURCES
     syscall/munmap.cpp
     syscall/open.cpp
     syscall/read.cpp
+    syscall/sigaction.cpp
+    syscall/sigreturn.cpp
     syscall/stat.cpp
     syscall/SyscallDispatcher.cpp
     syscall/write.cpp

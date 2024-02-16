@@ -3,7 +3,17 @@
 #include <bits/guards.h>
 #include <sys/types.h>
 
-#define WEXITSTATUS(wstatus) (wstatus & 0xFF)
+#define WEXITSTATUS(status) ((status) & 0xFF)
+#define WTERMSIG(status)    (((status) >> 8) & 0xFF)
+#define WSTOPSIG(status)    WTERMSIG(status)
+#define WIFCONTINUED        (!WEXITSTATUS(status) && !WSTOPSIG(status))
+#define WIFSTOPPED(status)  (!WEXITSTATUS(status) && WSTOPSIG(status))
+#define WIFEXITED(status)   (WEXITSTATUS(status) && !WSTOPSIG(status))
+#define WIFSIGNALED(status) (WEXITSTATUS(status) && WSTOPSIG(status))
+
+#define WEXITED    0x01
+#define WSTOPPED   0x02
+#define WCONTINUED 0x04
 
 __LIBC_HEADER_BEGIN
 

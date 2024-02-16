@@ -283,7 +283,6 @@ static void update_screen(size_t start_position, line_t *first_line)
 			print_count = viewport_width;
 
 		mvaddnstr(row, 0, line->buffer + start_position, print_count);
-		refresh(); // TODO: Remove this line when Terminal implements scroll regions
 
 		line = line->next;
 
@@ -298,8 +297,8 @@ static void update_screen(size_t start_position, line_t *first_line)
 
 static void update_cursor()
 {
-	update_screen(starting_column, starting_line);
 	move(cursor.line - starting_line_index, cursor.column - starting_column);
+	update_screen(starting_column, starting_line);
 }
 
 static void scroll_up()

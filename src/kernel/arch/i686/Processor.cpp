@@ -8,6 +8,8 @@
 #include <logging/logger.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 
+#include "../../userland/libc/sys/arch/i386/syscall.h"
+
 #define APIC_IPI_INTERRUPT (CPU::MAX_INTERRUPTS - 3)
 
 extern "C"
@@ -184,8 +186,8 @@ namespace Kernel::CPU
 
 	thread_registers_t Processor::create_initial_state(uintptr_t stack_ptr, uintptr_t main_ptr, bool is_userspace_thread, Memory::Arch::paging_space_t paging_space)
 	{
-		uint32_t cs = is_userspace_thread ? 0x18 : 0x08;
-		uint32_t ds = is_userspace_thread ? 0x20 : 0x10;
+		uint32_t cs = is_userspace_thread ? 0x18 | 0x03 : 0x08;
+		uint32_t ds = is_userspace_thread ? 0x20 | 0x03 : 0x10;
 
 		return {
 		    .cs = cs,
@@ -363,6 +365,62 @@ namespace Kernel::CPU
 		return esp;
 	}
 
+	extern "C" void signal_trampoline();
+	extern "C" uintptr_t signal_trampoline_end;
+	static void signal_trampoline_wrapper() __used;
+	__naked __noreturn void signal_trampoline_wrapper()
+	{
+		asm(".globl signal_trampoline\n"
+		    "signal_trampoline:\n"   // currently on stack: interrupt_frame_t, old registers_t, pointer to old interrupt_frame_t, pointer to old registers_t, context *, siginfo_t *, signal, handler
+		    "    pop %%ecx\n"        // handler in ecx
+		    "    call *%%ecx\n"       // handler(signal, siginfo_t *, context *)
+		    "    add $0xC, %%esp\n"  // skip to registers_t pointer
+		    "    pop %%ecx\n"        // ecx = interrupt_frame_t pointer
+		    "    pop %%ebx\n"        // ebx = registers_t pointer
+		    "    mov %[sc], %%eax\n" // eax == __SC_sigreturn
+		    "    int $0x80\n"        // syscall(__SC_sigreturn, registers_t *)
+		    ".globl signal_trampoline_end\n"
+		    "signal_trampoline_end:"
+		    :
+		    : [sc] "i" (__SC_sigreturn)
+		    : "memory");
+	}
+
+	void Processor::get_signal_trampoline(uintptr_t *address, size_t *size)
+	{
+		auto begin = reinterpret_cast<uintptr_t>(signal_trampoline);
+		auto end = reinterpret_cast<uintptr_t>(&signal_trampoline_end);
+
+		*address = begin;
+		*size = end - begin;
+	}
+
+	void Processor::do_sigenter(thread_t *thread, thread_registers_t regs, uintptr_t trampoline, uintptr_t handler, int signal, uintptr_t siginfo, uintptr_t context)
+	{
+		uintptr_t frame_addr = thread_push_userspace_data(thread, *regs.frame);
+		uintptr_t regs_addr = thread_push_userspace_data(thread, regs);
+		thread_push_userspace_data(thread, regs_addr);
+		thread_push_userspace_data(thread, frame_addr);
+		thread_push_userspace_data(thread, context);
+		thread_push_userspace_data(thread, siginfo);
+		thread_push_userspace_data(thread, signal);
+		thread_push_userspace_data(thread, handler);
+
+		current().enter_critical();
+		current().get_interrupt_frame_stack().top()->eip = trampoline;
+		current().leave_critical();
+	}
+
+	uintptr_t Processor::do_sigreturn(thread_t *thread, thread_registers_t *original_regs, interrupt_frame_t *frame)
+	{
+		thread->registers = *original_regs;
+		current().enter_critical();
+		*current().get_interrupt_frame_stack().top() = *frame;
+		thread->registers.frame = current().get_interrupt_frame_stack().top();
+		current().leave_critical();
+		return original_regs->eax;
+	}
+
 	__noreturn void Processor::enter_thread_context(thread_t &thread)
 	{
 		if (thread.registers.cs != 0x08)
@@ -399,6 +457,61 @@ namespace Kernel::CPU
 
 		for(;;)
 			;
+	}
+
+	void Processor::enter_new_thread_context(thread_t &thread)
+	{
+		if (thread.registers.cs != 0x08)
+			update_tss(thread.kernel_stack);
+
+		auto *stack = (uint32_t *)thread.kernel_stack;
+
+		if (thread.registers.cs != 0x08)
+		{
+			*stack-- = thread.registers.ss;
+			*stack-- = thread.registers.esp;
+		}
+		*stack-- = thread.registers.eflags;
+		*stack-- = thread.registers.cs;
+		*stack-- = thread.registers.eip;
+		*stack-- = 0;
+		*stack-- = 0;
+		*stack-- = thread.registers.eax;
+		*stack-- = thread.registers.ecx;
+		*stack-- = thread.registers.edx;
+		*stack-- = thread.registers.ebx;
+		*stack-- = thread.registers.esp;
+		*stack-- = thread.registers.ebp;
+		*stack-- = thread.registers.esi;
+		*stack-- = thread.registers.edi;
+		*stack-- = thread.registers.ds;
+		*stack-- = thread.registers.es;
+		*stack-- = thread.registers.fs;
+		*stack-- = thread.registers.gs;
+		*stack = 0x10;
+
+		m_page_fault_tss.cr3 = thread.registers.cr3;
+		uintptr_t old_cr3 = get_page_directory();
+
+		asm volatile(
+		    "cmpl %[old_cr3], %[new_cr3]\n"
+		    "jz 1f\n"
+		    "movl %[new_cr3], %%cr3\n"
+		    "1:\n"
+		    "movl %[esp], %%esp\n"
+		    "popl %%ss\n"
+		    "popl %%gs\n"
+		    "popl %%fs\n"
+		    "popl %%es\n"
+		    "popl %%ds\n"
+		    "popa\n"
+		    "addl $0x8, %%esp\n"
+		    "iret\n"
+		    :
+		    : [esp] "d"((uintptr_t)stack),
+		      [new_cr3] "a"(thread.registers.cr3),
+		      [old_cr3] "b"(old_cr3)
+		    : "memory");
 	}
 
 	__noreturn void Processor::initial_enter_thread_context(thread_t thread)

@@ -30,6 +30,8 @@ __LIBC_HEADER_BEGIN
 
     char *getcwd(char *buf, size_t size);
 
+    pid_t getpid(void);
+
     int unlink(const char *path);
 
     __attribute__((deprecated)) char *getwd(char buf[PATH_MAX]);

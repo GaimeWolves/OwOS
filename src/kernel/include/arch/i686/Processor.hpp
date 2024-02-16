@@ -20,6 +20,7 @@
 
 namespace Kernel::CPU
 {
+	class ExceptionHandler;
 	class PageFaultHandler;
 
 	class Processor
@@ -28,6 +29,7 @@ namespace Kernel::CPU
 		friend SyscallDispatcher;
 		friend CoreScheduler;
 		friend GlobalScheduler;
+		friend ExceptionHandler;
 		friend PageFaultHandler;
 	public:
 		[[nodiscard]] static Processor &current();
@@ -125,8 +127,10 @@ namespace Kernel::CPU
 
 		void enter_thread_context(thread_t &thread);
 		void initial_enter_thread_context(thread_t thread);
-		void update_thread_context(thread_t &thread);
+		void enter_new_thread_context(thread_t &thread);
 		void enter_thread_after_exec(thread_t *thread, thread_registers_t registers);
+		void update_thread_context(thread_t &thread);
+
 		[[nodiscard]] bool is_scheduler_running() const { return m_scheduler_initialized; }
 		[[nodiscard]] bool is_thread_running() const { return m_current_thread; }
 		[[nodiscard]] thread_t *get_current_thread() const { return m_current_thread; }
@@ -142,6 +146,10 @@ namespace Kernel::CPU
 		[[nodiscard]] uint32_t id() const { return m_id; }
 		[[nodiscard]] static Processor &by_id(uint32_t id);
 		static void enumerate(const LibK::function<bool(Processor &)> &callback);
+
+		static void get_signal_trampoline(uintptr_t *address, size_t *size);
+		static void do_sigenter(thread_t *thread, thread_registers_t regs, uintptr_t trampoline, uintptr_t handler, int signal, uintptr_t siginfo, uintptr_t context);
+		static uintptr_t do_sigreturn(thread_t *thread, thread_registers_t *original_regs, interrupt_frame_t *frame);
 
 		[[nodiscard]] always_inline static uintptr_t cr2()
 		{

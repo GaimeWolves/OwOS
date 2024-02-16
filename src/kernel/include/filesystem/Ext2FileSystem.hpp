@@ -19,6 +19,8 @@ namespace Kernel
 			uint32_t singly_indirect_block;
 			uint32_t doubly_indirect_block;
 			uint32_t triply_indirect_block;
+
+			static __block_pointer_t from_linear_index(uint32_t index, uint32_t inodes_per_block);
 		} block_pointer_t;
 
 		enum class InodeType : uint16_t

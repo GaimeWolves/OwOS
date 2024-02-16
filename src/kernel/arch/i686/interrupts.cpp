@@ -5,53 +5,110 @@
 
 #include <arch/Processor.hpp>
 #include <arch/i686/interrupts.hpp>
+#include <arch/stack_tracing.hpp>
 #include <common_attributes.h>
 #include <interrupts/SharedIRQHandler.hpp>
 #include <interrupts/UnhandledInterruptHandler.hpp>
 #include <syscall/SyscallDispatcher.hpp>
-#include <arch/stack_tracing.hpp>
 
 #include <libk/kcstdio.hpp>
 #include <libk/kstring.hpp>
 
+#include "../../userland/libc/signal.h"
+
 #define INIT_INTERRUPT(i)                                                             \
+	do                                                                                \
 	{                                                                                 \
 		m_idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::INTERRUPT_GATE); \
 		m_handlers[(i)] = nullptr;                                                    \
-	}
+	} while (0)
 
 #define INIT_TRAP(i)                                                             \
+	do                                                                           \
 	{                                                                            \
 		m_idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TRAP_GATE); \
 		m_handlers[(i)] = nullptr;                                               \
-	}
+	} while (0)
 
 #define INIT_TASK(i)                                                             \
+	do                                                                           \
 	{                                                                            \
 		m_idt[(i)] = create_idt_entry(isr_##i##_entry, IDTEntryType::TASK_GATE); \
 		m_handlers[(i)] = nullptr;                                               \
-	}
+	} while (0)
+
+extern "C"
+{
+	extern uintptr_t _virtual_addr;
+}
 
 namespace Kernel::CPU
 {
+	bool in_kernel_space(uintptr_t virt_address)
+	{
+		return virt_address >= reinterpret_cast<uintptr_t>(&_virtual_addr);
+	}
 
-	class PageFaultHandler final : public Interrupts::InterruptHandler
+	// TODO: move this out of architecture-specific code
+
+	class ExceptionHandler : public Interrupts::InterruptHandler
 	{
 	public:
-		explicit PageFaultHandler(uint32_t interrupt_number)
+		explicit ExceptionHandler(uint32_t interrupt_number, int8_t signal_number)
 		    : InterruptHandler(interrupt_number)
-		{
-		}
-
-		~PageFaultHandler() override = default;
+		    , m_interrupt_number(interrupt_number)
+			, m_signal_number(signal_number)
+		{}
 
 		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
+			auto &core = Processor::current();
+			if (!core.get_current_thread() || in_kernel_space(reg.eip))
+				handle_kernel_exception(reg);
+			else
+				handle_userspace_exception(reg);
+		}
+
+		virtual void handle_kernel_exception(const CPU::interrupt_frame_t &reg __unused)
+		{
 			halt_aps();
 
+			critical_empty_logger();
+			critical_printf("CRITICAL ERROR: received exception 0x%.2x in kernel space\n", m_interrupt_number);
+
+			print_stacktrace(Processor::current().m_tss.ebp);
+
+			Processor::halt();
+		}
+
+		virtual void handle_userspace_exception(const CPU::interrupt_frame_t &reg __unused)
+		{
+			Processor::current().get_current_thread()->parent_process->exit(0, m_signal_number);
+			CoreScheduler::yield();
+		}
+
+		void eoi() override {}
+
+		[[nodiscard]] Interrupts::InterruptType type() const override { return Interrupts::InterruptType::GenericInterrupt; }
+
+	private:
+		uint32_t m_interrupt_number{0};
+		int8_t m_signal_number{0};
+	};
+
+	class PageFaultHandler final : public ExceptionHandler
+	{
+	public:
+		explicit PageFaultHandler()
+		    : ExceptionHandler(0x0E, SIGSEGV)
+		{}
+
+		void handle_kernel_exception(const CPU::interrupt_frame_t &reg) override
+		{
 			uintptr_t address = Processor::cr2();
 
-			// TODO: Actually handle page faults
+			halt_aps();
+
 			critical_empty_logger();
 			critical_printf("CRITICAL ERROR: Got page fault at address %p executing %p\n", address, Processor::current().m_tss.eip);
 			critical_printf("CRITICAL ERROR: With error code %i\n", reg.error_code);
@@ -61,9 +118,14 @@ namespace Kernel::CPU
 			Processor::halt();
 		}
 
-		void eoi() override {}
+		void handle_userspace_exception(const CPU::interrupt_frame_t &reg __unused) override
+		{
+			Processor::current().get_current_thread()->parent_process->exit(0, SIGSEGV);
 
-		[[nodiscard]] Interrupts::InterruptType type() const override { return Interrupts::InterruptType::GenericInterrupt; }
+			// TODO: handle page faults correctly
+
+			CoreScheduler::yield();
+		}
 	};
 
 	class SyscallHandler final : public Interrupts::InterruptHandler
@@ -87,7 +149,11 @@ namespace Kernel::CPU
 		[[nodiscard]] Interrupts::InterruptType type() const override { return Interrupts::InterruptType::GenericInterrupt; }
 	};
 
-	static PageFaultHandler page_fault_handler = PageFaultHandler(0x0E);
+	// TODO: ugly way of doing this
+	static ExceptionHandler division_fault_handler = ExceptionHandler(0x00, SIGFPE);
+	static ExceptionHandler invalid_instruction_handler = ExceptionHandler(0x06, SIGILL);
+	static ExceptionHandler gpf_fault_handler = ExceptionHandler(0x0D, SIGILL);
+	static PageFaultHandler page_fault_handler = PageFaultHandler();
 	static SyscallHandler syscall_handler = SyscallHandler();
 
 	static idt_entry_t create_idt_entry(void (*entry)(), IDTEntryType type);
@@ -164,7 +230,7 @@ namespace Kernel::CPU
 			core.increment_irq_counter();
 
 		core.enter_critical();
-		core.get_exit_function_stack().push([](){});
+		core.get_exit_function_stack().push([]() {});
 		core.get_interrupt_frame_stack().push(regs);
 		core.leave_critical();
 		auto handler = core.get_interrupt_handler(regs->isr_number);
@@ -212,7 +278,7 @@ namespace Kernel::CPU
 		INIT_INTERRUPT(0x0B);
 		INIT_INTERRUPT(0x0C);
 		INIT_INTERRUPT(0x0D);
-		INIT_TASK(0x0E);
+		INIT_INTERRUPT(0x0E); // TODO: Hardware Task Switching messes with returning from the page fault handler // INIT_TASK(0x0E);
 		INIT_INTERRUPT(0x0F);
 		INIT_INTERRUPT(0x10);
 		INIT_INTERRUPT(0x11);
@@ -481,6 +547,9 @@ namespace Kernel::CPU
 
 	void Processor::init_fault_handlers()
 	{
+		division_fault_handler.register_handler();
+		invalid_instruction_handler.register_handler();
+		gpf_fault_handler.register_handler();
 		page_fault_handler.register_handler();
 		syscall_handler.register_handler();
 	}
@@ -553,4 +622,4 @@ namespace Kernel::CPU
 		return count;
 	}
 
-} // namespace Kernel::Processor
+} // namespace Kernel::CPU
