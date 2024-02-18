@@ -1,15 +1,33 @@
 #!/bin/sh
 
-wget https://ftp.gnu.org/gnu/ncurses/ncurses-6.4.tar.gz
+set -e
 
-tar -xzvf ncurses-6.4.tar.gz
+NCURSES_VERSION=6.4
+
+if ! [ -d "$ROOTDIR" ]; then
+  echo "Set ROOTDIR variable to the project root"
+  exit
+fi
+
+# TODO: handle trailing slashes correctly
+if [ "$PWD" != "$ROOTDIR/ports/ncurses" ]; then
+  echo "Run this script in the 'ROOTDIR/ports/ncurses' directory"
+  exit
+fi
+
+rm -rf "ncurses-$NCURSES_VERSION.tar.gz"
+rm -rf "ncurses-$NCURSES_VERSION"
+rm -rf build
+
+wget "https://ftp.gnu.org/gnu/ncurses/ncurses-$NCURSES_VERSION.tar.gz"
+
+tar -xzvf "ncurses-$NCURSES_VERSION.tar.gz"
 
 mkdir -p build
 
-export ROOTDIR="/home/nick/Programming/OwOS"
 export OWOS_SYSROOT="$ROOTDIR/bin/sysroot"
 
-export PATH=$PATH:$ROOTDIR/ports:$ROOTDIR/toolchain-hosted/bin
+export PATH="$PATH:$ROOTDIR/ports:$ROOTDIR/toolchain-hosted/bin"
 export PKG_CONFIG=i686-owos-pkg-config
 export PKG_CONFIG_FOR_BUILD=pkg-config
 
@@ -22,9 +40,21 @@ export OBJCOPY="i686-owos-objcopy"
 export STRIP="i686-owos-strip"
 export CXXFILT="i686-owos-c++filt"
 
-cd ./ncurses-6.4 && for file in ../patches/*.patch; do patch -p1 <"$file"; done && cd ..
-cd build
-../ncurses-6.4/configure --host=i686-owos --prefix="/usr" --without-cxx-binding --without-cxx --without-develop --with-shared --with-pkg-config --enable-assertions --with-debug --without-tests --without-ada --enable-term-driver --with-build-cc="/bin/gcc"
+cd "./ncurses-$NCURSES_VERSION" && for file in ../patches/*.patch; do patch -p1 <"$file"; done && cd ..
+cd build || exit
+"../ncurses-$NCURSES_VERSION/configure" \
+  --host=i686-owos --prefix="/usr" \
+  --without-cxx-binding \
+  --without-cxx \
+  --without-develop \
+  --with-shared \
+  --with-pkg-config \
+  --enable-assertions \
+  --with-debug \
+  --without-tests \
+  --without-ada \
+  --enable-term-driver \
+  --with-build-cc="/bin/gcc"
 make
-make DESTDIR=$OWOS_SYSROOT install
+make DESTDIR="$OWOS_SYSROOT" install
 

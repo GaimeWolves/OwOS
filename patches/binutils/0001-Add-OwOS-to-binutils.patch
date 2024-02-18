@@ -1,25 +1,25 @@
-From df303e1dba5c7884be61733b3f66a32c96ae5b51 Mon Sep 17 00:00:00 2001
+From 0023f9454e8c0ff7ebdb5e0d10d3149d0fd25544 Mon Sep 17 00:00:00 2001
 From: Nick Djerfi <gamewolvesofficial@gmail.com>
-Date: Tue, 11 Oct 2022 19:24:28 +0200
+Date: Sat, 17 Feb 2024 22:06:03 +0100
 Subject: [PATCH] Add OwOS to binutils
 
 ---
  bfd/config.bfd                   | 10 ++++++++++
  config.sub                       |  2 +-
  gas/configure.tgt                |  1 +
- ld/Makefile.am                   |  4 ++++
+ ld/Makefile.am                   |  2 ++
  ld/configure.tgt                 | 13 +++++++++++++
  ld/emulparams/elf_i386_owos.sh   |  3 +++
  ld/emulparams/elf_x86_64_owos.sh |  3 +++
- 7 files changed, 35 insertions(+), 1 deletion(-)
+ 7 files changed, 33 insertions(+), 1 deletion(-)
  create mode 100644 ld/emulparams/elf_i386_owos.sh
  create mode 100644 ld/emulparams/elf_x86_64_owos.sh
 
 diff --git a/bfd/config.bfd b/bfd/config.bfd
-index a4c6c8e8..13c6ed5a 100644
+index bbf12447..dff1f578 100644
 --- a/bfd/config.bfd
 +++ b/bfd/config.bfd
-@@ -626,6 +626,11 @@ case "${targ}" in
+@@ -636,6 +636,11 @@ case "${targ}" in
      targ_selvecs=iamcu_elf32_vec
      targ64_selvecs="x86_64_elf64_vec"
      ;;
@@ -31,7 +31,7 @@ index a4c6c8e8..13c6ed5a 100644
    i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu)
      targ_defvec=i386_elf32_fbsd_vec
      targ_selvecs="i386_elf32_vec iamcu_elf32_vec i386_pei_vec i386_coff_vec"
-@@ -685,6 +690,11 @@ case "${targ}" in
+@@ -695,6 +700,11 @@ case "${targ}" in
      targ_selvecs="i386_elf32_vec iamcu_elf32_vec"
      want64=true
      ;;
@@ -39,15 +39,15 @@ index a4c6c8e8..13c6ed5a 100644
 +    targ_defvec=x86_64_elf64_vec
 +    targ_selvecs=i386_elf32_vec
 +    want64=true
-+    ;; 
++    ;;
    x86_64-*-freebsd* | x86_64-*-kfreebsd*-gnu)
      targ_defvec=x86_64_elf64_fbsd_vec
      targ_selvecs="i386_elf32_fbsd_vec iamcu_elf32_vec i386_coff_vec i386_pei_vec x86_64_pe_vec x86_64_pei_vec i386_elf32_vec x86_64_elf64_vec"
 diff --git a/config.sub b/config.sub
-index dba16e84..a68ced5c 100755
+index defe52c0..398f2e7a 100755
 --- a/config.sub
 +++ b/config.sub
-@@ -1723,7 +1723,7 @@ case $os in
+@@ -1735,7 +1735,7 @@ case $os in
  	# Now accept the basic system types.
  	# The portable systems comes first.
  	# Each alternative MUST end in a * to match a version number.
@@ -57,22 +57,22 @@ index dba16e84..a68ced5c 100755
  	     | hpux* | unos* | osf* | luna* | dgux* | auroraux* | solaris* \
  	     | sym* |  plan9* | psp* | sim* | xray* | os68k* | v88r* \
 diff --git a/gas/configure.tgt b/gas/configure.tgt
-index 62f806bd..b8cc86c6 100644
+index 7c66734e..d374e47e 100644
 --- a/gas/configure.tgt
 +++ b/gas/configure.tgt
-@@ -239,6 +239,7 @@ case ${generic_target} in
+@@ -243,6 +243,7 @@ case ${generic_target} in
      esac ;;
    i386-*-lynxos*)			fmt=elf em=lynx ;;
    i386-*-redox*)			fmt=elf ;;
-+  i386-*-owos*)    fmt=elf em=gnu ;;
++  i386-*-owos*)				fmt=elf em=gnu ;;
    i386-*-solaris*)			fmt=elf em=solaris ;;
    i386-*-freebsd* \
    | i386-*-kfreebsd*-gnu)		fmt=elf em=freebsd ;;
 diff --git a/ld/Makefile.am b/ld/Makefile.am
-index d31021c1..5798bdea 100644
+index f9ee05b1..2f14a9bc 100644
 --- a/ld/Makefile.am
 +++ b/ld/Makefile.am
-@@ -275,6 +275,7 @@ ALL_EMULATION_SOURCES = \
+@@ -277,6 +277,7 @@ ALL_EMULATION_SOURCES = \
  	eelf32xtensa.c \
  	eelf32z80.c \
  	eelf_i386.c \
@@ -80,7 +80,7 @@ index d31021c1..5798bdea 100644
  	eelf_i386_be.c \
  	eelf_i386_fbsd.c \
  	eelf_i386_haiku.c \
-@@ -453,6 +454,7 @@ ALL_64_EMULATION_SOURCES = \
+@@ -461,6 +462,7 @@ ALL_64_EMULATION_SOURCES = \
  	eelf64tilegx_be.c \
  	eelf_mipsel_haiku.c \
  	eelf_x86_64.c \
@@ -88,27 +88,11 @@ index d31021c1..5798bdea 100644
  	eelf_x86_64_cloudabi.c \
  	eelf_x86_64_fbsd.c \
  	eelf_x86_64_haiku.c \
-@@ -769,6 +771,7 @@ $(ALL_EMULATION_SOURCES) $(ALL_64_EMULATION_SOURCES): $(GEN_DEPENDS)
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_be.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_fbsd.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_haiku.Pc@am__quote@
-+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_owos.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_ldso.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_sol2.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_vxworks.Pc@am__quote@
-@@ -944,6 +947,7 @@ $(ALL_EMULATION_SOURCES) $(ALL_64_EMULATION_SOURCES): $(GEN_DEPENDS)
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_cloudabi.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_fbsd.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_haiku.Pc@am__quote@
-+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_owos.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_sol2.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ehppa64linux.Pc@am__quote@
- @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei386pep.Pc@am__quote@
 diff --git a/ld/configure.tgt b/ld/configure.tgt
-index 2bae9099..466235ea 100644
+index f937f78b..55ac8d25 100644
 --- a/ld/configure.tgt
 +++ b/ld/configure.tgt
-@@ -403,6 +403,11 @@ i[3-7]86-*-elf* | i[3-7]86-*-rtems* | i[3-7]86-*-genode*)
+@@ -409,6 +409,11 @@ i[3-7]86-*-elf* | i[3-7]86-*-rtems* | i[3-7]86-*-genode*)
  i[3-7]86-*-dragonfly*)	targ_emul=elf_i386
  			targ_extra_emuls="elf_iamcu i386bsd"
  			;;
@@ -120,7 +104,7 @@ index 2bae9099..466235ea 100644
  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu)
  			targ_emul=elf_i386_fbsd
  			targ_extra_emuls="elf_i386 elf_iamcu i386bsd"
-@@ -1029,6 +1034,10 @@ x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-fuchsia* | x86_64-*-genode*)
+@@ -1045,6 +1050,10 @@ x86_64-*-elf* | x86_64-*-rtems* | x86_64-*-fuchsia* | x86_64-*-genode*)
  x86_64-*-dragonfly*)	targ_emul=elf_x86_64
  			targ_extra_emuls="elf_i386 elf_iamcu"
  			;;
@@ -131,37 +115,35 @@ index 2bae9099..466235ea 100644
  x86_64-*-freebsd* | x86_64-*-kfreebsd*-gnu)
  			targ_emul=elf_x86_64_fbsd
  			targ_extra_emuls="elf_i386_fbsd elf_x86_64 elf_i386 elf_iamcu"
-@@ -1091,6 +1100,10 @@ case "${target}" in
+@@ -1112,6 +1121,10 @@ case "${target}" in
    NATIVE_LIB_DIRS='/lib /usr/lib /usr/pkg/lib /usr/local/lib'
    ;;
  
 +*-*-owos*)
 +  NATIVE_LIB_DIRS='/lib /usr/lib /usr/local/lib'
-+  ;;  
++  ;;
 +
  *-*-freebsd*)
    NATIVE_LIB_DIRS='/lib /usr/lib /usr/local/lib'
    ;;
 diff --git a/ld/emulparams/elf_i386_owos.sh b/ld/emulparams/elf_i386_owos.sh
 new file mode 100644
-index 00000000..4fcb07ef
+index 00000000..93fa9918
 --- /dev/null
 +++ b/ld/emulparams/elf_i386_owos.sh
 @@ -0,0 +1,3 @@
 +source_sh ${srcdir}/emulparams/elf_i386.sh
 +GENERATE_SHLIB_SCRIPT=yes
 +GENERATE_PIE_SCRIPT=yes
-\ No newline at end of file
 diff --git a/ld/emulparams/elf_x86_64_owos.sh b/ld/emulparams/elf_x86_64_owos.sh
 new file mode 100644
-index 00000000..73ab39f1
+index 00000000..4ddde5ab
 --- /dev/null
 +++ b/ld/emulparams/elf_x86_64_owos.sh
 @@ -0,0 +1,3 @@
 +source_sh ${srcdir}/emulparams/elf_x86_64.sh
 +GENERATE_SHLIB_SCRIPT=yes
 +GENERATE_PIE_SCRIPT=yes
-\ No newline at end of file
 -- 
-2.38.0
+2.43.0
 

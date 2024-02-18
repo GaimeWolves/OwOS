@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 tmpA=$(mktemp)
 tmpB=$(mktemp)

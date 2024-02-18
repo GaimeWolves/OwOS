@@ -8,6 +8,8 @@
 #define EXT2_SIGNATURE 0xef53
 #define EXT2_SUPERBLOCK_OFFSET 1024
 
+#define EXT2_MAX_BYTES_FOR_SYMLINK_DIRECT 60
+
 // TODO: Rewrite this to only use the FS cache to access blocks
 namespace Kernel
 {
@@ -208,11 +210,20 @@ namespace Kernel
 		if (!m_inode_metadata_cached)
 			read_and_parse_metadata();
 
-		if (!is_type(FileType::RegularFile))
+		if (!is_type(FileType::RegularFile) && !is_type(FileType::SoftLink))
 			return 0;
 
 		if (offset + bytes > m_size)
 			bytes = m_size - offset;
+
+		if (is_type(FileType::SoftLink) && offset + bytes < EXT2_MAX_BYTES_FOR_SYMLINK_DIRECT)
+		{
+			// If a symlink is shorter than 60 bytes the data is stored in the inode metadata where the data block pointers would've been.
+			char *data = (char *)&m_inode_metadata.direct_ptr[0];
+			data += offset;
+			memcpy(buffer, data, bytes);
+			return bytes;
+		}
 
 		auto block_iterator = Ext2BlockIterator(offset, &m_inode_metadata, m_filesystem->m_block_size, m_filesystem, m_filesystem->m_device);
 

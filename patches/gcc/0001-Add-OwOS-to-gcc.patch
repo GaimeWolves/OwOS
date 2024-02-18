@@ -1,16 +1,19 @@
-From 9da7bdda4ef14e035bb5c0a1859852a96a9c315a Mon Sep 17 00:00:00 2001
+From 56a131b2d65636d619ae7c190c5359a17df8971c Mon Sep 17 00:00:00 2001
 From: Nick Djerfi <gamewolvesofficial@gmail.com>
-Date: Tue, 11 Oct 2022 19:35:39 +0200
+Date: Sat, 17 Feb 2024 21:47:21 +0100
 Subject: [PATCH] Add OwOS to gcc
 
 ---
- config.sub                  |    2 +-
- fixincludes/mkfixinc.sh     |    2 +
- gcc/config.gcc              |   11 +
- gcc/config/owos.h           |   30 +
- libgcc/config.host          |    8 +
- libstdc++-v3/crossconfig.m4 |    7 +
- 6 files changed, 59 insertions(+), 1 deletion(-)
+ config.sub                  |  2 +-
+ fixincludes/mkfixinc.sh     |  2 ++
+ gcc/config.gcc              | 11 +++++++++++
+ gcc/config/owos.h           | 34 ++++++++++++++++++++++++++++++++++
+ libgcc/config.host          |  8 ++++++++
+ libstdc++-v3/acinclude.m4   |  4 ++--
+ libstdc++-v3/configure      | 12 ++++++++++--
+ libstdc++-v3/configure.host |  3 +++
+ libstdc++-v3/crossconfig.m4 |  7 +++++++
+ 9 files changed, 78 insertions(+), 5 deletions(-)
  create mode 100644 gcc/config/owos.h
 
 diff --git a/config.sub b/config.sub
@@ -40,10 +43,10 @@ index df90720b7..ac81625d9 100755
      i?86-*-mingw32* | \
      x86_64-*-mingw32* | \
 diff --git a/gcc/config.gcc b/gcc/config.gcc
-index c5064dd37..4303da3da 100644
+index 648b3dc21..68ec4581c 100644
 --- a/gcc/config.gcc
 +++ b/gcc/config.gcc
-@@ -673,6 +673,11 @@ x86_cpus="generic intel"
+@@ -690,6 +690,11 @@ x86_cpus="generic intel"
  
  # Common parts for widely ported systems.
  case ${target} in
@@ -55,61 +58,64 @@ index c5064dd37..4303da3da 100644
  *-*-darwin*)
    tmake_file="t-darwin "
    tm_file="${tm_file} darwin.h"
-@@ -1919,6 +1924,12 @@ x86_64-*-dragonfly*)
- 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h dragonfly.h dragonfly-stdint.h i386/x86-64.h i386/dragonfly.h"
+@@ -1885,6 +1890,12 @@ x86_64-*-dragonfly*)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h dragonfly.h dragonfly-stdint.h i386/x86-64.h i386/dragonfly.h"
  	tmake_file="${tmake_file} i386/t-crtstuff"
  	;;
 +i[34567]86-*-owos*)
-+    tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h glibc-stdint.h i386/i386elf.h owos.h"
++    tm_file="${tm_file} i386/unix.h i386/att.h elfos.h glibc-stdint.h i386/i386elf.h owos.h"
 +    ;;
 +x86_64-*-owos*)
-+    tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h glibc-stdint.h i386/i386elf.h i386/x86-64.h owos.h"
++    tm_file="${tm_file} i386/unix.h i386/att.h elfos.h glibc-stdint.h i386/i386elf.h i386/x86-64.h owos.h"
 +    ;;	
  i[34567]86-*-freebsd*)
- 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h ${fbsd_tm_file} i386/freebsd.h"
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h ${fbsd_tm_file} i386/freebsd.h"
  	;;
 diff --git a/gcc/config/owos.h b/gcc/config/owos.h
 new file mode 100644
-index 000000000..044b659de
+index 000000000..4b9ccf78a
 --- /dev/null
 +++ b/gcc/config/owos.h
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,34 @@
 +#undef TARGET_OWOS
 +#define TARGET_OWOS 1
-+ 
++
 +#undef LIB_SPEC
 +#define LIB_SPEC "-lc"
-+ 
-+#undef STARTFILE_SPEC
-+#define STARTFILE_SPEC "crt0.o%s crti.o%s crtbegin.o%s"
 +
-+#undef STANDARD_STARTFILE_PREFIX
-+#define STANDARD_STARTFILE_PREFIX "/lib/"
++#undef STARTFILE_PREFIX_SPEC
++#define STARTFILE_PREFIX_SPEC              \
++	"/"                                    \
++	"/lib/ "                               \
++	"/usr/lib/ "
++
++#undef STARTFILE_SPEC
++#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti.o%s crtbegin.o%s"
 +
 +#undef LINK_SPEC
 +#define LINK_SPEC "-z max-page-size=4096 %{shared:-shared} %{static:-static} %{!static: %{rdynamic:-export-dynamic} -dynamic-linker /lib/ld-owos.so}"
-+ 
++
 +#undef ENDFILE_SPEC
 +#define ENDFILE_SPEC "crtend.o%s crtn.o%s"
 +
 +#define MATH_LIBRARY ""
-+ 
++
 +/* Additional predefined macros. */
 +#undef TARGET_OS_CPP_BUILTINS
-+#define TARGET_OS_CPP_BUILTINS()      \
-+  do {                                \
-+    builtin_define ("__owos__");      \
-+    builtin_define ("__unix__");      \
-+    builtin_assert ("system=owos");   \
-+    builtin_assert ("system=unix");   \
-+    builtin_assert ("system=posix");   \
-+  } while(0);
-\ No newline at end of file
++#define TARGET_OS_CPP_BUILTINS()        \
++	do                                  \
++	{                                   \
++		builtin_define("__owos__");     \
++		builtin_define("__unix__");     \
++		builtin_assert("system=owos");  \
++		builtin_assert("system=unix");  \
++		builtin_assert("system=posix"); \
++	} while (0);
 diff --git a/libgcc/config.host b/libgcc/config.host
-index 8c56fcae5..681bad754 100644
+index 9d7212028..9664e793e 100644
 --- a/libgcc/config.host
 +++ b/libgcc/config.host
-@@ -733,6 +733,14 @@ x86_64-*-dragonfly*)
+@@ -723,6 +723,14 @@ x86_64-*-dragonfly*)
  	tmake_file="${tmake_file} i386/t-dragonfly i386/t-crtstuff"
  	md_unwind_header=i386/dragonfly-unwind.h
  	;;
@@ -124,8 +130,88 @@ index 8c56fcae5..681bad754 100644
  i[34567]86-*-freebsd*)
  	tmake_file="${tmake_file} i386/t-freebsd i386/t-crtstuff"
  	md_unwind_header=i386/freebsd-unwind.h
+diff --git a/libstdc++-v3/acinclude.m4 b/libstdc++-v3/acinclude.m4
+index 49cb0623e..7df351ebf 100644
+--- a/libstdc++-v3/acinclude.m4
++++ b/libstdc++-v3/acinclude.m4
+@@ -1397,7 +1397,7 @@ AC_DEFUN([GLIBCXX_ENABLE_LIBSTDCXX_TIME], [
+         ac_has_nanosleep=yes
+         ac_has_sched_yield=yes
+         ;;
+-      freebsd*|netbsd*|dragonfly*|rtems*)
++      freebsd*|netbsd*|dragonfly*|rtems*|owos*)
+         ac_has_clock_monotonic=yes
+         ac_has_clock_realtime=yes
+         ac_has_nanosleep=yes
+@@ -2434,7 +2434,7 @@ AC_DEFUN([GLIBCXX_ENABLE_CLOCALE], [
+       dragonfly* | freebsd*)
+ 	enable_clocale_flag=dragonfly
+ 	;;
+-      openbsd*)
++      openbsd* | owos*)
+ 	enable_clocale_flag=newlib
+ 	;;
+       *)
+diff --git a/libstdc++-v3/configure b/libstdc++-v3/configure
+index 9b6027775..f6e66d36d 100755
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -11910,6 +11910,11 @@ else
+     lt_cv_dlopen_libs=
+     ;;
+ 
++  owos*)
++    lt_cv_dlopen="dlopen"
++    lt_cv_dlopen_libs=
++    ;;
++
+   darwin*)
+   # if libdl is installed we need to link against it
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
+@@ -16517,6 +16522,9 @@ fi
+       openbsd*)
+ 	enable_clocale_flag=newlib
+ 	;;
++      owos*)
++	enable_clocale_flag=newlib
++	;;
+       *)
+ 	if test x"$with_newlib" = x"yes"; then
+ 	  enable_clocale_flag=newlib
+@@ -20675,7 +20683,7 @@ fi
+         ac_has_nanosleep=yes
+         ac_has_sched_yield=yes
+         ;;
+-      freebsd*|netbsd*|dragonfly*|rtems*)
++      freebsd*|netbsd*|dragonfly*|rtems*|owos*)
+         ac_has_clock_monotonic=yes
+         ac_has_clock_realtime=yes
+         ac_has_nanosleep=yes
+@@ -29361,7 +29369,7 @@ case "${host}" in
+     # This is a freestanding configuration; there is nothing to do here.
+     ;;
+ 
+-  avr*-*-*)
++  avr*-*-* | *owos*)
+     $as_echo "#define HAVE_ACOSF 1" >>confdefs.h
+ 
+     $as_echo "#define HAVE_ASINF 1" >>confdefs.h
+diff --git a/libstdc++-v3/configure.host b/libstdc++-v3/configure.host
+index 9e7c7f02d..50fcabea5 100644
+--- a/libstdc++-v3/configure.host
++++ b/libstdc++-v3/configure.host
+@@ -297,6 +297,9 @@ case "${host_os}" in
+     # Use libatomic if necessary and avoid libstdc++ specific atomicity support
+     atomicity_dir="cpu/generic/atomicity_builtins"
+     ;;
++  owos*)
++    os_include_dir="os/newlib"
++    ;;
+   solaris2*)
+     os_include_dir="os/solaris"
+     ;;
 diff --git a/libstdc++-v3/crossconfig.m4 b/libstdc++-v3/crossconfig.m4
-index ae5283b7a..ed57ddacf 100644
+index b3269cb88..13ad3009f 100644
 --- a/libstdc++-v3/crossconfig.m4
 +++ b/libstdc++-v3/crossconfig.m4
 @@ -67,6 +67,13 @@ case "${host}" in
@@ -143,5 +229,5 @@ index ae5283b7a..ed57ddacf 100644
      # Darwin versions vary, but the linker should work in a cross environment,
      # so we just check for all the features here.
 -- 
-2.38.0
+2.43.0
 

@@ -78,7 +78,7 @@ void do_relocation(shared_object_t *shared_object, Elf32_Rel *relocation)
 		if (!symbol_ptr)
 			symbol_ptr = resolve_symbol(symbol_name, shared_object);
 
-		// DEBUG_PRINTF(2, "%s: %s (%p) -> %p\n", name, symbol_name, ptr, symbol_ptr);
+		DEBUG_PRINTF(2, "%s: %s (%p) -> %p\n", name, symbol_name, ptr, symbol_ptr);
 
 		if (!symbol_ptr && bind != STB_WEAK)
 		{

@@ -1,43 +1,41 @@
 ---
 BasedOnStyle: LLVM
-Language: Cpp
-AlignConsecutiveMacros: AcrossComments
-AlignEscapedNewlines: Left
-AlignTrailingComments: true
-BreakConstructorInitializers: BeforeComma
-PackConstructorInitializers: NextLine
-IndentPPDirectives: AfterHash
-IndentWidth: 4
-NamespaceIndentation: All
-PointerAlignment: Right
-TabWidth: 4
-UseTab: ForIndentation
 AccessModifierOffset: -4
-ColumnLimit: 0
-LambdaBodyIndentation: OuterScope
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossComments: true
+AlignEscapedNewlines: Left
 BinPackArguments: false
 BinPackParameters: false
-FixNamespaceComments: true
-
-BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel:  true
-  AfterClass:      true
+  AfterCaseLabel: true
+  AfterClass: true
   AfterControlStatement: Always
-  AfterEnum:       true
-  AfterFunction:   true
-  AfterNamespace:  true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
   AfterObjCDeclaration: true
-  AfterStruct:     true
-  AfterUnion:      true
+  AfterStruct: true
+  AfterUnion: true
   AfterExternBlock: true
-  BeforeCatch:     true
-  BeforeElse:      true
+  BeforeCatch: true
+  BeforeElse: true
   BeforeLambdaBody: false
-  BeforeWhile:     false
-  IndentBraces:    false
+  BeforeWhile: false
+  IndentBraces: false
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-
-...
+BreakBeforeBraces: Custom
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 0
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+InsertNewlineAtEOF: true
+InsertTrailingCommas: Wrapped
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: OuterScope
+NamespaceIndentation: All
+PackConstructorInitializers: NextLine
+TabWidth: 4
+UseTab: ForIndentation

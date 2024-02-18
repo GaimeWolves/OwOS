@@ -37,6 +37,18 @@
 		m_handlers[(i)] = nullptr;                                               \
 	} while (0)
 
+#define PRINT_REGISTER(tag, name, var) log(tag, #var ": 0x%.8x", name.var)
+#define PRINT_REGISTERS(tag, name)      \
+	PRINT_REGISTER(tag, name, eax);     \
+	PRINT_REGISTER(tag, name, ebx);     \
+	PRINT_REGISTER(tag, name, ecx);     \
+	PRINT_REGISTER(tag, name, edx);     \
+	PRINT_REGISTER(tag, name, esi);     \
+	PRINT_REGISTER(tag, name, edi);     \
+	PRINT_REGISTER(tag, name, ebp);     \
+	PRINT_REGISTER(tag, name, old_esp); \
+	PRINT_REGISTER(tag, name, eip)
+
 extern "C"
 {
 	extern uintptr_t _virtual_addr;
@@ -57,8 +69,9 @@ namespace Kernel::CPU
 		explicit ExceptionHandler(uint32_t interrupt_number, int8_t signal_number)
 		    : InterruptHandler(interrupt_number)
 		    , m_interrupt_number(interrupt_number)
-			, m_signal_number(signal_number)
-		{}
+		    , m_signal_number(signal_number)
+		{
+		}
 
 		void handle_interrupt(const CPU::interrupt_frame_t &reg) override
 		{
@@ -101,7 +114,8 @@ namespace Kernel::CPU
 	public:
 		explicit PageFaultHandler()
 		    : ExceptionHandler(0x0E, SIGSEGV)
-		{}
+		{
+		}
 
 		void handle_kernel_exception(const CPU::interrupt_frame_t &reg) override
 		{
@@ -120,9 +134,13 @@ namespace Kernel::CPU
 
 		void handle_userspace_exception(const CPU::interrupt_frame_t &reg __unused) override
 		{
-			Processor::current().get_current_thread()->parent_process->exit(0, SIGSEGV);
+			auto process = Processor::current().get_current_thread()->parent_process;
+			process->exit(0, SIGSEGV);
 
 			// TODO: handle page faults correctly
+
+			log("FAULT", "Segmentation fault for PID %d:", process->get_pid());
+			PRINT_REGISTERS("FAULT", reg);
 
 			CoreScheduler::yield();
 		}

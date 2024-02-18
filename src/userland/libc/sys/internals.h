@@ -4,7 +4,7 @@
 
 __LIBC_HEADER_BEGIN
 
-void __libc_init(int argc, char **argv, char **envp);
+void __libc_init(int argc, char **argv);
 void __stdio_init();
 void __malloc_init();
 

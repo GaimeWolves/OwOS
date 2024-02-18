@@ -144,15 +144,20 @@ namespace Kernel::ELF
 
 		assert(hasSignature(header)); // TODO: Error handling
 
+		uintptr_t entry = header->e_entry;
 		uintptr_t offset = 0;
 
-		if (header->e_type == ET_DYN || header->e_type == ET_REL)
+		bool is_dynamic = header->e_type == ET_DYN || header->e_type == ET_REL;
+
+		if (is_dynamic)
+		{
 			offset = 0x55555000; // TODO: ASLR
 
-		load_dynamic_loader_image();
-		assert(s_loader_image_address);
+			load_dynamic_loader_image();
+			assert(s_loader_image_address);
 
-		uintptr_t entry = 0x88888000 + s_loader_entry_offset; // Ehh
+			entry = 0x88888000 + s_loader_entry_offset; // Ehh
+		}
 
 		auto old_memory_space = CPU::Processor::current().get_memory_space();
 		auto &memory_space = parent_process->get_memory_space();
@@ -175,7 +180,10 @@ namespace Kernel::ELF
 			}
 		}
 
-		uintptr_t loader_base = map_dynamic_loader();
+		uintptr_t loader_base = 0;
+
+		if (is_dynamic)
+			loader_base = map_dynamic_loader();
 
 		thread_t *thread = parent_process->get_thread_by_index(0);
 		CPU::Processor::initialize_userspace_thread(thread, entry, parent_process->get_memory_space());
