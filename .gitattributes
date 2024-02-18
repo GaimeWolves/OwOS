@@ -1,3 +1,11 @@
 * text=auto
 
+*.c text
+*.cpp text
+*.h text
+*.hpp text
+**/CMakeLists.txt text
+*.S text
+*.sh text
+
 *.psf binary
