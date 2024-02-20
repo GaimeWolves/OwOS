@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-__LIBC_HEADER_BEGIN
+__LIBC_BEGIN_DECLS
 
 #ifdef __LIBC_DEBUG
 extern int __in_trace;
@@ -24,4 +24,4 @@ extern int __in_trace;
 #	define TRACE(fmt, ...) ((void)(0))
 #endif
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

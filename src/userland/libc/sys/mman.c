@@ -2,7 +2,7 @@
 
 #include <__debug.h>
 
-#include <sys/arch/i386/syscall.h>
+#include <sys/syscall.h>
 
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off)
 {

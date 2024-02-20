@@ -1,15 +1,12 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include <bits/guards.h>
 
-	int dlclose(void *);
-	char *dlerror(void);
-	void *dlopen(const char *, int);
-	void *dlsym(void *__restrict, const char *__restrict);
+__LIBC_BEGIN_DECLS
 
-#ifdef __cplusplus
-}
-#endif
+int   dlclose(void *handle);
+char *dlerror(void);
+void *dlopen(const char *file, int mode);
+void *dlsym(void *__restrict handle, const char *__restrict name);
+
+__LIBC_END_DECLS

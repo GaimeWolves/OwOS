@@ -1,6 +1,6 @@
 #include "elf/elf.hpp"
 
-#include <sys/arch/i386/auxv.h>
+#include <sys/auxv.h>
 
 #include "elf/definitions.hpp"
 #include "filesystem/File.hpp"

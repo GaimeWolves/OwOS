@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bits/guards.h>
 #include <errno.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -20,8 +21,10 @@
 	S(chdir)              \
 	S(getcwd)             \
 	S(getdents)           \
-	S(sigaction)           \
+	S(sigaction)          \
 	S(sigreturn)
+
+__LIBC_BEGIN_DECLS
 
 typedef enum Syscall
 {
@@ -30,11 +33,16 @@ typedef enum Syscall
 #undef __ENUM_FN
 } Syscall;
 
-#ifndef __OWOS_KERNEL
+#ifndef __LIBC_KEEP_DEFS
 #	undef __ENUM_SYSCALL
 #endif
 
-// https://github.com/managarm/mlibc/blob/master/sysdeps/linux/include/bits/syscall.h
+#define __SC_stat_TYPE_FSTAT   1
+#define __SC_stat_TYPE_LSTAT   2
+#define __SC_stat_TYPE_STAT    3
+#define __SC_stat_TYPE_FSTATAT 4
+
+// See: https://github.com/managarm/mlibc/blob/master/sysdeps/linux/include/bits/syscall.h
 typedef uintptr_t __sc_word_t;
 
 #define __scc(x)                                       ((__sc_word_t)(x))
@@ -62,7 +70,4 @@ uintptr_t __do_syscall4(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __s
 uintptr_t __do_syscall5(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4, __sc_word_t arg5);
 uintptr_t __do_syscall6(Syscall syscall, __sc_word_t arg1, __sc_word_t arg2, __sc_word_t arg3, __sc_word_t arg4, __sc_word_t arg5, __sc_word_t arg6);
 
-#define __SC_stat_TYPE_FSTAT   1
-#define __SC_stat_TYPE_LSTAT   2
-#define __SC_stat_TYPE_STAT    3
-#define __SC_stat_TYPE_FSTATAT 4
+__LIBC_END_DECLS

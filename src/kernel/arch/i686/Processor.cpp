@@ -8,7 +8,7 @@
 #include <logging/logger.hpp>
 #include <memory/VirtualMemoryManager.hpp>
 
-#include "../../userland/libc/sys/arch/i386/syscall.h"
+#include <sys/syscall.h>
 
 #define APIC_IPI_INTERRUPT (CPU::MAX_INTERRUPTS - 3)
 

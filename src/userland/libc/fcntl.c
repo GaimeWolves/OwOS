@@ -2,9 +2,8 @@
 
 #include <__debug.h>
 
-#include <sys/arch/i386/syscall.h>
-#include <sys/types.h>
 #include <stdarg.h>
+#include <sys/syscall.h>
 
 int open(const char *path, int oflag, ...)
 {

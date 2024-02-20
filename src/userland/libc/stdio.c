@@ -2,14 +2,14 @@
 
 #include <__debug.h>
 
-#include <sys/internals.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdarg.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/internals.h>
+#include <unistd.h>
 
 #include "__printf.h"
 
@@ -129,7 +129,7 @@ int fputc(int c, FILE *file)
 	// TRACE("fputc(%c, %p)\r\n", c, file);
 
 	unsigned char ch = c;
-	ssize_t ret = write(file->fd, &ch, 1);
+	ssize_t       ret = write(file->fd, &ch, 1);
 
 	if (ret < 0)
 		return EOF;
@@ -148,7 +148,7 @@ int fgetc(FILE *stream)
 {
 	TRACE("fgetc(%p)\r\n", stream);
 
-	int ch = 0;
+	int     ch = 0;
 	ssize_t ret = read(stream->fd, &ch, 1);
 
 	if (ret < 0)
@@ -218,13 +218,13 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restri
 {
 	TRACE("fwrite(%p, %lu, %lu, %p)\r\n", ptr, size, nitems, stream);
 
-	size_t num = 0;
+	size_t      num = 0;
 	const char *data = ptr;
-	while (nitems--) {
+	while (nitems--)
+	{
 		size_t count = size;
-		while (count--) {
+		while (count--)
 			fputc(*data++, stream);
-		}
 		num++;
 	}
 
@@ -328,7 +328,7 @@ int vfprintf(FILE *__restrict file, const char *__restrict fmt, va_list ap)
 {
 	TRACE("vfprintf(%p, %s, %p)\r\n", file, fmt, ap);
 
-	printf_conv_t conversion = { 0 };
+	printf_conv_t conversion = {0};
 
 	conversion.ap = ap;
 	conversion.file = file;
@@ -354,7 +354,7 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict format, va_list a
 {
 	TRACE("vsnprintf(%p, %lu, %s, %p)\r\n", s, n, format, ap);
 
-	printf_conv_t conversion = { 0 };
+	printf_conv_t conversion = {0};
 
 	conversion.ap = ap;
 	conversion.buffer = s;

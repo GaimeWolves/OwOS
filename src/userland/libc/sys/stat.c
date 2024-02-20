@@ -2,10 +2,9 @@
 
 #include <__debug.h>
 
-#include <sys/arch/i386/syscall.h>
-
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/syscall.h>
 
 int stat(const char *restrict path, struct stat *restrict buf)
 {

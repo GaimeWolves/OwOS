@@ -2,8 +2,8 @@
 
 #include <__debug.h>
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 char *setlocale(int category, const char *locale)
 {

@@ -5,6 +5,9 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(ARCH "i686")
 
+set(LIBC_SYSTEM owos)
+set(LIBC_ARCH i686)
+
 option(DEBUG_KERNEL "Enable kernel debug messages" ON)
 
 set(TOOLCHAIN_PATH ${CMAKE_SOURCE_DIR}/toolchain/bin/${ARCH}-elf-)

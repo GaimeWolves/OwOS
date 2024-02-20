@@ -4,7 +4,7 @@
 
 #include <sys/types.h>
 
-__LIBC_HEADER_BEGIN
+__LIBC_BEGIN_DECLS
 
 struct tm
 {
@@ -22,9 +22,9 @@ struct tm
 struct timespec
 {
 	time_t tv_sec;
-	long tv_nsec;
+	long   tv_nsec;
 };
 
 time_t time(time_t *tloc);
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

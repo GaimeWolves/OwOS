@@ -1,10 +1,9 @@
 #include <signal.h>
 
-#include "__debug.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include <__debug.h>
 
-#include <sys/arch/i386/syscall.h>
+#include <stdio.h>
+#include <sys/syscall.h>
 
 void (*signal(int sig, void (*func)(int)))(int)
 {

@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-__LIBC_HEADER_BEGIN
+__LIBC_BEGIN_DECLS
 
 struct printf_conv_t;
 
@@ -36,4 +36,4 @@ typedef struct printf_conv_t
 
 void __printf_impl(printf_conv_t *conversion);
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

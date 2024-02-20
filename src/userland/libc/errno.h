@@ -2,27 +2,27 @@
 
 #include <bits/guards.h>
 
-__LIBC_HEADER_BEGIN
+#define __ENUM_ERRNO_CODES(E)              \
+	E(ESUCCESS, "No error")                \
+	E(EACCES, "Permission denied")         \
+	E(EAGAIN, "")                          \
+	E(EBADF, "")                           \
+	E(ECHILD, "")                          \
+	E(EINTR, "")                           \
+	E(EINVAL, "Invalid argument")          \
+	E(EMFILE, "")                          \
+	E(ENODEV, "")                          \
+	E(ENOENT, "No such file or directory") \
+	E(ENOEXEC, "Exec format error")        \
+	E(ENOMEM, "")                          \
+	E(ENOTDIR, "Not a directory")          \
+	E(ENOTSUP, "")                         \
+	E(ENOTTY, "")                          \
+	E(ENXIO, "")                           \
+	E(EOVERFLOW, "")                       \
+	E(ERANGE, "Numerical result out of range")
 
-#define __ENUM_ERRNO_CODES(E)                  \
-	E(ESUCCESS, "No error")                    \
-	E(EACCES, "Permission denied")             \
-	E(EAGAIN, "")                              \
-	E(EBADF, "")                               \
-	E(EINVAL, "Invalid argument")              \
-	E(EMFILE, "")                              \
-	E(ENODEV, "")                              \
-	E(ENOMEM, "")                              \
-	E(ENOTSUP, "")                             \
-	E(ENXIO, "")                               \
-	E(EOVERFLOW, "")                           \
-	E(ENOTTY, "")                              \
-	E(ENOENT, "No such file or directory")     \
-	E(EINTR, "")                               \
-	E(ECHILD, "")                              \
-	E(ENOEXEC, "Exec format error")            \
-	E(ERANGE, "Numerical result out of range") \
-	E(ENOTDIR, "Not a directory")
+__LIBC_BEGIN_DECLS
 
 enum __ErrnoCode
 {
@@ -31,10 +31,12 @@ enum __ErrnoCode
 #undef __ENUM_FN
 };
 
-extern int errno;
-
 #ifndef __LIBC_KEEP_DEFS
 #	undef __ENUM_ERRNO_CODES
 #endif
 
-__LIBC_HEADER_END
+extern int errno;
+
+// TODO: define error codes as macros (an enum is not sufficient)
+
+__LIBC_END_DECLS

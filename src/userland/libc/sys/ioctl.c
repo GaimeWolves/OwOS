@@ -2,8 +2,8 @@
 
 #include <__debug.h>
 
-#include <sys/arch/i386/syscall.h>
 #include <stdarg.h>
+#include <sys/syscall.h>
 
 int ioctl(int fd, unsigned long request, ...)
 {

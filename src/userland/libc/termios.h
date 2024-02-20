@@ -2,28 +2,10 @@
 
 #include <bits/guards.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
-
-__LIBC_HEADER_BEGIN
-
-typedef uint8_t cc_t;
-typedef uint32_t speed_t;
-typedef uint32_t tcflag_t;
+#include <stdlib.h>
 
 #define NCCS 11
-
-struct termios
-{
-	tcflag_t c_iflag;
-	tcflag_t c_oflag;
-	tcflag_t c_cflag;
-	tcflag_t c_lflag;
-	cc_t c_cc[NCCS];
-
-	speed_t c_ispeed;
-	speed_t c_ospeed;
-};
 
 #define VEOF   0
 #define VEOL   1
@@ -119,17 +101,33 @@ struct termios
 #define NOFLSH 0x080
 #define TOSTOP 0x100
 
-#define TCSANOW 1
+#define TCSANOW   1
 #define TCSADRAIN 2
 #define TCSAFLUSH 3
 
 #define TCIFLUSH 0x01
 
-int tcgetattr(int filedes, struct termios *termios_p);
-int tcsetattr(int, int, const struct termios *);
+__LIBC_BEGIN_DECLS
 
-int tcflush(int fildes, int queue_selector);
+typedef uint8_t  cc_t;
+typedef uint32_t speed_t;
+typedef uint32_t tcflag_t;
+
+struct termios
+{
+	tcflag_t c_iflag;
+	tcflag_t c_oflag;
+	tcflag_t c_cflag;
+	tcflag_t c_lflag;
+	cc_t     c_cc[NCCS];
+
+	speed_t c_ispeed;
+	speed_t c_ospeed;
+};
 
 speed_t cfgetospeed(const struct termios *termios_p);
+int     tcflush(int fildes, int queue_selector);
+int     tcgetattr(int filedes, struct termios *termios_p);
+int     tcsetattr(int fildes, int optional_actions, const struct termios *termios_p);
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

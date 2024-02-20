@@ -1,36 +1,76 @@
+add_subdirectory(sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH})
+
+list(TRANSFORM LIBC_SYSDEPS_SOURCES PREPEND "sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH}/")
+list(TRANSFORM LIBC_SYSDEPS_HEADERS PREPEND "sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH}/")
+
 set(SOURCES
+    ${LIBC_SYSDEPS_SOURCES}
+    __debug.c
+    __heap.c
+    __heap.h
+    __malloc.c
+    __printf.c
+    __printf.h
+    assert.c
+    ctype.c
+    dirent.c
+    dlfcn.c
+    errno.c
+    fcntl.c
+    locale.c
+    math.c
+    signal.c
     stdio.c
     stdlib.c
-    unistd.c
     string.c
-    dlfcn.c
-    math.c sys/mman.c errno.c sys/arch/i386/syscall.c __printf.h __printf.c ctype.c assert.c sys/internals.c __malloc.c __heap.h __heap.c sys/stat.c fcntl.c termios.c sys/ioctl.c signal.c locale.c time.c dirent.c __debug.c sys/wait.c)
+    sys/internals.c
+    sys/ioctl.c
+    sys/mman.c
+    sys/stat.c
+    sys/wait.c
+    termios.c
+    time.c
+    unistd.c)
 
 set(HEADERS
-    sys/arch/i386/syscall.h
-    bits/FILE.h
-    sys/types.h
-    errno.h
-    stdlib.h
-    stdio.h
-    time.h
-    unistd.h
-    string.h
-    stdarg.h
-    stdint.h
-    dlfcn.h
-    math.h
+    __debug.h
     assert.h
+    bits/attributes.h
+    bits/FILE.h
+    bits/environ.h
+    bits/guards.h
     ctype.h
+    dirent.h
+    dlfcn.h
+    errno.h
+    fcntl.h
+    limits.h
     locale.h
+    math.h
     setjmp.h
     signal.h
+    stdarg.h
+    stdbool.h
+    stddef.h
+    stdint.h
+    stdio.h
+    stdlib.h
+    string.h
+    sys/auxv.h
+    sys/internals.h
+    sys/ioctl.h
     sys/mman.h
-    bits/guards.h sys/arch/i386/auxv.h stdbool.h limits.h sys/internals.h sys/stat.h fcntl.h termios.h sys/ioctl.h stddef.h dirent.h bits/environ.h __debug.h sys/wait.h)
+    sys/stat.h
+    sys/syscall.h
+    sys/types.h
+    sys/wait.h
+    termios.h
+    time.h
+    unistd.h)
 
-add_library(crt0 STATIC sys/arch/i386/crt0.S)
-add_library(crti STATIC sys/arch/i386/crti.S)
-add_library(crtn STATIC sys/arch/i386/crtn.S)
+add_library(crt0 STATIC sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH}/crt0.S)
+add_library(crti STATIC sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH}/crti.S)
+add_library(crtn STATIC sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH}/crtn.S)
 
 add_custom_command(
     TARGET crt0
@@ -50,24 +90,23 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:crtn> ${CMAKE_INSTALL_PREFIX}/lib/crtn.o
 )
 
-add_library(c SHARED ${SOURCES} ${HEADERS} sys/internals.c)
+add_library(c_objlib OBJECT ${SOURCES} ${HEADERS} ${LIBC_SYSDEPS_HEADERS})
+target_compile_options(c_objlib PRIVATE -ffreestanding -nostdlib -fpic -pie -Og -g -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
+target_include_directories(c_objlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH})
+target_compile_definitions(c_objlib PRIVATE __LIBC_ARCH=${LIBC_ARCH} __LIBC_SYSTEM=${LIBC_SYSTEM})
+# target_compile_definitions(c_objlib PRIVATE __LIBC_DEBUG)
 
-add_custom_command(
-    TARGET c
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_SONAME_FILE:c> ${CMAKE_INSTALL_PREFIX}/lib/libc.so
-)
-
-target_compile_options(c PRIVATE -ffreestanding -fpic -pie -Og -g -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
-target_link_options(c PRIVATE -ffreestanding -Og -g -nostdlib -pie -Wl,-E,-shared)
+add_library(c SHARED $<TARGET_OBJECTS:c_objlib>)
 target_link_libraries(c PRIVATE gcc)
-target_include_directories(c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_options(c PRIVATE -ffreestanding -nostdlib)
 
-# target_compile_definitions(c PRIVATE __LIBC_DEBUG)
-
-target_sources(c PUBLIC FILE_SET HEADERS
+target_sources(c PUBLIC FILE_SET base_headers TYPE HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
     FILES ${HEADERS})
+
+target_sources(c PUBLIC FILE_SET sysdeps_headers TYPE HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH}
+    FILES ${LIBC_SYSDEPS_HEADERS})
 
 set_target_properties(c PROPERTIES POSITION_INDEPENDENT_CODE 1)
 set_target_properties(c PROPERTIES VERSION 1)
@@ -75,31 +114,17 @@ set_target_properties(c PROPERTIES SOVERSION 1)
 
 add_dependencies(c crt0 crti crtn)
 
-install(TARGETS c FILE_SET HEADERS)
+install(TARGETS c FILE_SET base_headers FILE_SET sysdeps_headers RUNTIME LIBRARY)
 
-add_library(c_static STATIC ${SOURCES} ${HEADERS})
-
-add_custom_command(
-    TARGET c_static
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:c_static> ${CMAKE_INSTALL_PREFIX}/lib/libc.a
-)
-
+add_library(c_static STATIC $<TARGET_OBJECTS:c_objlib>)
 set_target_properties(c_static PROPERTIES OUTPUT_NAME c)
-
-target_compile_options(c_static PRIVATE -ffreestanding -fpic -pie -O0 -Wall -Wextra -Werror -fno-exceptions -fno-omit-frame-pointer)
-target_link_options(c_static PRIVATE -ffreestanding -nostdlib -O0 -pie)
 target_link_libraries(c_static PRIVATE gcc)
-target_include_directories(c_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_sources(c_static PUBLIC FILE_SET HEADERS
-    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-    FILES ${HEADERS})
+target_link_options(c_static PRIVATE -ffreestanding -nostdlib)
 
 set_target_properties(c_static PROPERTIES POSITION_INDEPENDENT_CODE 1)
 set_target_properties(c_static PROPERTIES VERSION 1.0)
 
-install(TARGETS c_static FILE_SET HEADERS)
+install(TARGETS c_static RUNTIME LIBRARY)
 
 # These things will all be embedded into libc.so
 file(WRITE "${CMAKE_INSTALL_PREFIX}/lib/libpthread.so" "INPUT(libc.so)")

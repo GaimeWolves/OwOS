@@ -2,8 +2,8 @@
 
 #include <bits/guards.h>
 
-__LIBC_HEADER_BEGIN
+__LIBC_BEGIN_DECLS
 
 extern char **environ;
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

@@ -2,23 +2,24 @@
 
 #include <bits/guards.h>
 
-__LIBC_HEADER_BEGIN
 
 #define __ENUM_IOCTL_REQUESTS(E) \
 	E(TCGETS)                    \
 	E(TCSETS)
 
-enum __IOCtlNum
+__LIBC_BEGIN_DECLS
+
+enum __IOCtlNumber
 {
 #define __ENUM_FN(constant) constant,
 	__ENUM_IOCTL_REQUESTS(__ENUM_FN)
 #undef __ENUM_FN
 };
 
-int ioctl(int fd, unsigned long request, ...);
-
 #ifndef __LIBC_KEEP_DEFS
 #	undef __ENUM_IOCTL_REQUESTS
 #endif
 
-__LIBC_HEADER_END
+int ioctl(int fd, unsigned long request, ...);
+
+__LIBC_END_DECLS

@@ -1,4 +1,4 @@
-#include <sys/arch/i386/auxv.h>
+#include <sys/auxv.h>
 #include <sys/internals.h>
 #include <stddef.h>
 #include <assert.h>
@@ -149,7 +149,7 @@ __attribute__((naked)) void _start()
 }
 
 // Stack layout is in accordance with http://www.sco.com/developers/devspecs/abi386-4.pdf
-__attribute__((noreturn)) void _entry(int argc, char *arg0)
+_Noreturn void _entry(int argc, char *arg0)
 {
 	DEBUG_PUTS(0, "Hello from the dynamic linker");
 	DEBUG_PUTS(0, "Stage 0: Initialization");

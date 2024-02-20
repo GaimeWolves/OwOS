@@ -1,11 +1,10 @@
 #pragma once
 
 #include <bits/guards.h>
-
 #include <stdint.h>
 #include <stddef.h>
 
-__LIBC_HEADER_BEGIN
+__LIBC_BEGIN_DECLS
 
 typedef struct heap_block_t
 {
@@ -21,4 +20,4 @@ void *__heap_alloc(size_t size, size_t align);
 void __heap_free(void *ptr);
 size_t __heap_size(void *ptr);
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

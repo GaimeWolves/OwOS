@@ -7,22 +7,22 @@
 #define __LIBC_KEEP_DEFS
 #include <errno.h>
 
-const char * const error_string[] = {
+const char *const error_string[] = {
 #define __ENUM_FN(constant, string) string,
     __ENUM_ERRNO_CODES(__ENUM_FN)
 #undef __ENUM_FN
 };
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void *memcpy(void *__restrict s1, const void *__restrict s2, size_t n)
 {
 	TRACE("memcpy(%p, %p, %lu)\r\n", s1, s2, n);
-	char* dp = s1;
-	const char* sp = s2;
+	char       *dp = s1;
+	const char *sp = s2;
 
-	while(n--)
+	while (n--)
 		*dp++ = *sp++;
 
 	return s1;
@@ -31,18 +31,18 @@ void *memcpy(void *__restrict s1, const void *__restrict s2, size_t n)
 void *memmove(void *dest, const void *src, size_t count)
 {
 	TRACE("memmove(%p, %p, %lu)\r\n", dest, src, count);
-	const char* sp = src;
-	char* dp = dest;
+	const char *sp = src;
+	char       *dp = dest;
 
-	if (src < dest) {
-		for (size_t i = count; i > 0; i--) {
+	if (src < dest)
+	{
+		for (size_t i = count; i > 0; i--)
 			dp[i - 1] = sp[i - 1];
-		}
 	}
-	else if (src > dest) {
-		for (size_t i = 0; i < count; i++) {
+	else if (src > dest)
+	{
+		for (size_t i = 0; i < count; i++)
 			dp[i] = sp[i];
-		}
 	}
 
 	return dest;
@@ -114,10 +114,10 @@ char *strchr(const char *s, int c)
 	if (c == 0)
 		return str + strlen(s);
 
-	while (*str) {
-		if (*str == c) {
+	while (*str)
+	{
+		if (*str == c)
 			return str;
-		}
 
 		str++;
 	}
@@ -132,8 +132,8 @@ int strcmp(const char *s1, const char *s2)
 
 	do
 	{
-		c1 = (unsigned char) *s1++;
-		c2 = (unsigned char) *s2++;
+		c1 = (unsigned char)*s1++;
+		c2 = (unsigned char)*s2++;
 
 		if (!c1)
 			return c1 - c2;
@@ -149,8 +149,8 @@ int strncmp(const char *s1, const char *s2, size_t n)
 
 	while (n-- > 0)
 	{
-		c1 = (unsigned char) *s1++;
-		c2 = (unsigned char) *s2++;
+		c1 = (unsigned char)*s1++;
+		c2 = (unsigned char)*s2++;
 
 		if (!c1 || c1 != c2)
 			return c1 - c2;
@@ -162,7 +162,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
 char *strcpy(char *__restrict dest, const char *__restrict src)
 {
 	TRACE("strcpy(%s, %s)\r\n", dest, src);
-	char* buf = dest;
+	char *buf = dest;
 
 	if (!src)
 	{
@@ -178,7 +178,6 @@ char *strcpy(char *__restrict dest, const char *__restrict src)
 	return buf;
 }
 
-
 size_t strlen(const char *s)
 {
 	if (!s)
@@ -186,7 +185,7 @@ size_t strlen(const char *s)
 
 	size_t len = 0;
 
-	while(*s++)
+	while (*s++)
 		len++;
 
 	return len;
@@ -195,7 +194,7 @@ size_t strlen(const char *s)
 char *strncpy(char *__restrict dest, const char *__restrict src, size_t count)
 {
 	TRACE("strncmp(%s, %s, %lu)\r\n", dest, src, count);
-	char* buf = dest;
+	char  *buf = dest;
 	size_t i;
 
 	for (i = 0; i < count && src[i]; i++)
@@ -296,7 +295,8 @@ char *strdup(const char *s)
 
 	char *copy = malloc(len);
 
-	if (!copy) {
+	if (!copy)
+	{
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -321,10 +321,10 @@ char *strrchr(const char *s, int c)
 
 	char *last = NULL;
 
-	while (*str) {
-		if (*str == c) {
+	while (*str)
+	{
+		if (*str == c)
 			last = str;
-		}
 
 		str++;
 	}

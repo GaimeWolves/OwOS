@@ -11,25 +11,25 @@
 #define __CT_HEXDG 0b01000000
 #define __CT_SPACE 0b10000000
 
-__LIBC_HEADER_BEGIN
+__LIBC_BEGIN_DECLS
 
 extern unsigned char const __ctype_lookup[];
 
-int isalnum(int);
-int isalpha(int);
-int isascii(int);
-int iscntrl(int);
-int isdigit(int);
-int isxdigit(int);
-int isspace(int);
-int ispunct(int);
-int isprint(int);
-int isgraph(int);
-int islower(int);
-int isupper(int);
-int isblank(int);
-int toascii(int);
-int tolower(int);
-int toupper(int);
+int isalnum(int c);
+int isalpha(int c);
+int isascii(int c);
+int isblank(int c);
+int iscntrl(int c);
+int isdigit(int c);
+int isgraph(int c);
+int islower(int c);
+int isprint(int c);
+int ispunct(int c);
+int isspace(int c);
+int isupper(int c);
+int isxdigit(int c);
+int toascii(int c);
+int tolower(int c);
+int toupper(int c);
 
-__LIBC_HEADER_END
+__LIBC_END_DECLS

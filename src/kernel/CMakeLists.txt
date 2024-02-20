@@ -237,7 +237,7 @@ target_link_libraries(kernel kernel_heap gcc)
 target_include_directories(kernel PRIVATE include)
 
 # Enable this when our libc headers are more mature or find a better solution to get at sys/arch/i386/syscall.h
-target_include_directories(kernel PRIVATE ${CMAKE_SOURCE_DIR}/src/userland/libc)
+target_include_directories(kernel PRIVATE ${CMAKE_SOURCE_DIR}/src/userland/libc ${CMAKE_SOURCE_DIR}/src/userland/libc/sysdeps/${LIBC_SYSTEM}/${LIBC_ARCH})
 
 target_compile_definitions(kernel_heap PRIVATE ARCH_${ARCH})
 target_compile_definitions(kernel PRIVATE ARCH_${ARCH})
@@ -246,7 +246,7 @@ target_compile_definitions(kernel_heap PRIVATE __OWOS_KERNEL)
 target_compile_definitions(kernel PRIVATE __OWOS_KERNEL)
 
 target_compile_definitions(kernel_heap PRIVATE __LIBC_KEEP_DEFS)
-target_compile_definitions(kernel PRIVATE __LIBC_KEEP_DEFS)
+target_compile_definitions(kernel PRIVATE __LIBC_KEEP_DEFS __LIBC_ARCH=${LIBC_ARCH} __LIBC_SYSTEM=${LIBC_SYSTEM})
 
 if (DEBUG_KERNEL)
     target_compile_definitions(kernel PRIVATE _DEBUG=1)

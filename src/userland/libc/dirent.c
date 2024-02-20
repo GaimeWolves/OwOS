@@ -1,12 +1,11 @@
 #include <dirent.h>
 
+#include <__debug.h>
+
 #include <fcntl.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <sys/syscall.h>
 #include <unistd.h>
-#include <sys/arch/i386/syscall.h>
-
-#include "__debug.h"
 
 DIR *fdopendir(int fd)
 {

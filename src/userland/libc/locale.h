@@ -1,14 +1,11 @@
 #pragma once
 
+#include <bits/guards.h>
+
 #define LC_CTYPE 1
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+__LIBC_BEGIN_DECLS
 
-	char *setlocale(int category, const char *locale);
+char *setlocale(int category, const char *locale);
 
-#ifdef __cplusplus
-}
-#endif
+__LIBC_END_DECLS

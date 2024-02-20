@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../userland/libc/signal.h"
-#include "../../userland/libc/sys/arch/i386/syscall.h"
-#include "../../userland/libc/termios.h"
+#include <termios.h>
+#include <sys/syscall.h>
+#include <signal.h>
 
 #include <sys/stat.h>
 

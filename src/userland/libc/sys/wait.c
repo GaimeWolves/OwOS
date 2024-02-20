@@ -1,9 +1,6 @@
 #include <sys/wait.h>
 
-#include <sys/arch/i386/syscall.h>
-
-#include <stdlib.h>
-#include <stdio.h>
+#include <sys/syscall.h>
 
 pid_t wait(int *stat_loc)
 {

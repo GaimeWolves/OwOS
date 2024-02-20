@@ -1,7 +1,8 @@
 #include "__heap.h"
 
-#include <sys/mman.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <sys/mman.h>
 
 // NOTE: For now this is just adapted from the kernels basic bitmap heap
 
@@ -9,12 +10,12 @@
 
 static heap_block_t *s_heap;
 
-inline static void setID(uint8_t *bitmap, uint32_t block, uint8_t id);
+inline static void    setID(uint8_t *bitmap, uint32_t block, uint8_t id);
 inline static uint8_t getID(uint8_t *bitmap, uint32_t block);
 inline static uint8_t getFreeID(uint8_t idLeft, uint8_t idRight);
 
-inline static bool can_align(uint8_t *bitmap, uint32_t block_size, uint32_t block, size_t align);
-inline static size_t get_alignment_offset(uintptr_t address, size_t align);
+inline static bool      can_align(uint8_t *bitmap, uint32_t block_size, uint32_t block, size_t align);
+inline static size_t    get_alignment_offset(uintptr_t address, size_t align);
 inline static uintptr_t align_address(uintptr_t address, size_t align);
 
 // Set the 2-bit id in the specified place of the bitmap
@@ -117,8 +118,8 @@ void *__heap_alloc(size_t size, size_t align)
 				continue;
 
 			uintptr_t address = (uintptr_t)bitmap + start * block->block_size;
-			size_t offset = get_alignment_offset(address, align);
-			uint32_t needed_blocks = (size + offset + block->block_size - 1) / block->block_size;
+			size_t    offset = get_alignment_offset(address, align);
+			uint32_t  needed_blocks = (size + offset + block->block_size - 1) / block->block_size;
 
 			// The current block is used
 			if (getID(bitmap, start))
@@ -163,10 +164,10 @@ void __heap_free(void *ptr)
 		// Pointer is inside block
 		if ((uintptr_t)ptr >= (uintptr_t)(block + 1) && (uintptr_t)ptr < (uintptr_t)block + sizeof(heap_block_t) + block->mem_size)
 		{
-			uint8_t *bitmap = (uint8_t *)(block + 1);
+			uint8_t  *bitmap = (uint8_t *)(block + 1);
 			uintptr_t offset = (uintptr_t)ptr - (uintptr_t)bitmap;
-			uint32_t block_index = offset / block->block_size;
-			uint8_t id = getID(bitmap, block_index);
+			uint32_t  block_index = offset / block->block_size;
+			uint8_t   id = getID(bitmap, block_index);
 
 			if (id == 0)
 				return;
@@ -198,11 +199,11 @@ size_t __heap_size(void *ptr)
 		// Pointer is inside block
 		if ((uintptr_t)ptr >= (uintptr_t)(block + 1) && (uintptr_t)ptr < (uintptr_t)block + sizeof(heap_block_t) + block->mem_size)
 		{
-			uint8_t *bitmap = (uint8_t *)(block + 1);
+			uint8_t  *bitmap = (uint8_t *)(block + 1);
 			uintptr_t offset = (uintptr_t)ptr - (uintptr_t)bitmap;
-			size_t alignment = offset % block->block_size;
-			uint32_t block_index = offset / block->block_size;
-			uint8_t id = getID(bitmap, block_index);
+			size_t    alignment = offset % block->block_size;
+			uint32_t  block_index = offset / block->block_size;
+			uint8_t   id = getID(bitmap, block_index);
 
 			uint32_t block_count = block->mem_size / block->block_size;
 

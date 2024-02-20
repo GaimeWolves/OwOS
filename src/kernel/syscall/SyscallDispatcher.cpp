@@ -4,7 +4,7 @@
 
 #include <syscall/syscalls.hpp>
 
-#include "../../userland/libc/sys/arch/i386/syscall.h"
+#include <sys/syscall.h>
 
 #include <arch/Processor.hpp>
 

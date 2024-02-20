@@ -1,15 +1,15 @@
 #pragma once
 
 #ifdef __cplusplus
-#	ifndef __LIBC_HEADER_BEGIN
-#		define __LIBC_HEADER_BEGIN \
+#	ifndef __LIBC_BEGIN_DECLS
+#		define __LIBC_BEGIN_DECLS \
 			extern "C"             \
 			{
-#		define __LIBC_HEADER_END }
+#		define __LIBC_END_DECLS }
 #	endif
 #else
-#	ifndef __LIBC_HEADER_BEGIN
-#		define __LIBC_HEADER_BEGIN
-#		define __LIBC_HEADER_END
+#	ifndef __LIBC_BEGIN_DECLS
+#		define __LIBC_BEGIN_DECLS
+#		define __LIBC_END_DECLS
 #	endif
 #endif

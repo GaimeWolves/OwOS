@@ -3,12 +3,10 @@
 #include <__debug.h>
 
 #include <bits/environ.h>
-
-#include <sys/arch/i386/syscall.h>
-
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/syscall.h>
 
 void abort(void)
 {
@@ -85,7 +83,7 @@ long long strtoll(const char *str, char **str_end, int base)
 {
 	TRACE("strtoll(%s, %p, %d)\r\n", str, str_end, base);
 
-	while(isspace(str[0]))
+	while (isspace(str[0]))
 		str++;
 
 	long long sign = 1;
@@ -116,7 +114,7 @@ unsigned long long strtoull(const char *str, char **str_end, int base)
 
 	unsigned long long num = 0;
 
-	while(isspace(str[0]))
+	while (isspace(str[0]))
 		str++;
 
 	if (base == 0)
@@ -141,7 +139,7 @@ unsigned long long strtoull(const char *str, char **str_end, int base)
 		}
 	}
 
-	while(str)
+	while (str)
 	{
 		if (!isalnum(str[0]))
 			break;
@@ -163,7 +161,7 @@ unsigned long long strtoull(const char *str, char **str_end, int base)
 	}
 
 	if (str_end)
-		*str_end = (char*)str;
+		*str_end = (char *)str;
 
 	return num;
 }

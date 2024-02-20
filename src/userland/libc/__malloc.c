@@ -1,15 +1,14 @@
-#include <sys/internals.h>
-#include <sys/mman.h>
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-
-#define HEAP_REGION_SIZE (2 << 16)
-#define HEAP_BLOCK_SIZE 0x16
-
-#include <stdio.h>
+#include <sys/internals.h>
+#include <sys/mman.h>
 
 #include "__heap.h"
+
+#define HEAP_REGION_SIZE (2 << 16)
+#define HEAP_BLOCK_SIZE  0x16
 
 void __malloc_init()
 {

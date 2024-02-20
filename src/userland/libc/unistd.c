@@ -3,14 +3,14 @@
 #include <__debug.h>
 
 #include <bits/environ.h>
-#include <sys/arch/i386/syscall.h>
+#include <sys/syscall.h>
 
-#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 char *optarg;
-int opterr, optind, optopt;
+int   opterr, optind, optopt;
 
 int close(int filedes)
 {
@@ -76,7 +76,8 @@ int access(const char *path, int amode)
 	puts("access() not working properly! R_OK, W_OK, X_OK always allowed!");
 
 	struct stat buf;
-	if (stat(path, &buf) != 0) {
+	if (stat(path, &buf) != 0)
+	{
 		errno = ENOENT;
 		return -1;
 	}
@@ -130,7 +131,7 @@ int dup(int fildes)
 	abort();
 }
 
-int getopt(int argc, char * const argv[], const char *optstring)
+int getopt(int argc, char *const argv[], const char *optstring)
 {
 	TRACE("getopt(%d, %p, %s)\r\n", argc, argv, optstring);
 	(void)argc;

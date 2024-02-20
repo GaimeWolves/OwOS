@@ -52,20 +52,22 @@ static void printf_parse_flags(printf_conv_t *conversion);
 static void printf_parse_width(printf_conv_t *conversion);
 static char printf_parse_precision(printf_conv_t *conversion);
 
-static char* ulltoa(unsigned long long num, char* buf, size_t base, bool prepend_zeros)
+static char *ulltoa(unsigned long long num, char *buf, size_t base, bool prepend_zeros)
 {
 	if (base < 2)
 		return 0;
 
 	size_t i = 0;
-	do {
+	do
+	{
 		size_t r = num % base;
 		buf[i++] = (r > 9) ? (r - 10) + 'A' : r + '0';
 		num /= base;
 	} while (num > 0 || (prepend_zeros && ((base == 16 && i < 16) || (base == 2 && i < 64))));
 
 	size_t end = i - 1;
-	for (size_t k = 0; k <= end / 2; k++) {
+	for (size_t k = 0; k <= end / 2; k++)
+	{
 		char c = buf[k];
 		buf[k] = buf[end - k];
 		buf[end - k] = c;
@@ -75,12 +77,13 @@ static char* ulltoa(unsigned long long num, char* buf, size_t base, bool prepend
 	return buf;
 }
 
-static char* lltoa(long long num, char* buf, size_t base, bool prepend_zeros)
+static char *lltoa(long long num, char *buf, size_t base, bool prepend_zeros)
 {
 	if (base < 2)
 		return 0;
 
-	if (num < 0) {
+	if (num < 0)
+	{
 		*buf = '-';
 		num *= -1;
 		ulltoa(num, buf + 1, base, prepend_zeros);
@@ -91,20 +94,22 @@ static char* lltoa(long long num, char* buf, size_t base, bool prepend_zeros)
 	return buf;
 }
 
-static char* uitoa(size_t num, char* buf, size_t base, bool prepend_zeros)
+static char *uitoa(size_t num, char *buf, size_t base, bool prepend_zeros)
 {
 	if (base < 2)
 		return 0;
 
 	size_t i = 0;
-	do {
+	do
+	{
 		size_t r = num % base;
 		buf[i++] = (r > 9) ? (r - 10) + 'A' : r + '0';
 		num /= base;
 	} while (num > 0 || (prepend_zeros && ((base == 16 && i < 8) || (base == 2 && i < 32))));
 
 	size_t end = i - 1;
-	for (size_t k = 0; k <= end / 2; k++) {
+	for (size_t k = 0; k <= end / 2; k++)
+	{
 		char c = buf[k];
 		buf[k] = buf[end - k];
 		buf[end - k] = c;
@@ -442,7 +447,7 @@ void __printf_impl(printf_conv_t *conversion)
 	}
 
 	const char **format = &conversion->format;
-	size_t *bufsz = &conversion->bufsz;
+	size_t      *bufsz = &conversion->bufsz;
 
 	if (*bufsz == 0)
 		return;
@@ -498,7 +503,7 @@ void __printf_impl(printf_conv_t *conversion)
 			}
 			case 's':
 			{
-				char *s = ARG(char *);
+				char  *s = ARG(char *);
 				size_t size = strlen(s);
 
 				// Precision declares maximum characters to be printed
@@ -707,7 +712,7 @@ void __printf_impl(printf_conv_t *conversion)
 			{
 				// Implementation defined as 0xDEADBEEF or (nil)
 				unsigned long ptr = ARG(unsigned long);
-				char repr[11] = {'0', 'x', 0, 0, 0, 0, 0, 0, 0, 0, 0};
+				char          repr[11] = {'0', 'x', 0, 0, 0, 0, 0, 0, 0, 0, 0};
 				uitoa((size_t)ptr, repr + 2, 16, true);
 
 				conversion->minimal_width -= ptr == 0 ? 5 : 10;

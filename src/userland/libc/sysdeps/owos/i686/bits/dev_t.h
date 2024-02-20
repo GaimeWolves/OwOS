@@ -4,6 +4,6 @@
 
 __LIBC_BEGIN_DECLS
 
-double sin(double x);
+typedef int dev_t;
 
 __LIBC_END_DECLS
