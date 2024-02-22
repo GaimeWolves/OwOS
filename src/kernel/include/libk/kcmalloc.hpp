@@ -1,7 +1,8 @@
 #pragma once
 
-#include <stddef.h>
 #include <stdint.h>
+
+#include <libk/kcstddef.hpp>
 
 namespace Kernel::Heap
 {
@@ -17,12 +18,6 @@ namespace Kernel::Heap
 	const heap_statistics_t &getStatistics();
 } // namespace Kernel::Heap
 
-// These must lie in the std namespace
-namespace std
-{
-	enum class align_val_t : size_t {};
-};
-
 extern "C"
 {
 	__attribute__((malloc)) void *kmalloc(size_t size, size_t align = 1);
@@ -31,10 +26,3 @@ extern "C"
 
 	void kfree(void *ptr);
 }
-
-// C++ placement new and delete operators
-inline void *operator new(size_t, void *p) { return p; }
-inline void *operator new[](size_t, void *p) { return p; }
-
-inline void operator delete(void *, void *){}
-inline void operator delete[](void *, void *){}

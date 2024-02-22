@@ -15,3 +15,8 @@ extern "C" __noreturn __used void __stack_chk_fail(void)
 {
 	Kernel::panic("Stack smashed");
 }
+
+extern "C" __noreturn __used void __stack_chk_fail_local(void)
+{
+	__stack_chk_fail();
+}

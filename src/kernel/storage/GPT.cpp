@@ -52,7 +52,7 @@ namespace Kernel::GPT
 			return false;
 		}
 
-		size_t table_size = LibK::round_up_to_multiple(header->partition_entry_count * header->partition_entry_size, device.block_size());
+		size_t table_size = LibK::round_up_to_multiple<uint32_t>(header->partition_entry_count * header->partition_entry_size, device.block_size());
 		size_t block_count = table_size / device.block_size();
 
 		auto table_region = Memory::VirtualMemoryManager::instance().allocate_region(table_size);

@@ -42,6 +42,10 @@ SECTIONS
 		*(.dtors)
 		_end_dtors = .;
 
+		_start_init_array = .;
+		*(.init_array)
+		_end_init_array = .;
+
 		*(.rodata)
 	} :rodata
 

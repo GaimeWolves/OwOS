@@ -36,6 +36,9 @@ namespace Kernel
 		func_t _start_dtors;
 		func_t _end_dtors;
 
+		func_t _start_init_array;
+		func_t _end_init_array;
+
 		uintptr_t _kernel_start;
 		uintptr_t _kernel_end;
 
@@ -85,6 +88,9 @@ namespace Kernel
 
 			for (func_t *ctor = &_start_ctors; ctor < &_end_ctors; ctor++)
 				(*ctor)();
+
+			for (func_t *init = &_start_init_array; init < &_end_init_array; init++)
+				(*init)();
 
 			CPU::Processor::by_id(0).set_memory_space(Memory::VirtualMemoryManager::instance().get_kernel_memory_space());
 			CPU::Processor::early_initialize(0);

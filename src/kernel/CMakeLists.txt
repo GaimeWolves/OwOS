@@ -20,21 +20,20 @@ set(LIBK_INCLUDES
     include/libk/kcstdio.hpp
     include/libk/kcstring.hpp
     include/libk/kfunctional.hpp
-    include/libk/kiterator.hpp
     include/libk/klist.hpp
     include/libk/kmath.hpp
     include/libk/kmemory.hpp
     include/libk/kshared_ptr.hpp
     include/libk/kstack.hpp
     include/libk/kstring.hpp
-    include/libk/ktype_traits.hpp
     include/libk/kutility.hpp
     include/libk/kvector.hpp
     include/libk/printf.hpp
     include/libk/StringView.hpp
     include/libk/ErrorOr.hpp
     include/libk/kcstdlib.hpp
-    include/libk/karray.hpp)
+    include/libk/karray.hpp
+    include/libk/__allocators.hpp)
 
 set(LIBK_SOURCES
     libk/kcassert.cpp
@@ -206,7 +205,7 @@ set(SOURCES
     ${ARCH_SOURCES}
     ${LIBK_SOURCES})
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -222,8 +221,8 @@ add_custom_command(
 
 add_executable(kernel ${SOURCES} font_out.S)
 
-set(CFLAGS -ffreestanding -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer -fsanitize=undefined)
-set(LFLAGS LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -O0 -g3 -nostdlib)
+set(CFLAGS -ffreestanding -fno-pic -O0 -g3 -Wall -Wextra -Werror -fno-exceptions -fno-threadsafe-statics -fstack-protector-all -fno-rtti -fdebug-prefix-map=${CMAKE_SOURCE_DIR}= -fno-omit-frame-pointer -fsanitize=undefined)
+set(LFLAGS LINKER:-T ${CMAKE_CURRENT_SOURCE_DIR}/arch/${ARCH}/linker.ld -ffreestanding -O0 -g3 -nostdlib -fno-pie)
 
 target_compile_options(kernel PRIVATE ${CFLAGS})
 target_compile_options(kernel_heap PRIVATE ${CFLAGS})

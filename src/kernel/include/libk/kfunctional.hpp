@@ -3,7 +3,6 @@
 #include <libk/kcassert.hpp>
 #include <libk/kcstddef.hpp>
 #include <libk/kcstring.hpp>
-#include <libk/ktype_traits.hpp>
 #include <libk/kutility.hpp>
 #include <libk/kshared_ptr.hpp>
 

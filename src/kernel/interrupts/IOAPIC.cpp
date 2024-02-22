@@ -56,9 +56,9 @@ namespace Kernel::Interrupts
 		m_registers = Memory::MMIO<uint32_t>(address, 0x20);
 		uint32_t reg = read_register(REGISTER_IOAPICVER);
 		m_gsi_count = ((reg >> 16) & 0xFF) + 1;
-		m_interrupt_mask = new uint32_t[LibK::round_up_to_multiple(m_gsi_count, 32ul) / 32];
+		m_interrupt_mask = new uint32_t[LibK::round_up_to_multiple<uint32_t>(m_gsi_count, 32) / 32];
 
-		for (size_t i = 0; i < LibK::round_up_to_multiple(m_gsi_count, 32ul) / 32; i++)
+		for (size_t i = 0; i < LibK::round_up_to_multiple<uint32_t>(m_gsi_count, 32) / 32; i++)
 			m_interrupt_mask[i] = 0xFFFFFFFF;
 
 		assert(m_interrupt_mask);

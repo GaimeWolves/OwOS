@@ -1,21 +1,21 @@
 #pragma once
 
-#include <libk/kiterator.hpp>
-#include <libk/ktype_traits.hpp>
+#include <iterator>
+#include <type_traits>
 
 namespace Kernel::LibK
 {
-	template <typename Container, typename T, typename Iterator = iterator<random_access_iterator_tag, typename remove_reference<T>::type>>
-	class normal_iterator : public Iterator
+	template <typename Container, typename T>
+	class normal_iterator
 	{
 	public:
 		friend Container;
 
-		typedef typename Iterator::value_type value_type;
-		typedef typename Iterator::difference_type difference_type;
-		typedef typename Iterator::pointer pointer;
-		typedef typename Iterator::reference reference;
-		typedef typename Iterator::iterator_category iterator_category;
+		using iterator_category = std::random_access_iterator_tag;
+		using difference_type = std::ptrdiff_t;
+		using value_type = T;
+		using pointer = T *;
+		using reference = T &;
 
 		normal_iterator() = default;
 		normal_iterator(const normal_iterator &) = default;
@@ -27,12 +27,10 @@ namespace Kernel::LibK
 			return *this;
 		}
 
+		/* implicit */ operator normal_iterator<const Container, const T>() const { return {m_container, m_index}; }
+
 		bool operator==(const normal_iterator &rhs) const { return m_index == rhs.m_index; }
-		bool operator!=(const normal_iterator &rhs) const { return m_index != rhs.m_index; }
-		bool operator<(const normal_iterator &rhs) const { return m_index < rhs.m_index; }
-		bool operator>(const normal_iterator &rhs) const { return m_index > rhs.m_index; }
-		bool operator<=(const normal_iterator &rhs) const { return m_index <= rhs.m_index; }
-		bool operator>=(const normal_iterator &rhs) const { return m_index >= rhs.m_index; }
+		difference_type operator<=>(const normal_iterator &rhs) const { return static_cast<difference_type>(m_index) - static_cast<difference_type>(rhs.m_index); }
 
 		normal_iterator &operator++()
 		{
@@ -94,12 +92,15 @@ namespace Kernel::LibK
 		pointer operator->() const { return &m_container.at(m_index); }
 		reference operator[](difference_type offset) const { return m_container.at(m_index + offset); }
 
-	private:
 		normal_iterator(Container &container, size_t index)
 		    : m_container(container), m_index(index)
 		{
 		}
 
+		// TODO: find a way around this
+		[[nodiscard]] size_t __index() const { return m_index; }
+
+	private:
 		Container &m_container;
 		size_t m_index{0};
 	};

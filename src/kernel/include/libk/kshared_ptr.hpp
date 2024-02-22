@@ -45,7 +45,7 @@ namespace Kernel::LibK
 
 	public:
 		constexpr shared_ptr() noexcept = default;
-		constexpr explicit shared_ptr(nullptr_t) noexcept {};
+		constexpr explicit shared_ptr(std::nullptr_t) noexcept {};
 
 		template<class U, class Deleter>
 		shared_ptr(U *ptr, Deleter d)

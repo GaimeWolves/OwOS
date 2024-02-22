@@ -169,7 +169,7 @@ namespace Kernel::Memory::Arch
 		constexpr uintptr_t map_pd_index = get_pd_index(FIXED_PAGE_TABLE_MAP_ADDR);
 		constexpr uintptr_t map_pt_index = get_pt_index(FIXED_PAGE_TABLE_MAP_ADDR);
 
-		auto page_directory = get_page_directory();
+		auto &page_directory = get_page_directory();
 
 		assert(page_directory[map_pd_index].present);
 

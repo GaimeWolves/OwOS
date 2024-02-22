@@ -1,5 +1,7 @@
 #include <libk/kcmalloc.hpp>
 
+#include <new>
+
 #include <stddef.h>
 #include <stdint.h>
 

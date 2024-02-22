@@ -162,7 +162,7 @@ namespace Kernel
 
 		auto directory = node->file->read_directory();
 		node->children = LibK::vector<vfs_node_t *>();
-		node->children.ensure_capacity(directory.size());
+		node->children.reserve(directory.size());
 		for (auto *file : directory)
 		{
 			auto child = new vfs_node_t;

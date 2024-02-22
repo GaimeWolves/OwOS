@@ -11,7 +11,7 @@
 
 namespace Kernel
 {
-	static LibK::SRMWQueue<LibK::string> s_message_queue;
+	static LibK::SRMWQueue<LibK::string> s_message_queue{};
 	static thread_t *s_logging_thread;
 	static bool s_logging_thread_started{false};
 

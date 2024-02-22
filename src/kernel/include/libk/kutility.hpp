@@ -1,8 +1,7 @@
 #pragma once
 
 #include <stddef.h>
-
-#include <libk/ktype_traits.hpp>
+#include <type_traits>
 
 namespace Kernel::LibK
 {
@@ -10,22 +9,22 @@ namespace Kernel::LibK
 	auto declval() -> T;
 
 	template <class T>
-	constexpr T &&forward(typename remove_reference<T>::type &t) noexcept
+	constexpr T &&forward(typename std::remove_reference<T>::type &t) noexcept
 	{
 		return static_cast<T &&>(t);
 	}
 
 	template <class T>
-	constexpr T &&forward(typename remove_reference<T>::type &&t) noexcept
+	constexpr T &&forward(typename std::remove_reference<T>::type &&t) noexcept
 	{
-		static_assert(!is_lvalue_reference<T>::value, "Cannot forward an rvalue as an lvalue.");
+		static_assert(!std::is_lvalue_reference<T>::value, "Cannot forward an rvalue as an lvalue.");
 		return static_cast<T &&>(t);
 	}
 
 	template <class T>
-	constexpr typename remove_reference<T>::type &&move(T &&t) noexcept
+	constexpr typename std::remove_reference<T>::type &&move(T &&t) noexcept
 	{
-		return static_cast<typename remove_reference<T>::type &&>(t);
+		return static_cast<typename std::remove_reference<T>::type &&>(t);
 	}
 
 	template <class T, size_t N>

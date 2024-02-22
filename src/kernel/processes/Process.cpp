@@ -26,7 +26,7 @@ namespace Kernel
 		uintptr_t signal_trampoline_address;
 		uintptr_t signal_trampoline_size;
 
-		CPU::Processor::get_signal_trampoline(&signal_trampoline_address, &signal_trampoline_size);
+		CPU::Processor::get_signal_trampoline(&signal_trampoline_address, reinterpret_cast<size_t *>(&signal_trampoline_size));
 		auto config = Memory::mapping_config_t { .userspace = true };
 		m_signal_trampoline = Memory::VirtualMemoryManager::instance().allocate_region_at(0x1000, signal_trampoline_size, config);
 		memcpy(m_signal_trampoline.virt_region().pointer(), (void *)signal_trampoline_address, signal_trampoline_size);
@@ -87,7 +87,7 @@ namespace Kernel
 		uintptr_t signal_trampoline_address;
 		uintptr_t signal_trampoline_size;
 
-		CPU::Processor::get_signal_trampoline(&signal_trampoline_address, &signal_trampoline_size);
+		CPU::Processor::get_signal_trampoline(&signal_trampoline_address, reinterpret_cast<size_t *>(&signal_trampoline_size));
 		auto config = Memory::mapping_config_t { .userspace = true };
 		m_signal_trampoline = Memory::VirtualMemoryManager::instance().allocate_region_at(0x1000, signal_trampoline_size, config);
 		memcpy(m_signal_trampoline.virt_region().pointer(), (void *)signal_trampoline_address, signal_trampoline_size);

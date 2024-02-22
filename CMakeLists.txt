@@ -10,7 +10,7 @@ set(LIBC_ARCH i686)
 
 option(DEBUG_KERNEL "Enable kernel debug messages" ON)
 
-set(TOOLCHAIN_PATH ${CMAKE_SOURCE_DIR}/toolchain/bin/${ARCH}-elf-)
+set(TOOLCHAIN_PATH ${CMAKE_SOURCE_DIR}/toolchain-hosted/bin/${ARCH}-owos-)
 
 set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}gcc)
 set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PATH}g++)

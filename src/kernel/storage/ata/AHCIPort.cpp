@@ -183,9 +183,9 @@ namespace Kernel
 		return processed_count;
 	}
 
-	size_t AHCIPort::find_slot()
+	uint32_t AHCIPort::find_slot()
 	{
-		for (size_t i = 0; i < AHCI::NUM_SLOTS; i++)
+		for (uint32_t i = 0; i < AHCI::NUM_SLOTS; i++)
 		{
 			if (!(m_hba_port->ci & (1 << i)) && !m_command_slots[i].issued())
 				return i;
