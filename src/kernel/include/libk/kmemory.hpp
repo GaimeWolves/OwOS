@@ -15,7 +15,7 @@ namespace Kernel::LibK
 	};
 
 	template <class T, class... Args>
-	shared_ptr<T> make_shared(Args &&...args) { return shared_ptr<T>(new T(forward<Args>(args)...)); }
+	shared_ptr<T> make_shared(Args &&...args) { return shared_ptr<T>(new T(std::forward<Args>(args)...)); }
 
 	template <class T, class... Args>
 	constexpr T *construct_at(T *p, Args &&...args) { return ::new (static_cast<void *>(p)) T(std::forward<Args>(args)...); }

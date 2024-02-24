@@ -43,7 +43,7 @@ namespace Kernel
 			switch (m_type)
 			{
 			case Type::AHCI:
-				count_for_transfer = LibK::min(count * m_ahci_port->block_size(), PAGE_SIZE);
+				count_for_transfer = LibK::min<size_t>(count * m_ahci_port->block_size(), PAGE_SIZE);
 				count -= count_for_transfer;
 				action = type == TransferType::Read ? AHCI::TransferAction::Read : AHCI::TransferAction::Write;
 				actually_transferred = m_ahci_port->transfer(action, block + i * PAGE_SIZE / m_ahci_port->block_size(), count_for_transfer, physical);

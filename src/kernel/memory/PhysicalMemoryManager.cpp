@@ -193,7 +193,7 @@ namespace Kernel::Memory
 		size_t needed_page_count = (size + buddy.page_size - 1) / buddy.page_size;
 
 		size_t start = (min_address + buddy.page_size - 1) / buddy.page_size;
-		uint32_t real_max_address = LibK::min(max_address, m_memory_map.get_usable_mem_size());
+		uint32_t real_max_address = LibK::min<uint32_t>(max_address, m_memory_map.get_usable_mem_size());
 		size_t end = real_max_address / buddy.page_size;
 
 		size_t idx_start = LibK::max(buddy.last_alloc, start);

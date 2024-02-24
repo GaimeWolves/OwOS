@@ -243,7 +243,7 @@ namespace Kernel::Memory
 	memory_space_t VirtualMemoryManager::copy_current_memory_space()
 	{
 		auto current_space = CPU::Processor::current().get_memory_space();
-		memory_space_t space = LibK::move(create_memory_space());
+		memory_space_t space = create_memory_space();
 		memory_space_t *new_space = &space;
 
 		current_space->userland_map.traverse([current_space, new_space](memory_region_t region) {
@@ -258,7 +258,7 @@ namespace Kernel::Memory
 			return true;
 		});
 
-		return LibK::move(space);
+		return space;
 	}
 
 	void VirtualMemoryManager::free_current_userspace()

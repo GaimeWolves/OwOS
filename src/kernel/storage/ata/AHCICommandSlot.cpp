@@ -34,7 +34,7 @@ namespace Kernel
 	{
 		assert(!(byte_count & 1)); // byte count must be word aligned
 		size_t prtd_count = LibK::round_up_to_multiple<size_t>(byte_count, MAX_PRTD_BYTE_COUNT) / MAX_PRTD_BYTE_COUNT;
-		prtd_count = LibK::min(prtd_count, NUM_PRTDS); // no dynamic number of PRDTs for now
+		prtd_count = LibK::min<size_t>(prtd_count, NUM_PRTDS); // no dynamic number of PRDTs for now
 		size_t actual_byte_count = LibK::min(prtd_count * MAX_PRTD_BYTE_COUNT, byte_count);
 		auto sector_count = LibK::round_up_to_multiple<size_t>(actual_byte_count, 512) / 512; // TODO: Determine device sector size
 

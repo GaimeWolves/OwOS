@@ -251,7 +251,7 @@ namespace Kernel::CPU
 		uint32_t m_id{0};
 		bool m_interrupts_enabled{false};
 		uint32_t m_in_critical{0};
-		LibK::atomic_uint32_t m_irq_counter{0};
+		std::atomic_unsigned_lock_free m_irq_counter{0};
 		LibK::stack<interrupt_frame_t *>m_frame_stack{};
 		LibK::stack<LibK::function<void()>> m_exit_function_stack{};
 

@@ -212,7 +212,7 @@ namespace Kernel::LibK
 			size_t len = strlen(str);
 
 			if (state.has_precision)
-				len = min(len, state.precision);
+				len = min((int)len, state.precision);
 
 			size_t pad_length = (size_t)state.width > len ? state.width - len : 0;
 
@@ -438,7 +438,7 @@ namespace Kernel::LibK
 			argument_list_ref_t m_ap;
 		};
 
-		template <typename putc_func, template <typename T, typename U, template <typename X, typename Y> typename V> typename impl_t = printf_impl_t, typename argument_list_t = va_list, template <typename T, typename V = decltype(declval<argument_list_t &>())> typename next_argument = va_arg_next_argument>
+		template <typename putc_func, template <typename T, typename U, template <typename X, typename Y> typename V> typename impl_t = printf_impl_t, typename argument_list_t = va_list, template <typename T, typename V = decltype(std::declval<argument_list_t &>())> typename next_argument = va_arg_next_argument>
 		int printf_internal(putc_func putc, char *buffer, const char *fmt, argument_list_t ap)
 		{
 			int ret = 0;

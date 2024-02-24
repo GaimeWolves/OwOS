@@ -1,10 +1,10 @@
 #pragma once
 
-#include <stdint.h>
+#include <atomic>
+#include <cstdint>
 
 #include <libk/kvector.hpp>
 #include <libk/Concurrent.hpp>
-#include <libk/katomic.hpp>
 
 #include <time/Timer.hpp>
 #include <arch/interrupts.hpp>
@@ -64,7 +64,7 @@ namespace Kernel::Time
 		void update_queue(LibK::vector<event_t> &event_queue, uint64_t nanoseconds);
 
 		LibK::vector<Timer *> m_available_timers{};
-		LibK::atomic_uint32_t m_sleeping{0}; // Bitmap of sleeping cores
+		std::atomic<uint32_t> m_sleeping{0}; // Bitmap of sleeping cores
 		EventQueue m_scheduled_events{}; // TODO: This should use some sort of linked list
 	};
 }

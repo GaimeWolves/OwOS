@@ -14,6 +14,19 @@ extern "C"
 		return len;
 	}
 
+	size_t strnlen_s(const char *str, size_t count)
+	{
+		if (!str)
+			return 0;
+
+		size_t len = 0;
+
+		while (len < count && *(str)++)
+			len++;
+
+		return len;
+	}
+
 	char *strrev(char *str)
 	{
 		size_t len = strlen(str);

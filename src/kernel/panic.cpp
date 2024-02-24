@@ -1,9 +1,10 @@
 #include <panic.hpp>
 
+#include <atomic>
+
 #include <common_attributes.h>
 
 #include <libk/kcstdarg.hpp>
-#include <libk/katomic.hpp>
 #include <libk/kshared_ptr.hpp>
 
 #include <arch/Processor.hpp>
@@ -33,7 +34,7 @@ namespace Kernel
 		}
 	};
 
-	static LibK::atomic_bool s_is_panicking = false;
+	static std::atomic_flag s_is_panicking = false;
 	static PanicMessage s_panic_message = PanicMessage();
 
 	__noreturn void panic()
@@ -44,13 +45,13 @@ namespace Kernel
 	__noreturn void panic(const char *fmt, ...)
 	{
 		CPU::Processor::current().enter_critical();
-		if (s_is_panicking)
+		if (s_is_panicking.test())
 		{
 			for (;;)
 				CPU::Processor::halt();
 		}
 
-		s_is_panicking = true;
+		s_is_panicking.test_and_set();
 		CPU::Processor::current().smp_broadcast(LibK::shared_ptr<CPU::ProcessorMessage>(&s_panic_message), true);
 
 		s_trace_lock.lock();

@@ -2,8 +2,6 @@
 
 #include <arch/spinlock.hpp>
 
-#include <libk/katomic.hpp>
-
 namespace Kernel::Locking
 {
 	class Mutex
@@ -19,10 +17,10 @@ namespace Kernel::Locking
 		void lock();
 		void unlock();
 
-		[[nodiscard]] always_inline bool is_locked() const { return m_locked; }
+		[[nodiscard]] always_inline bool is_locked() const { return m_locked.test(std::memory_order_relaxed); }
 
 	private:
 		Spinlock m_lock;
-		LibK::atomic_bool m_locked{false};
+		std::atomic_flag m_locked{false};
 	};
-}
+} // namespace Kernel::Locking

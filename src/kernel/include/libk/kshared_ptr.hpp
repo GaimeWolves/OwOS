@@ -1,7 +1,8 @@
 #pragma once
 
+#include <atomic>
+
 #include <libk/kcstddef.hpp>
-#include <libk/katomic.hpp>
 #include <libk/kcassert.hpp>
 
 namespace Kernel::LibK
@@ -14,7 +15,7 @@ namespace Kernel::LibK
 	private:
 		struct auxiliary
 		{
-			atomic_size_t count;
+			std::atomic_unsigned_lock_free count;
 
 			auxiliary()
 				: count(1)

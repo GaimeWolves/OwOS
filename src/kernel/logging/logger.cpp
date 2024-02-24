@@ -124,7 +124,7 @@ namespace Kernel
 
 	void log(LibK::string &&message)
 	{
-		s_message_queue.put(LibK::move(message));
+		s_message_queue.put(std::move(message));
 		if (s_logging_thread_started)
 			CoreScheduler::resume(s_logging_thread);
 	}
@@ -138,7 +138,7 @@ namespace Kernel
 		printf_into_string(message, fmt, ap);
 		va_end(ap);
 
-		log(LibK::move(message));
+		log(std::move(message));
 	}
 
 	void log(const char *tag, const char *fmt, ...)
@@ -159,6 +159,6 @@ namespace Kernel
 			printf_into_string(message, "<empty string>");
 		}
 
-		log(LibK::move(message));
+		log(std::move(message));
 	}
 }

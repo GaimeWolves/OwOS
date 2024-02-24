@@ -22,7 +22,7 @@ namespace Kernel::LibK
 		template <typename Functor>
 		static Ret invoke_fn(Functor *functor, Args &&... args)
 		{
-			return (*functor)(LibK::forward<Args>(args)...);
+			return (*functor)(std::forward<Args>(args)...);
 		}
 
 		template <typename Functor>
@@ -145,9 +145,9 @@ namespace Kernel::LibK
 		Ret operator()(Args...args) const
 		{
 			if (m_functor_ptr)
-				return m_invoke_fn(m_functor_ptr.get(), LibK::forward<Args>(args)...);
+				return m_invoke_fn(m_functor_ptr.get(), std::forward<Args>(args)...);
 			else
-				return m_invoke_fn((char *)m_functor_small, LibK::forward<Args>(args)...);
+				return m_invoke_fn((char *)m_functor_small, std::forward<Args>(args)...);
 		}
 
 		explicit operator bool() const noexcept { return m_invoke_fn; }

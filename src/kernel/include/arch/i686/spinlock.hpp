@@ -1,6 +1,7 @@
 #pragma once
 
-#include <libk/katomic.hpp>
+#include <atomic>
+
 #include <libk/kcassert.hpp>
 
 #include <common_attributes.h>
@@ -22,10 +23,10 @@ namespace Kernel::Locking
 
 		always_inline bool is_locked() const noexcept
 		{
-			return m_lock.load(LibK::memory_order_relaxed);
+			return m_lock.test(std::memory_order_relaxed);
 		}
 
 	private:
-		alignas(64) LibK::atomic_uint32_t m_lock{0}; // lock will be aligned on cache line boundary
+		alignas(64) std::atomic_flag m_lock{false}; // lock will be aligned on cache line boundary
 	};
 } // namespace Kernel::Locking

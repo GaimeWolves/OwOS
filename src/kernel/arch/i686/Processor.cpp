@@ -19,7 +19,7 @@ extern "C"
 
 namespace Kernel::CPU
 {
-	static LibK::atomic_uint64_t s_nanoseconds_since_boot;
+	static std::atomic<uint64_t> s_nanoseconds_since_boot;
 
 	class APICIPIInterruptHandler final : public Interrupts::InterruptHandler
 	{
@@ -158,7 +158,7 @@ namespace Kernel::CPU
 	void Processor::smp_enqueue_message(LibK::shared_ptr<ProcessorMessage> message)
 	{
 		// log("SMP", "Enqueueing message on (#%d)", this->id());
-		m_queued_messages.put(LibK::move(message));
+		m_queued_messages.put(std::move(message));
 	}
 
 	void Processor::smp_process_messages()
@@ -173,7 +173,7 @@ namespace Kernel::CPU
 
 	void Processor::defer_call(LibK::function<void()> &&callback)
 	{
-		m_deferred_calls.put(move(callback));
+		m_deferred_calls.put(std::move(callback));
 	}
 
 	void Processor::process_deferred_queue()

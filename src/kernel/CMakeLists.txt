@@ -13,7 +13,6 @@ set(LIBK_INCLUDES
     include/libk/CircularBuffer.hpp
     include/libk/Concurrent.hpp
     include/libk/GUID.hpp
-    include/libk/katomic.hpp
     include/libk/kcassert.hpp
     include/libk/kcctype.hpp
     include/libk/kcstdarg.hpp

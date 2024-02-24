@@ -1,9 +1,8 @@
 #pragma once
 
-#include "arch/spinlock.hpp"
-#include "libk/StringView.hpp"
-#include "libk/katomic.hpp"
-#include "libk/kstring.hpp"
+#include <arch/spinlock.hpp>
+#include <libk/StringView.hpp>
+#include <libk/kstring.hpp>
 
 namespace Kernel::LibK
 {
@@ -34,17 +33,17 @@ namespace Kernel::LibK
 			head.next = node->next;
 			queue_lock.unlock();
 
-			T data = LibK::move(node->data);
+			T data = std::move(node->data);
 			delete node;
 
-			return LibK::move(data);
+			return std::move(data);
 		}
 
 		void put(T &&data)
 		{
 			auto *node = new list_node_t;
 
-			node->data = LibK::move(data);
+			node->data = std::move(data);
 
 			queue_lock.lock();
 			node->prev = head.prev;

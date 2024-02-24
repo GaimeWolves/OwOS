@@ -6,6 +6,7 @@
 extern "C"
 {
 	size_t strlen(const char *str);
+	size_t strnlen_s(const char *str, size_t count);
 	char *strrev(char *str);
 	int strcmp(const char *lhs, const char *rhs);
 	int strncmp(const char *lhs, const char *rhs, size_t count);

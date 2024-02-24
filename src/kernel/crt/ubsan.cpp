@@ -1,6 +1,7 @@
 #include <panic.hpp>
 
-#include <libk/katomic.hpp>
+#include <atomic>
+
 #include <logging/logger.hpp>
 #include <stdint.h>
 

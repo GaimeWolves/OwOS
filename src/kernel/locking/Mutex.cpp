@@ -11,7 +11,7 @@ namespace Kernel::Locking
 		if (!locked)
 			return false;
 
-		m_locked = true;
+		m_locked.test_and_set();
 		m_lock.unlock();
 		return true;
 	}
@@ -22,15 +22,15 @@ namespace Kernel::Locking
 		if (!core.is_scheduler_running() || !core.is_thread_running())
 		{
 			m_lock.lock();
-			m_locked = true;
+			m_locked.test_and_set();
 			m_lock.unlock();
 			return;
 		}
 
-		if (m_locked)
+		if (m_locked.test())
 			CoreScheduler::block(this);
 
-		m_locked = true;
+		m_locked.test_and_set();
 	}
 
 	void Mutex::unlock()
@@ -39,11 +39,11 @@ namespace Kernel::Locking
 		if (!core.is_scheduler_running() || !core.is_thread_running())
 		{
 			m_lock.lock();
-			m_locked = false;
+			m_locked.clear();
 			m_lock.unlock();
 			return;
 		}
 
-		m_locked = false;
+		m_locked.clear();
 	}
 }

@@ -517,7 +517,7 @@ namespace Kernel
 
 	void Terminal::CUU(int n)
 	{
-		size_t new_row = LibK::min(m_cursor.row, n);
+		size_t new_row = LibK::min<size_t>(m_cursor.row, n);
 		set_cursor(new_row, m_cursor.column);
 	}
 
@@ -553,7 +553,7 @@ namespace Kernel
 
 	void Terminal::CHA(int n)
 	{
-		size_t new_column = LibK::min(LibK::max(n - 1, 0), m_console->get_width() - 1);
+		size_t new_column = LibK::min<size_t>(LibK::max(n - 1, 0), m_console->get_width() - 1);
 		set_cursor(m_cursor.row, new_column);
 	}
 

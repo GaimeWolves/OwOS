@@ -81,7 +81,7 @@ namespace Kernel::LibK
 		T *emplace(Args &&...args)
 		{
 			auto *node = new node_t{
-			    .value = T(forward<Args>(args)...),
+			    .value = T(std::forward<Args>(args)...),
 			    .height = 1,
 			    .parent = nullptr,
 			    .left = nullptr,

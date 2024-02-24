@@ -1,5 +1,7 @@
 #include <interrupts/LAPIC.hpp>
 
+#include <atomic>
+
 #include <arch/Processor.hpp>
 #include <arch/interrupts.hpp>
 #include <arch/smp.hpp>
@@ -7,9 +9,7 @@
 #include <memory/VirtualMemoryManager.hpp>
 #include <time/EventManager.hpp>
 
-#include "logging/logger.hpp"
-#include <libk/katomic.hpp>
-#include <libk/kcstdio.hpp>
+#include <logging/logger.hpp>
 
 #define APIC_SPURIOUS_INTERRUPT (CPU::MAX_INTERRUPTS - 1)
 #define APIC_ERROR_INTERRUPT    (CPU::MAX_INTERRUPTS - 2)
@@ -80,51 +80,47 @@ namespace Kernel::Interrupts
 	class APICErrorInterruptHandler final : public InterruptHandler
 	{
 	public:
-		APICErrorInterruptHandler(uint32_t interrupt_number)
+		explicit APICErrorInterruptHandler(uint32_t interrupt_number)
 		    : InterruptHandler(interrupt_number)
 		{
 		}
 
-		virtual ~APICErrorInterruptHandler()
-		{
-		}
+		~APICErrorInterruptHandler() override = default;
 
-		virtual void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
+		void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
 			log("APIC", "Got error interrupt");
 		}
 
-		virtual void eoi()
+		void eoi() override
 		{
 			LAPIC::instance().eoi();
 		}
 
-		virtual InterruptType type() const { return InterruptType::GenericInterrupt; }
+		[[nodiscard]] InterruptType type() const override { return InterruptType::GenericInterrupt; }
 	};
 
 	// TODO: Move into separate class later
 	class APICSpuriousInterruptHandler final : public InterruptHandler
 	{
 	public:
-		APICSpuriousInterruptHandler(uint32_t interrupt_number)
+		explicit APICSpuriousInterruptHandler(uint32_t interrupt_number)
 		    : InterruptHandler(interrupt_number)
 		{
 		}
 
-		virtual ~APICSpuriousInterruptHandler()
-		{
-		}
+		~APICSpuriousInterruptHandler() override = default;
 
-		virtual void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
+		void handle_interrupt(const CPU::interrupt_frame_t &reg __unused) override
 		{
 			log("APIC", "Got spurious interrupt");
 		}
 
-		virtual void eoi()
+		void eoi() override
 		{
 		}
 
-		virtual InterruptType type() const { return InterruptType::SpuriousInterrupt; }
+		[[nodiscard]] InterruptType type() const override { return InterruptType::SpuriousInterrupt; }
 	};
 
 	typedef union lvt_entry_t
@@ -266,10 +262,13 @@ namespace Kernel::Interrupts
 		for (size_t i = 0; i < m_available_aps; i++)
 			kernel_stacks.push_back(kernel_stack_addr + PAGE_SIZE * 8 * (i + 1));
 
-		auto cpu_id = LibK::atomic_uint32_t(0);
-		auto do_continue = LibK::atomic_uint32_t(0);
+		uint32_t cpu_id_raw = 0;
+		uint32_t do_continue_raw = 0;
 
-		CPU::initialize_smp_boot_environment(kernel_stacks, cpu_id.raw_ptr(), do_continue.raw_ptr());
+		auto cpu_id = std::atomic_ref(cpu_id_raw);
+		auto do_continue = std::atomic_ref(do_continue_raw);
+
+		CPU::initialize_smp_boot_environment(kernel_stacks, &cpu_id_raw, &do_continue_raw);
 
 		write_icr(0, APIC_DELIV_INIT, APIC_DEST_PHYSICAL, APIC_SHORTHAND_ALL_EXCL, 0);
 
@@ -339,7 +338,7 @@ namespace Kernel::Interrupts
 	{
 		auto &core = CPU::Processor::current();
 		uint64_t elapsed_time = core.get_next_timer_tick();
-		uint64_t next_interval = 0;
+		uint64_t next_interval;
 
 		if (core.id() == 0)
 			core.increment_nanoseconds_since_boot(elapsed_time * m_time_quantum);

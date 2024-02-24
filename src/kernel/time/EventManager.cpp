@@ -33,14 +33,14 @@ namespace Kernel::Time
 
 	void EventManager::early_sleep(uint64_t usecs)
 	{
-		static LibK::atomic_bool s_sleeping;
-		s_sleeping = true;
+		static std::atomic_flag s_sleeping(false);
+		s_sleeping.test_and_set();
 
 		schedule_event([](){
-			s_sleeping = false;
+			s_sleeping.clear();
 		}, usecs * 1000,false);
 
-		while (s_sleeping)
+		while (s_sleeping.test())
 			;
 	}
 
@@ -124,7 +124,7 @@ namespace Kernel::Time
 			}
 
 			if (core.is_scheduler_running())
-				CPU::Processor::current().defer_call(LibK::move(event.callback));
+				CPU::Processor::current().defer_call(std::move(event.callback));
 			else
 				event.callback();
 

@@ -25,7 +25,7 @@ namespace Kernel
 		if (context.is_null())
 			return -EACCES;
 
-		int fd = process->add_file(LibK::move(context));
+		int fd = process->add_file(std::move(context));
 
 		return fd;
 	}

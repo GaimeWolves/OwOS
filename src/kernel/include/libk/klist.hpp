@@ -27,7 +27,7 @@ namespace Kernel::LibK
 		{
 			auto *node = new list_node_t;
 
-			node->data = LibK::move(data);
+			node->data = std::move(data);
 
 			node->prev = head.prev;
 			head.prev->next = node;
@@ -41,7 +41,7 @@ namespace Kernel::LibK
 		{
 			auto *node = new list_node_t;
 
-			node->data = LibK::move(data);
+			node->data = std::move(data);
 
 			node->next = head.next;
 			head.next->prev = node;
@@ -59,10 +59,10 @@ namespace Kernel::LibK
 			node->next->prev = &head;
 			head.next = node->next;
 
-			T data = LibK::move(node->data);
+			T data = std::move(node->data);
 			delete node;
 
-			return LibK::move(data);
+			return std::move(data);
 		}
 
 		T pop_back()
@@ -73,10 +73,10 @@ namespace Kernel::LibK
 			node->prev->next = &head;
 			head.prev = node->prev;
 
-			T data = LibK::move(node->data);
+			T data = std::move(node->data);
 			delete node;
 
-			return LibK::move(data);
+			return std::move(data);
 		}
 
 		[[nodiscard]] bool empty() const { return head.next == &head; }

@@ -1,28 +1,14 @@
 #pragma once
 
-#include <limits.h>
+#include <climits>
 
 namespace Kernel::LibK
 {
-	template <typename T, typename V>
-	constexpr auto min(T a, V b) -> decltype(a + b)
-	{
-		using type = decltype(a + b);
-		if (static_cast<type>(a) < static_cast<type>(b))
-			return a;
+	template <typename T>
+	constexpr const T &min(const T &a, const T &b) { return a < b ? a : b; }
 
-		return b;
-	}
-
-	template <typename T, typename V>
-	constexpr auto max(T a, V b) -> decltype(a + b)
-	{
-		using type = decltype(a + b);
-		if (static_cast<type>(a) > static_cast<type>(b))
-			return a;
-
-		return b;
-	}
+	template <typename T>
+	constexpr const T &max(const T &a, const T &b) { return a < b ? b : a; }
 
 	template <typename T>
 	constexpr T next_power_of_two(T value)

@@ -235,7 +235,7 @@ namespace Kernel
 		{
 			uint32_t block = block_iterator.get();
 
-			size_t to_read = LibK::min(m_filesystem->m_block_size, bytes);
+			size_t to_read = LibK::min<size_t>(m_filesystem->m_block_size, bytes);
 
 			fs_block_t *fs_block = FileSystemCache::acquire(m_filesystem->m_device, block);
 			memcpy(buffer, fs_block->data() + offset_in_block, to_read);
@@ -305,7 +305,7 @@ namespace Kernel
 		{
 			uint32_t block = block_iterator.get();
 
-			size_t to_write = LibK::min(m_filesystem->m_block_size, bytes);
+			size_t to_write = LibK::min<size_t>(m_filesystem->m_block_size, bytes);
 
 			fs_block_t *fs_block = FileSystemCache::acquire(m_filesystem->m_device, block);
 			memcpy(fs_block->data() + offset_in_block, buffer, to_write);
@@ -654,7 +654,7 @@ namespace Kernel
 
 			block_group_descriptor_t *block_group_descriptor = get_block_group_descriptor(block_group);
 
-			size_t allocated_blocks = LibK::min(count, block_group_descriptor->unallocated_blocks);
+			size_t allocated_blocks = LibK::min<size_t>(count, block_group_descriptor->unallocated_blocks);
 
 			if (allocated_blocks == 0)
 			{

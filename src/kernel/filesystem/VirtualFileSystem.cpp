@@ -183,7 +183,7 @@ namespace Kernel
 
 		if (path[0] != '/')
 		{
-			path.insert(path.begin(), cwd);
+			path.insert(0, cwd);
 		}
 	}
 
@@ -221,7 +221,7 @@ namespace Kernel
 		softlink->file->read(0, softlink->file->size(), prefix);
 
 		path.erase(path.begin(), path.begin() + (int)softlink->file->name().size());
-		path.insert(path.begin(), prefix);
+		path.insert(0, prefix);
 
 		kfree(prefix);
 	}

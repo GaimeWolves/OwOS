@@ -1,6 +1,6 @@
 #include <processes/Process.hpp>
 
-#include <libk/katomic.hpp>
+#include <atomic>
 
 #include <processes/GlobalScheduler.hpp>
 #include <memory/VirtualMemoryManager.hpp>
@@ -9,11 +9,9 @@
 #include <logging/logger.hpp>
 #include <tty/VirtualConsole.hpp>
 
-#include "../../userland/libc/signal.h"
-
 namespace Kernel
 {
-	static LibK::atomic<pid_t> s_pid_counter{0};
+	static std::atomic<pid_t> s_pid_counter{0};
 
 	Process::Process()
 	{

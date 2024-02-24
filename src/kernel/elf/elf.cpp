@@ -102,7 +102,7 @@ namespace Kernel::ELF
 			auto *pheader = (elf32_phdr_t *)(region.virt_address + header->e_phoff + header->e_phentsize * i);
 			if (pheader->p_type == PT_LOAD)
 			{
-				s_loader_image_size = LibK::max(s_loader_image_size, pheader->p_vaddr + pheader->p_memsz);
+				s_loader_image_size = LibK::max<size_t>(s_loader_image_size, pheader->p_vaddr + pheader->p_memsz);
 			}
 		}
 
